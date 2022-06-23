@@ -1,0 +1,70 @@
+syntax = "proto3";
+package elmer.everything;
+option go_package = "./.";
+
+message EmptyishRequest {}
+
+message Scalar {
+    double my_double = 1;
+    float my_float = 2;
+    int32 my_int32 = 3;
+    //int64 my_int64 = 4;
+    uint32 my_uint32 = 5;
+    //uint64 my_uint64 = 6;
+    sint32 my_sint32 = 7;
+    //sint64 my_sint64 = 8;
+    fixed32 my_fixed32 = 9;
+    //fixed64 my_fixed64 = 10;
+    sfixed32 my_sfixed32 = 11;
+    //sfixed64 my_sfixed64 = 12;
+    bool my_bool = 13;
+    string my_string = 14;
+    bytes my_bytes = 15;
+}
+
+enum ABC {
+    Unknown = 0;
+    A = 1;
+    B = 2;
+    C = 3;
+}
+
+message MsgWithEnums {
+    enum Clocks {
+        //option allow_alias = true;    
+        Mechanical = 0;
+        Wall = 1;
+        //Cuckoo = 1;
+        Grandfather = 2;
+        Digital = 4;
+    }
+
+    ABC best_letter = 1;
+    Clocks favourite_clock = 2;
+}
+
+message Nested {
+    message A {
+        message B {
+            message C {
+                enum Decision {
+                    MAYBE = 0;
+                    YES = 1;
+                    NO = 2;
+                }
+
+                double inside = 1;
+            }
+            C c = 1;
+        }
+        B b = 1;
+    }
+    A a = 1;
+}
+
+/*
+message Special {
+    repeated int32 my_list = 1;
+    map<string, bool> strings = 2;
+}
+*/
