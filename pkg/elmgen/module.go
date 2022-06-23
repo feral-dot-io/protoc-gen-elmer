@@ -60,16 +60,6 @@ func (c *Config) nameAndPath(pkg, file string) (name, path string) {
 	return
 }
 
-func (m *Module) registerProtoName(name protoreflect.FullName, alias string) {
-	// Don't overwrite. This should never happen. We rely on protobuf semantics being enforced by our caller
-	if _, ok := m.protoNS[name]; ok {
-		log.Panicf("duplicate protoreflect.FullName: %s", name)
-	}
-	// Defer Elm ID creation so that we can decide which IDs get suffixed on name collision
-	m.protoNS[name] = ""
-	m.protoAliases[name] = alias
-}
-
 // Convert a protobuf full ident to a valid Elm ID following naming conventions. Diverging from naming conversions, proto namespaces can be joined with a separator.
 // The proto3 spec says idents are limited to "alphanum plus _". A full ident is joins idents by a dot.
 // If isType is true then first character is uppercased, otherwise it's lowercased.

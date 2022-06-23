@@ -7,28 +7,6 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func (m *Module) regEnums(protoEnums []*protogen.Enum) {
-	for _, proto := range protoEnums {
-		m.registerProtoName(proto.Desc.FullName(), "")
-		m.protoEnums = append(m.protoEnums, proto)
-		// Build a qualified alias? TODO this looks similar to regRecords
-		var suffix protoreflect.Name
-		if m.config.VariantSuffixes {
-			suffix = "."
-			if m.config.QualifyNested {
-				suffix += protoreflect.Name(proto.Desc.FullName())
-			} else {
-				suffix += proto.Desc.Name()
-			}
-		}
-		// Add variants
-		for _, protoVal := range proto.Values {
-			vd := protoVal.Desc
-			m.registerProtoName(vd.FullName(), string(vd.Name()+suffix))
-		}
-	}
-}
-
 func (m *Module) addEnums() {
 	for _, proto := range m.protoEnums {
 		m.Unions = append(m.Unions, m.newUnion(proto))

@@ -8,44 +8,6 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func (m *Module) regMessages(protoMsgs []*protogen.Message) {
-	for _, proto := range protoMsgs {
-		// Recursive
-		m.regEnums(proto.Enums)
-		m.regMessages(proto.Messages)
-		// Add this msg
-		m.registerProtoName(proto.Desc.FullName(), "")
-		m.protoMessages = append(m.protoMessages, proto)
-
-		var prefix protoreflect.Name
-		if m.config.QualifyNested {
-			prefix = protoreflect.Name(proto.Desc.FullName())
-		} else {
-			prefix = proto.Desc.Name()
-		}
-
-		for _, oneof := range proto.Oneofs {
-			od := oneof.Desc
-			m.registerProtoName(od.FullName(), string(prefix+"."+od.Name()))
-			// Build a qualified alias?
-			var suffix protoreflect.Name
-			if m.config.VariantSuffixes {
-				suffix = "."
-				if m.config.QualifyNested {
-					suffix += protoreflect.Name(od.FullName())
-				} else {
-					suffix += od.Name()
-				}
-			}
-			// Add fields
-			for _, field := range oneof.Fields {
-				fd := field.Desc
-				m.registerProtoName(fd.FullName(), string(fd.Name()+suffix))
-			}
-		}
-	}
-}
-
 func (m *Module) addRecords() error {
 	for _, proto := range m.protoMessages {
 		// Defer map handling to fields
