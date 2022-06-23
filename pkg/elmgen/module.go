@@ -1,6 +1,7 @@
 package elmgen
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"unicode"
@@ -10,9 +11,6 @@ import (
 )
 
 func (config Config) newModule() *Module {
-	if config.CollisionSuffix == "" {
-		config.CollisionSuffix = DefaultConfig.CollisionSuffix
-	}
 	return &Module{
 		config:       config,
 		protoNS:      make(map[protoreflect.FullName]ElmType),
@@ -22,6 +20,16 @@ func (config Config) newModule() *Module {
 
 func (config *Config) NewModule(proto *protogen.File) (*Module, error) {
 	m := config.newModule()
+	// Check config is valid
+	if !ValidPartialElmID(m.config.QualifiedSeparator) {
+		return nil, fmt.Errorf("qualified separator must be a valid Elm identifier, got `%s`",
+			m.config.QualifiedSeparator)
+	}
+	if !ValidPartialElmID(m.config.CollisionSuffix) {
+		return nil, fmt.Errorf("collision suffix must be a valid Elm identifier, got `%s`",
+			m.config.CollisionSuffix)
+	}
+	//
 	m.protoPkg = proto.Desc.Package() + "."
 	m.Name, m.Path = config.nameAndPath(string(proto.Desc.Package()), proto.GeneratedFilenamePrefix)
 	// First pass: get proto Idents
@@ -136,8 +144,9 @@ func (m *Module) getElmValue(name protoreflect.FullName) string {
 }
 
 func (m *Module) registerElmID(id string) string {
-	// TODO: check if name looks normal ie., starts with a capital
-	// TODO: check for invalid Elm IDs
+	if !ValidElmID(id) {
+		log.Panicf("invalid Elm ID: %s", id)
+	}
 	if _, ok := m.elmNS[id]; ok {
 		// Already registered, add a suffix to last ID
 		id += m.config.CollisionSuffix

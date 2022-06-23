@@ -176,6 +176,9 @@ func TestCollisionSuffix(t *testing.T) {
 	// Duplicate Elm ID gets a suffixed
 	assert.Equal(t, "Hello", m.registerElmID("Hello"))
 	assert.Equal(t, "Hello___", m.registerElmID("Hello"))
+	// Invalid suffix
+	_, err := (&Config{CollisionSuffix: " "}).NewModule(nil)
+	assert.ErrorContains(t, err, "collision")
 }
 
 func TestQualified(t *testing.T) {
@@ -219,4 +222,7 @@ func TestQualified(t *testing.T) {
 	assert.Equal(t, ElmType("Outer_Inner_Conundrum"), o.ID)
 	assert.Equal(t, ElmType("Or_Outer_Inner_Conundrum"), o.Variants[0].ID)
 	assert.Equal(t, ElmType("And_Outer_Inner_Conundrum"), o.Variants[1].ID)
+	// Invalid separator
+	_, err := (&Config{QualifiedSeparator: " "}).NewModule(nil)
+	assert.ErrorContains(t, err, "separator")
 }

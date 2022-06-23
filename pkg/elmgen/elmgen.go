@@ -1,6 +1,9 @@
 package elmgen
 
 import (
+	"unicode"
+	"unicode/utf8"
+
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -14,11 +17,11 @@ type Config struct {
 	// Proto allows nesting. When we decide on a name, do we use the last (deepest) name or qualify all?
 	QualifyNested bool
 	// Replaces a Protobuf namespace separator (a dot, `.`) with this string in Elm code
-	QualifiedSeparator string // TODO must be a valid Elm ID
+	QualifiedSeparator string
 	// Variants created from enums and oneofs are suffixed with their parent
 	VariantSuffixes bool
 	// When mapping Protobuf idents to Elm we may up with a naming collision. Resolve this collision by appending this to the second ID generated or returning an error if blank
-	CollisionSuffix string // TODO must be valid Elm, return an error on blank
+	CollisionSuffix string // TODO return an error on blank
 }
 
 var DefaultConfig = Config{
@@ -120,3 +123,20 @@ func (a Oneofs) Less(i, j int) bool { return a[i].ID < a[j].ID }
 func (a Records) Len() int           { return len(a) }
 func (a Records) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a Records) Less(i, j int) bool { return a[i].ID < a[j].ID }
+
+func ValidElmID(id string) bool {
+	runes := []rune(id)
+	return utf8.ValidString(id) && id != "" && // Non-empty utf8
+		unicode.IsLetter(runes[0]) && // First char is a letter
+		ValidPartialElmID(string(runes[1:])) // Remaining chars are valid
+}
+
+func ValidPartialElmID(partial string) bool {
+	for _, r := range partial {
+		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_') {
+			return false
+		}
+	}
+	// Allow empty as well
+	return true
+}
