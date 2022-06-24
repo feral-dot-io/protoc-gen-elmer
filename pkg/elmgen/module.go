@@ -75,13 +75,21 @@ func (m *Module) protoFullIdentToElmCasing(from string, isType bool) string {
 	var segments []string
 	var buf []rune
 	var prev, prev2 rune
+	appendBuf := func() {
+		if len(buf) == 0 { // No characters, e.g., just underscore(s)
+			x := 'x'
+			if isType {
+				x = 'X'
+			}
+			buf = append(buf, x)
+		}
+		segments = append(segments, string(buf))
+		buf = nil
+	}
 	for _, r := range from {
 		original := r
 		if r == '.' { // End of namespace
-			if len(buf) > 0 {
-				segments = append(segments, string(buf))
-				buf = nil
-			}
+			appendBuf()
 		} else if r != '_' { // Skip underscores
 			if len(buf) == 0 {
 				// First character must be upper or lower
@@ -107,9 +115,7 @@ func (m *Module) protoFullIdentToElmCasing(from string, isType bool) string {
 		prev = original
 	}
 	// Add leftover buffer
-	if len(buf) > 0 {
-		segments = append(segments, string(buf))
-	}
+	appendBuf()
 	return strings.Join(segments, m.config.QualifiedSeparator)
 }
 

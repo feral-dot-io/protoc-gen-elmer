@@ -156,11 +156,11 @@ func TestNaming(t *testing.T) {
 		"A_B_C":                         "ABC", // Looks odd
 		"MyURLIsHere":                   "MyUrlIsHere",
 		"UpUpUp":                        "UpUpUp",
-		".":                             "",
-		"...":                           "",
+		".":                             "XX",
+		"...":                           "XXXX",
 		"oops.oops":                     "OopsOops",
-		"_":                             "",
-		"___":                           "",
+		"_":                             "X",
+		"___":                           "X",
 		"my._pkg":                       "MyPkg",
 	}
 	m := Config{}.newModule()
@@ -171,6 +171,9 @@ func TestNaming(t *testing.T) {
 	cases = map[string]string{
 		"hello.world":                   "Hello_World",
 		"pkg.name.MyMessage.field_name": "Pkg_Name_MyMessage_FieldName",
+		"_":                             "X",
+		".":                             "X_X",
+		"...":                           "X_X_X_X",
 	}
 	m = Config{QualifiedSeparator: "_"}.newModule()
 	for check, exp := range cases {
@@ -180,11 +183,24 @@ func TestNaming(t *testing.T) {
 	cases = map[string]string{
 		"hello.world":                   "helloWorld",
 		"pkg.name.MyMessage.field_name": "pkgNameMyMessageFieldName",
+		"_":                             "x",
+		".":                             "xx",
+		"...":                           "xxxx",
 	}
 	m = Config{}.newModule()
 	for check, exp := range cases {
 		assert.Equal(t, exp, m.protoFullIdentToElmCasing(check, false))
 	}
+}
+
+func TestProtoUnderscores(t *testing.T) {
+	config := &Config{QualifyNested: true}
+	config.testModule(t, `
+		syntax = "proto3";
+		message _ {
+			bool _ = 1;
+		}
+	`)
 }
 
 func TestCollisionSuffix(t *testing.T) {

@@ -109,7 +109,6 @@ func fieldType(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
 			return "", err
 		}
 		val, err := fieldType(m, pd.MapValue())
-		// TODO: check if key is scalar?
 		m.Imports.Dict = true
 		return "(Dict " + key + " " + val + ")", err
 	}
