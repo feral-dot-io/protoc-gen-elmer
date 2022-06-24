@@ -22,6 +22,7 @@ func (m *Module) addRecords() error {
 		m.Records = append(m.Records, record)
 	}
 	sort.Sort(m.Records)
+	sort.Sort(m.Oneofs)
 	return nil
 }
 

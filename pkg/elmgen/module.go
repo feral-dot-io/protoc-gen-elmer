@@ -53,7 +53,9 @@ func (config *Config) NewModule(proto *protogen.File) (*Module, error) {
 	m.regEnums(proto.Enums)
 	m.regMessages(proto.Messages)
 	// Next: translate proto -> elm. Ordering matters: name clashes are suffixed
-	m.addEnums()
+	if err := m.addEnums(); err != nil {
+		return nil, err
+	}
 	if err := m.addRecords(); err != nil {
 		return nil, err
 	}
