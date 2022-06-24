@@ -178,7 +178,6 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 					decoder = fmt.Sprintf("PD.repeated %d", f.WireNumber)
 				}
 			}
-			// TODO: mapped
 			gFP("%s %s %s (\\v m -> { m | %s = v })",
 				prefix, decoder, f.Decoder, f.Label)
 		}

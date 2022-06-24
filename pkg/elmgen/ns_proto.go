@@ -29,7 +29,13 @@ func (m *Module) regMessages(protoMsgs []*protogen.Message) {
 		prefix := m.aliasName(proto.Desc)
 		for _, oneof := range proto.Oneofs {
 			od := oneof.Desc
-			m.registerProtoName(od.FullName(), string(prefix+"."+od.Name()))
+			oneofAlias := string(prefix + "." + od.Name())
+			if od.IsSynthetic() { // Optional
+				// Make oneof an alias of single field
+				fd := od.Fields().Get(0)
+				oneofAlias = string(fd.FullName())
+			}
+			m.registerProtoName(od.FullName(), oneofAlias)
 			for _, field := range oneof.Fields {
 				fd := field.Desc
 				m.registerProtoName(fd.FullName(), m.variantAlias(od, fd))

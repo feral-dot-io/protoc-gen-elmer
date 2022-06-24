@@ -31,10 +31,9 @@ func (m *Module) newUnion(proto *protogen.Enum) (*Union, error) {
 		v := new(Variant)
 		v.Number = protoVal.Desc.Number()
 		// Variant (type) or alias (value)?
-		var err error
+		var err error // TODO: remove
 		if original := aliases[v.Number]; original != nil {
-			var elmID string
-			elmID, err = m.getElmValue(protoVal.Desc.FullName())
+			elmID := m.getElmValue(protoVal.Desc.FullName())
 			union.Aliases = append(union.Aliases,
 				&VariantAlias{original, elmID})
 		} else {
@@ -56,11 +55,13 @@ func (m *Module) newUnion(proto *protogen.Enum) (*Union, error) {
 
 func (m *Module) newOneof(proto protoreflect.OneofDescriptor) (*Oneof, error) {
 	oneof := new(Oneof)
+	oneof.IsSynthetic = proto.IsSynthetic()
+	// Register codec IDs
 	err := oneof.CodecIDs.register(m, proto.FullName())
 	if err != nil {
 		return nil, err
 	}
-	oneof.IsSynthetic = proto.IsSynthetic()
+	// Add field types
 	fields := proto.Fields()
 	for i := 0; i < fields.Len(); i++ {
 		field := fields.Get(i)

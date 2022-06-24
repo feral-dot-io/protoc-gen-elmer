@@ -63,7 +63,7 @@ func (m *Module) newRecord(proto *protogen.Message) (*Record, error) {
 
 func (m *Module) newField(pd protoreflect.FieldDescriptor) (*Field, error) {
 	field := new(Field)
-	field.Label = m.protoFullIdentToElmCasing(string(pd.Name()), false)
+	field.Label = m.getElmValue(protoreflect.FullName(pd.Name()))
 	var err error
 	if field.Type, err = fieldType(m, pd); err != nil {
 		return nil, err
@@ -88,17 +88,17 @@ func (m *Module) newOneofField(po protoreflect.OneofDescriptor) (*Oneof, *Field,
 		return nil, nil, err
 	}
 	field := &Field{
-		m.protoFullIdentToElmCasing(string(po.Name()), false),
+		m.getElmValue(protoreflect.FullName(po.Name())),
 		true, 0, 0,
-		"Maybe " + string(oneof.ID),
+		"(Maybe " + string(oneof.ID) + ")",
 		"Nothing",
 		oneof.DecodeID,
-		oneof.EncodeID,
-	}
+		oneof.EncodeID}
 	// Optional field?
 	if oneof.IsSynthetic {
 		// Unwrap type
-		field.Type = "Maybe " + oneof.Variants[0].Field.Type
+		field.Label = string(po.Fields().Get(0).Name())
+		field.Type = "(Maybe " + oneof.Variants[0].Field.Type + ")"
 	}
 	return oneof, field, nil
 }
@@ -203,11 +203,11 @@ func fieldZero(m *Module, pd protoreflect.FieldDescriptor) (interface{}, error) 
 }
 
 func fieldDecoder(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
-	return fieldCodec(m, "PD.", "decode", pd)
+	return fieldCodec(m, "PD.", "Decoder", pd)
 }
 
 func fieldEncoder(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
-	return fieldCodec(m, "PE.", "encode", pd)
+	return fieldCodec(m, "PE.", "Encoder", pd)
 }
 
 func fieldCodec(m *Module, lib, dir string, pd protoreflect.FieldDescriptor) (string, error) {
@@ -241,12 +241,10 @@ func fieldCodec(m *Module, lib, dir string, pd protoreflect.FieldDescriptor) (st
 		return lib + "bytes", nil
 
 	case protoreflect.EnumKind:
-		id, err := m.getElmType(pd.Enum().FullName())
-		return dir + string(id), err
+		return m.getElmValue(pd.Enum().FullName()) + dir, nil
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
-		id, err := m.getElmType(pd.Message().FullName())
-		return dir + string(id), err
+		return m.getElmValue(pd.Message().FullName()) + dir, nil
 	}
 	return "", fmt.Errorf("fieldCodec: unknown protoreflect.Kind: %s",
 		pd.Kind())

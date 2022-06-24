@@ -1,7 +1,6 @@
 package elmgen
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -9,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -118,81 +116,6 @@ func TestEmptyPackage(t *testing.T) {
 	assert.Equal(t, ElmType("AB"), elm.Records[1].ID)
 }
 
-func TestNS(t *testing.T) {
-	m := TestConfig.newModule()
-	// Trying to register duplicate proto ident
-	m.registerProtoName(protoreflect.FullName("test"), "")
-	assert.Panics(t, func() {
-		m.registerProtoName(protoreflect.FullName("test"), "")
-	})
-	// Getting an Elm ID from an unregistered proto ident
-	assert.Panics(t, func() {
-		m.getElmType("eek")
-	})
-	// Accidental codec registration gives a collision error
-	m = Config{}.newModule()
-	m.registerProtoName("Dupe", "")
-	cases := []string{"Dupe", "emptyDupe", "decodeDupe", "encodeDupe"}
-	for _, id := range cases {
-		fmt.Printf("id %s\n", id)
-		m.registerElmID(id)
-		err := new(CodecIDs).register(m, "Dupe")
-		assert.ErrorContains(t, err, id)
-		// Unregister values
-		for _, unreg := range cases {
-			delete(m.elmNS, unreg)
-		}
-	}
-}
-
-func TestNaming(t *testing.T) {
-	cases := map[string]string{
-		"hello":                         "Hello",
-		"hello_world":                   "HelloWorld",
-		"hello.world":                   "HelloWorld",
-		"pkg.name.MyMessage.field_name": "PkgNameMyMessageFieldName",
-		"ALL_CAPS":                      "AllCaps",
-		"URL":                           "Url",
-		"A_B_C":                         "ABC", // Looks odd
-		"MyURLIsHere":                   "MyUrlIsHere",
-		"UpUpUp":                        "UpUpUp",
-		".":                             "XX",
-		"...":                           "XXXX",
-		"oops.oops":                     "OopsOops",
-		"_":                             "X",
-		"___":                           "X",
-		"my._pkg":                       "MyPkg",
-	}
-	m := Config{}.newModule()
-	for check, exp := range cases {
-		assert.Equal(t, exp, m.protoFullIdentToElmCasing(check, true))
-	}
-	// Again but with a NS separator
-	cases = map[string]string{
-		"hello.world":                   "Hello_World",
-		"pkg.name.MyMessage.field_name": "Pkg_Name_MyMessage_FieldName",
-		"_":                             "X",
-		".":                             "X_X",
-		"...":                           "X_X_X_X",
-	}
-	m = Config{QualifiedSeparator: "_"}.newModule()
-	for check, exp := range cases {
-		assert.Equal(t, exp, m.protoFullIdentToElmCasing(check, true))
-	}
-	// Again but with type / value treatment
-	cases = map[string]string{
-		"hello.world":                   "helloWorld",
-		"pkg.name.MyMessage.field_name": "pkgNameMyMessageFieldName",
-		"_":                             "x",
-		".":                             "xx",
-		"...":                           "xxxx",
-	}
-	m = Config{}.newModule()
-	for check, exp := range cases {
-		assert.Equal(t, exp, m.protoFullIdentToElmCasing(check, false))
-	}
-}
-
 func TestProtoUnderscores(t *testing.T) {
 	config := &Config{QualifyNested: true}
 	config.testModule(t, `
@@ -202,31 +125,6 @@ func TestProtoUnderscores(t *testing.T) {
 		}
 	`)
 }
-
-func TestCollisionSuffix(t *testing.T) {
-	m := Config{CollisionSuffix: "___"}.newModule()
-	// Duplicate Elm ID gets a suffixed
-	id, err := m.registerElmID("Hello")
-	assert.NoError(t, err)
-	assert.Equal(t, "Hello", id)
-	id, err = m.registerElmID("Hello")
-	assert.NoError(t, err)
-	assert.Equal(t, "Hello___", id)
-	// Invalid suffix
-	_, err = (&Config{CollisionSuffix: " "}).NewModule(nil)
-	assert.ErrorContains(t, err, "collision")
-	// Must be valid Elm
-	assert.Panics(t, func() {
-		m.registerElmID(" ")
-	})
-	// Empty suffix gives an error
-	m = Config{}.newModule()
-	_, err = m.registerElmID("getReady")
-	assert.NoError(t, err)
-	_, err = m.registerElmID("getReady")
-	assert.ErrorContains(t, err, "collision")
-}
-
 func TestQualified(t *testing.T) {
 	config := TestConfig
 	config.QualifyNested = true

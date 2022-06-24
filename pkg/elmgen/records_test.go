@@ -72,8 +72,8 @@ func TestScalarRecord(t *testing.T) {
 	// IDs
 	assert.Equal(t, ElmType("Scalar"), scalar.ID)
 	assert.Equal(t, "emptyScalar", scalar.ZeroID)
-	assert.Equal(t, "decodeScalar", scalar.DecodeID)
-	assert.Equal(t, "encodeScalar", scalar.EncodeID)
+	assert.Equal(t, "scalarDecoder", scalar.DecodeID)
+	assert.Equal(t, "scalarEncoder", scalar.EncodeID)
 	// Fields
 	assertFields(t, scalar.Fields,
 		&Field{"myDouble", false, 1, opt, "Float", "0", "", ""},
@@ -125,8 +125,8 @@ func TestRecordFieldMessage(t *testing.T) {
 	assert.Empty(t, elm.Unions)
 	assert.Len(t, elm.Records, 3)
 	assertFields(t, elm.Records[2].Fields,
-		&Field{"first", false, 1, opt, "First", "emptyFirst", "decodeFirst", "encodeFirst"},
-		&Field{"second", false, 2, opt, "Second", "emptySecond", "decodeSecond", "encodeSecond"})
+		&Field{"first", false, 1, opt, "First", "emptyFirst", "firstDecoder", "firstEncoder"},
+		&Field{"second", false, 2, opt, "Second", "emptySecond", "secondDecoder", "secondEncoder"})
 }
 
 func TestRecordNestedMessage(t *testing.T) {
@@ -151,12 +151,12 @@ func TestRecordNestedMessage(t *testing.T) {
 	assert.Len(t, elm.Records, 4)
 	assertFields(t, elm.Records[0].Fields,
 		&Field{"first", false, 1, opt, "NestedFirst",
-			"emptyNestedFirst", "decodeNestedFirst", "encodeNestedFirst"},
+			"emptyNestedFirst", "nestedFirstDecoder", "nestedFirstEncoder"},
 		&Field{"second", false, 2, opt, "NestedSecond",
-			"emptyNestedSecond", "decodeNestedSecond", "encodeNestedSecond"})
+			"emptyNestedSecond", "nestedSecondDecoder", "nestedSecondEncoder"})
 	assertFields(t, elm.Records[3].Fields,
 		&Field{"farOut", false, 123, opt, "NestedFirst",
-			"emptyNestedFirst", "decodeNestedFirst", "encodeNestedFirst"})
+			"emptyNestedFirst", "nestedFirstDecoder", "nestedFirstEncoder"})
 }
 
 func TestRecordErrors(t *testing.T) {
@@ -229,7 +229,6 @@ func TestMapField(t *testing.T) {
 }
 
 func TestOneOf(t *testing.T) {
-	// First, the general case
 	elm := TestConfig.testModule(t, `
 		syntax = "proto3";
 		message Multi {
@@ -249,14 +248,13 @@ func TestOneOf(t *testing.T) {
 	assert.Len(t, r.Oneofs, 2)
 	assert.Equal(t, ElmType("Multi"), r.ID)
 	assertFields(t, r.Fields,
-		&Field{"pickOne", true, 0, 0, "Maybe MultiPickOne", "Nothing",
-			"decodeMultiPickOne", "encodeMultiPickOne"},
-		&Field{"pickAnother", true, 0, 0, "Maybe MultiPickAnother", "Nothing",
-			"decodeMultiPickAnother", "encodeMultiPickAnother"})
+		&Field{"pickOne", true, 0, 0, "(Maybe MultiPickOne)", "Nothing",
+			"multiPickOneDecoder", "multiPickOneEncoder"},
+		&Field{"pickAnother", true, 0, 0, "(Maybe MultiPickAnother)", "Nothing",
+			"multiPickAnotherDecoder", "multiPickAnotherEncoder"})
 }
 
 func TestOptionalField(t *testing.T) {
-	// First, the general case
 	elm := TestConfig.testModule(t, `
 		syntax = "proto3";
 		message Night {
@@ -268,6 +266,28 @@ func TestOptionalField(t *testing.T) {
 	r := elm.Records[0]
 	assert.Equal(t, ElmType("Night"), r.ID)
 	assertFields(t, r.Fields,
-		&Field{"shadow", true, 0, 0, "Maybe Bool", "Nothing",
-			"decodeNightShadow", "encodeNightShadow"})
+		&Field{"shadow", true, 0, 0, "(Maybe Bool)", "Nothing",
+			"nightShadowDecoder", "nightShadowEncoder"})
+	// Again but nested
+	elm = TestConfig.testModule(t, `
+		syntax = "proto3";
+		message Day {
+			message Night {
+				optional bool shadow = 666;
+			}
+			Night sun = 1;
+		}`)
+	assert.Empty(t, elm.Unions)
+	assert.Len(t, elm.Records, 2)
+	assert.Len(t, elm.Oneofs, 1)
+	r = elm.Records[0]
+	assert.Equal(t, ElmType("Day"), r.ID)
+	assertFields(t, r.Fields,
+		&Field{"sun", false, 1, opt, "DayNight", "emptyDayNight",
+			"dayNightDecoder", "dayNightEncoder"})
+	r = elm.Records[1]
+	assert.Equal(t, ElmType("DayNight"), r.ID)
+	assertFields(t, r.Fields,
+		&Field{"shadow", true, 0, 0, "(Maybe Bool)", "Nothing",
+			"dayNightShadowDecoder", "dayNightShadowEncoder"})
 }
