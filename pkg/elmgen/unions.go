@@ -7,29 +7,38 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func (m *Module) addEnums() {
+func (m *Module) addEnums() error {
 	for _, proto := range m.protoEnums {
-		m.Unions = append(m.Unions, m.newUnion(proto))
+		union, err := m.newUnion(proto)
+		if err != nil {
+			return err
+		}
+		m.Unions = append(m.Unions, union)
 	}
 	sort.Sort(m.Unions)
+	return nil
 }
 
-func (m *Module) newUnion(proto *protogen.Enum) *Union {
+func (m *Module) newUnion(proto *protogen.Enum) (*Union, error) {
 	union := new(Union)
-	union.CodecIDs.register(m, proto.Desc.FullName())
+	err := union.CodecIDs.register(m, proto.Desc.FullName())
+	if err != nil {
+		return nil, err
+	}
 	// Add variants
 	aliases := make(map[protoreflect.EnumNumber]*Variant)
 	for i, protoVal := range proto.Values {
 		v := new(Variant)
 		v.Number = protoVal.Desc.Number()
 		// Variant (type) or alias (value)?
+		var err error
 		if original := aliases[v.Number]; original != nil {
+			var elmID string
+			elmID, err = m.getElmValue(protoVal.Desc.FullName())
 			union.Aliases = append(union.Aliases,
-				&VariantAlias{
-					original,
-					m.getElmValue(protoVal.Desc.FullName())})
+				&VariantAlias{original, elmID})
 		} else {
-			v.ID = m.getElmType(protoVal.Desc.FullName())
+			v.ID, err = m.getElmType(protoVal.Desc.FullName())
 			aliases[v.Number] = v
 			// First is the default
 			if i == 0 {
@@ -38,20 +47,27 @@ func (m *Module) newUnion(proto *protogen.Enum) *Union {
 				union.Variants = append(union.Variants, v)
 			}
 		}
+		if err != nil {
+			return nil, err
+		}
 	}
-	return union
+	return union, nil
 }
 
 func (m *Module) newOneof(proto protoreflect.OneofDescriptor) (*Oneof, error) {
-	var err error
 	oneof := new(Oneof)
-	oneof.CodecIDs.register(m, proto.FullName())
+	err := oneof.CodecIDs.register(m, proto.FullName())
+	if err != nil {
+		return nil, err
+	}
 	oneof.IsSynthetic = proto.IsSynthetic()
 	fields := proto.Fields()
 	for i := 0; i < fields.Len(); i++ {
 		field := fields.Get(i)
 		v := new(OneofVariant)
-		v.ID = m.getElmType(field.FullName())
+		if v.ID, err = m.getElmType(field.FullName()); err != nil {
+			return nil, err
+		}
 		if v.Field, err = m.newField(field); err != nil {
 			return nil, err
 		}

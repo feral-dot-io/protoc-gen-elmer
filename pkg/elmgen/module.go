@@ -123,43 +123,58 @@ func (m *Module) protoFullIdentToElmType(name protoreflect.FullName, isType bool
 	return m.protoFullIdentToElmCasing(alias, isType)
 }
 
-func (m *Module) getElmType(name protoreflect.FullName) ElmType {
+func (m *Module) getElmType(name protoreflect.FullName) (ElmType, error) {
 	elmID, ok := m.protoNS[name]
 	// This should never happen. All proto names should be registered before use
 	if !ok {
 		log.Panicf("missing protoreflect.FullName: %s", name)
 	}
 	// First retrieval: create
+	var err error
 	if elmID == "" {
 		candidate := m.protoFullIdentToElmType(name, true)
-		elmID = ElmType(m.registerElmID(candidate))
+		candidate, err = m.registerElmID(candidate)
+		elmID = ElmType(candidate)
 		m.protoNS[name] = elmID
 	}
-	return elmID
+	return elmID, err
 }
 
-func (m *Module) getElmValue(name protoreflect.FullName) string {
+func (m *Module) getElmValue(name protoreflect.FullName) (string, error) {
 	candidate := m.protoFullIdentToElmType(name, false)
 	return m.registerElmID(candidate)
 }
 
-func (m *Module) registerElmID(id string) string {
+func (m *Module) registerElmID(id string) (string, error) {
 	if !ValidElmID(id) {
 		log.Panicf("invalid Elm ID: %s", id)
 	}
+	// Already registered?
 	if _, ok := m.elmNS[id]; ok {
-		// Already registered, add a suffix to last ID
+		// Generate an error?
+		if m.config.CollisionSuffix == "" {
+			return "", fmt.Errorf("protobuf schema generates a name collision with ID `%s` and current config (%#v) prevents us from resolving it",
+				id, m.config)
+		}
+		// Add suffix to ID
 		id += m.config.CollisionSuffix
 		return m.registerElmID(id)
 	}
 	m.elmNS[id] = struct{}{}
-	return id
+	return id, nil
 }
 
-func (d *CodecIDs) register(m *Module, name protoreflect.FullName) {
-	d.ID = m.getElmType(name)
+func (d *CodecIDs) register(m *Module, name protoreflect.FullName) (err error) {
+	if d.ID, err = m.getElmType(name); err != nil {
+		return err
+	}
 	id := string(d.ID)
-	d.ZeroID = m.registerElmID("empty" + id)
-	d.DecodeID = m.registerElmID("decode" + id)
-	d.EncodeID = m.registerElmID("encode" + id)
+	if d.ZeroID, err = m.registerElmID("empty" + id); err != nil {
+		return err
+	}
+	if d.DecodeID, err = m.registerElmID("decode" + id); err != nil {
+		return err
+	}
+	d.EncodeID, err = m.registerElmID("encode" + id)
+	return err
 }

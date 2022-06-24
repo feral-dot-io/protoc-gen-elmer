@@ -27,7 +27,10 @@ func (m *Module) addRecords() error {
 
 func (m *Module) newRecord(proto *protogen.Message) (*Record, error) {
 	var record Record
-	record.CodecIDs.register(m, proto.Desc.FullName())
+	err := record.CodecIDs.register(m, proto.Desc.FullName())
+	if err != nil {
+		return nil, err
+	}
 	oneofsSeen := make(map[protoreflect.FullName]bool)
 	for _, proto := range proto.Fields {
 		// Part of a oneof field?
@@ -143,12 +146,12 @@ func fieldTypeFromKind(m *Module, pd protoreflect.FieldDescriptor) (string, erro
 		return "Bytes", nil
 
 	case protoreflect.EnumKind:
-		id := m.getElmType(pd.Enum().FullName())
-		return string(id), nil
+		id, err := m.getElmType(pd.Enum().FullName())
+		return string(id), err
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
-		id := m.getElmType(pd.Message().FullName())
-		return string(id), nil
+		id, err := m.getElmType(pd.Message().FullName())
+		return string(id), err
 	}
 
 	return "", fmt.Errorf("fieldType: unknown protoreflect.Kind: %s", pd.Kind())
@@ -188,12 +191,12 @@ func fieldZero(m *Module, pd protoreflect.FieldDescriptor) (interface{}, error) 
 		return "(BE.encode (BE.sequence []))", nil
 
 	case protoreflect.EnumKind:
-		id := m.getElmType(pd.Enum().FullName())
-		return "empty" + id, nil
+		id, err := m.getElmType(pd.Enum().FullName())
+		return "empty" + id, err
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
-		id := m.getElmType(pd.Message().FullName())
-		return "empty" + id, nil
+		id, err := m.getElmType(pd.Message().FullName())
+		return "empty" + id, err
 	}
 
 	return "", fmt.Errorf("fieldZero: unknown protoreflect.Kind: %s", pd.Kind())
@@ -238,12 +241,12 @@ func fieldCodec(m *Module, lib, dir string, pd protoreflect.FieldDescriptor) (st
 		return lib + "bytes", nil
 
 	case protoreflect.EnumKind:
-		id := m.getElmType(pd.Enum().FullName())
-		return dir + string(id), nil
+		id, err := m.getElmType(pd.Enum().FullName())
+		return dir + string(id), err
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
-		id := m.getElmType(pd.Message().FullName())
-		return dir + string(id), nil
+		id, err := m.getElmType(pd.Message().FullName())
+		return dir + string(id), err
 	}
 	return "", fmt.Errorf("fieldCodec: unknown protoreflect.Kind: %s",
 		pd.Kind())

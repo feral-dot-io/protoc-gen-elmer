@@ -1,6 +1,7 @@
 package elmgen
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -13,7 +14,8 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-var TestConfig = DefaultConfig
+var TestConfig = Config{
+	VariantSuffixes: true}
 
 func testPlugin(t *testing.T, raw string) *protogen.Plugin {
 	t.Helper()
@@ -127,6 +129,20 @@ func TestNS(t *testing.T) {
 	assert.Panics(t, func() {
 		m.getElmType("eek")
 	})
+	// Accidental codec registration gives a collision error
+	m = Config{}.newModule()
+	m.registerProtoName("Dupe", "")
+	cases := []string{"Dupe", "emptyDupe", "decodeDupe", "encodeDupe"}
+	for _, id := range cases {
+		fmt.Printf("id %s\n", id)
+		m.registerElmID(id)
+		err := new(CodecIDs).register(m, "Dupe")
+		assert.ErrorContains(t, err, id)
+		// Unregister values
+		for _, unreg := range cases {
+			delete(m.elmNS, unreg)
+		}
+	}
 }
 
 func TestNaming(t *testing.T) {
@@ -174,10 +190,24 @@ func TestNaming(t *testing.T) {
 func TestCollisionSuffix(t *testing.T) {
 	m := Config{CollisionSuffix: "___"}.newModule()
 	// Duplicate Elm ID gets a suffixed
-	assert.Equal(t, "Hello", m.registerElmID("Hello"))
-	assert.Equal(t, "Hello___", m.registerElmID("Hello"))
+	id, err := m.registerElmID("Hello")
+	assert.NoError(t, err)
+	assert.Equal(t, "Hello", id)
+	id, err = m.registerElmID("Hello")
+	assert.NoError(t, err)
+	assert.Equal(t, "Hello___", id)
 	// Invalid suffix
-	_, err := (&Config{CollisionSuffix: " "}).NewModule(nil)
+	_, err = (&Config{CollisionSuffix: " "}).NewModule(nil)
+	assert.ErrorContains(t, err, "collision")
+	// Must be valid Elm
+	assert.Panics(t, func() {
+		m.registerElmID(" ")
+	})
+	// Empty suffix gives an error
+	m = Config{}.newModule()
+	_, err = m.registerElmID("getReady")
+	assert.NoError(t, err)
+	_, err = m.registerElmID("getReady")
 	assert.ErrorContains(t, err, "collision")
 }
 

@@ -16,6 +16,7 @@ func (m *Module) registerProtoName(name protoreflect.FullName, alias string) {
 	m.protoNS[name] = ""
 	m.protoAliases[name] = alias
 }
+
 func (m *Module) regMessages(protoMsgs []*protogen.Message) {
 	for _, proto := range protoMsgs {
 		// Recursive
