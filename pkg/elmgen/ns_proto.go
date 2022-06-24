@@ -2,6 +2,7 @@ package elmgen
 
 import (
 	"log"
+	"strings"
 
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -23,13 +24,13 @@ func (m *Module) regMessages(protoMsgs []*protogen.Message) {
 		m.regEnums(proto.Enums)
 		m.regMessages(proto.Messages)
 		// Register msg
-		m.registerProtoName(proto.Desc.FullName(), "")
+		prefix := m.aliasName(proto.Desc)
+		m.registerProtoName(proto.Desc.FullName(), prefix)
 		m.protoMessages = append(m.protoMessages, proto)
 		// Register oneofs
-		prefix := m.aliasName(proto.Desc)
 		for _, oneof := range proto.Oneofs {
 			od := oneof.Desc
-			oneofAlias := string(prefix + "." + od.Name())
+			oneofAlias := prefix + "." + string(od.Name())
 			if od.IsSynthetic() { // Optional
 				// Make oneof an alias of single field
 				fd := od.Fields().Get(0)
@@ -47,7 +48,7 @@ func (m *Module) regMessages(protoMsgs []*protogen.Message) {
 func (m *Module) regEnums(protoEnums []*protogen.Enum) {
 	for _, proto := range protoEnums {
 		pd := proto.Desc
-		m.registerProtoName(pd.FullName(), "")
+		m.registerProtoName(pd.FullName(), m.aliasName(pd))
 		m.protoEnums = append(m.protoEnums, proto)
 		for _, protoVal := range proto.Values {
 			vd := protoVal.Desc
@@ -56,20 +57,22 @@ func (m *Module) regEnums(protoEnums []*protogen.Enum) {
 	}
 }
 
-func (m *Module) aliasName(pd protoreflect.Descriptor) protoreflect.Name {
+func (m *Module) aliasName(pd protoreflect.Descriptor) string {
 	// Use full (qualified) or a minimal name?
 	if m.config.QualifyNested {
-		return protoreflect.Name(pd.FullName())
+		full := string(pd.FullName())
+		// No alias, drop pkg prefix from full
+		return strings.TrimPrefix(full, string(m.protoPkg))
 	} else {
-		return pd.Name()
+		return string(pd.Name())
 	}
 }
 
 func (m *Module) variantAlias(enum, value protoreflect.Descriptor) string {
-	var suffix protoreflect.Name
+	var suffix string
 	// Suffix variants?
 	if m.config.VariantSuffixes {
 		suffix = "." + m.aliasName(enum)
 	}
-	return string(value.Name() + suffix)
+	return string(value.Name()) + suffix
 }

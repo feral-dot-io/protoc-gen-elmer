@@ -31,7 +31,6 @@ func (m *Module) newUnion(proto *protogen.Enum) (*Union, error) {
 		v := new(Variant)
 		v.Number = protoVal.Desc.Number()
 		// Variant (type) or alias (value)?
-		var err error // TODO: remove
 		if original := aliases[v.Number]; original != nil {
 			elmID := m.getElmValue(protoVal.Desc.FullName())
 			union.Aliases = append(union.Aliases,

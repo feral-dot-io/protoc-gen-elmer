@@ -125,10 +125,6 @@ func (m *Module) getElmValue(name protoreflect.FullName) string {
 	return m.protoFullIdentToElmID(name, false)
 }
 
-func (id ElmType) asValue() string {
-	return protoFullIdentToElmCasing(string(id), "", false)
-}
-
 func (m *Module) registerElmID(id string) (string, error) {
 	if !validElmID(id) {
 		log.Panicf("invalid Elm ID: %s", id)
@@ -155,7 +151,7 @@ func (d *CodecIDs) register(m *Module, name protoreflect.FullName) (err error) {
 	if d.ZeroID, err = m.registerElmID("empty" + string(d.ID)); err != nil {
 		return err
 	}
-	id := d.ID.asValue() // Lowercases the first char
+	id := m.getElmValue(name)
 	if d.DecodeID, err = m.registerElmID(id + "Decoder"); err != nil {
 		return err
 	}

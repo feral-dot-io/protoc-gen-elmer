@@ -130,7 +130,9 @@ func TestRecordFieldMessage(t *testing.T) {
 }
 
 func TestRecordNestedMessage(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	config := TestConfig
+	config.QualifyNested = true
+	elm := config.testModule(t, `
 		syntax = "proto3";
 		package test.nested;
 		message Nested {
@@ -225,7 +227,7 @@ func TestMapField(t *testing.T) {
 	// Can we mimic a map entry? No. https://developers.google.com/protocol-buffers/docs/proto3#backwards_compatibility
 	assertFields(t, elm.Records[2].Fields,
 		&Field{"mimic", false, 1, protoreflect.Repeated,
-			"(List CMimicEntry)", "[]", "", ""})
+			"(List MimicEntry)", "[]", "", ""})
 }
 
 func TestOneOf(t *testing.T) {
@@ -255,7 +257,9 @@ func TestOneOf(t *testing.T) {
 }
 
 func TestOptionalField(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	config := TestConfig
+	config.QualifyNested = true
+	elm := config.testModule(t, `
 		syntax = "proto3";
 		message Night {
 			optional bool shadow = 666;
@@ -269,7 +273,7 @@ func TestOptionalField(t *testing.T) {
 		&Field{"shadow", true, 0, 0, "(Maybe Bool)", "Nothing",
 			"nightShadowDecoder", "nightShadowEncoder"})
 	// Again but nested
-	elm = TestConfig.testModule(t, `
+	elm = config.testModule(t, `
 		syntax = "proto3";
 		message Day {
 			message Night {
