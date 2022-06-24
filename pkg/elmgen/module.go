@@ -11,21 +11,38 @@ import (
 )
 
 func (config Config) newModule() *Module {
-	return &Module{
+	m := &Module{
 		config:       config,
 		protoNS:      make(map[protoreflect.FullName]ElmType),
 		protoAliases: make(map[protoreflect.FullName]string),
 		elmNS:        make(map[string]struct{})}
+	// Elm's reserved words
+	// Source: https://github.com/elm/compiler/blob/770071accf791e8171440709effe71e78a9ab37c/compiler/src/Parse/Variable.hs
+	m.registerElmID("if")
+	m.registerElmID("then")
+	m.registerElmID("else")
+	m.registerElmID("case")
+	m.registerElmID("of")
+	m.registerElmID("let")
+	m.registerElmID("in")
+	m.registerElmID("type")
+	m.registerElmID("module")
+	m.registerElmID("where")
+	m.registerElmID("import")
+	m.registerElmID("exposing")
+	m.registerElmID("as")
+	m.registerElmID("port")
+	return m
 }
 
 func (config *Config) NewModule(proto *protogen.File) (*Module, error) {
 	m := config.newModule()
 	// Check config is valid
-	if !ValidPartialElmID(m.config.QualifiedSeparator) {
+	if !validPartialElmID(m.config.QualifiedSeparator) {
 		return nil, fmt.Errorf("qualified separator must be a valid Elm identifier, got `%s`",
 			m.config.QualifiedSeparator)
 	}
-	if !ValidPartialElmID(m.config.CollisionSuffix) {
+	if !validPartialElmID(m.config.CollisionSuffix) {
 		return nil, fmt.Errorf("collision suffix must be a valid Elm identifier, got `%s`",
 			m.config.CollisionSuffix)
 	}
@@ -152,7 +169,7 @@ func (m *Module) getElmValue(name protoreflect.FullName) (string, error) {
 }
 
 func (m *Module) registerElmID(id string) (string, error) {
-	if !ValidElmID(id) {
+	if !validElmID(id) {
 		log.Panicf("invalid Elm ID: %s", id)
 	}
 	// Already registered?

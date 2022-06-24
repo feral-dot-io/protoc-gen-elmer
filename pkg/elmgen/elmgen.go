@@ -125,14 +125,14 @@ func (a Records) Len() int           { return len(a) }
 func (a Records) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a Records) Less(i, j int) bool { return a[i].ID < a[j].ID }
 
-func ValidElmID(id string) bool {
+func validElmID(id string) bool {
 	runes := []rune(id)
 	return utf8.ValidString(id) && id != "" && // Non-empty utf8
 		unicode.IsLetter(runes[0]) && // First char is a letter
-		ValidPartialElmID(string(runes[1:])) // Remaining chars are valid
+		validPartialElmID(string(runes[1:])) // Remaining chars are valid
 }
 
-func ValidPartialElmID(partial string) bool {
+func validPartialElmID(partial string) bool {
 	for _, r := range partial {
 		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_') {
 			return false
