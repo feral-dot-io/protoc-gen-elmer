@@ -28,25 +28,26 @@ func (m *Module) newUnion(proto *protogen.Enum) (*Union, error) {
 	// Add variants
 	aliases := make(map[protoreflect.EnumNumber]*Variant)
 	for i, protoVal := range proto.Values {
-		v := new(Variant)
-		v.Number = protoVal.Desc.Number()
+		num := protoVal.Desc.Number()
 		// Variant (type) or alias (value)?
-		if original := aliases[v.Number]; original != nil {
+		if original := aliases[num]; original != nil {
 			elmID := m.getElmValue(protoVal.Desc.FullName())
 			union.Aliases = append(union.Aliases,
 				&VariantAlias{original, elmID})
 		} else {
-			v.ID, err = m.getElmType(protoVal.Desc.FullName())
-			aliases[v.Number] = v
-			// First is the default
-			if i == 0 {
+			// Create
+			id, err := m.getElmType(protoVal.Desc.FullName())
+			if err != nil {
+				return nil, err
+			}
+			v := &Variant{id, num}
+			// Add
+			if i == 0 { // First is the default
 				union.DefaultVariant = v
 			} else {
 				union.Variants = append(union.Variants, v)
 			}
-		}
-		if err != nil {
-			return nil, err
+			aliases[v.Number] = v
 		}
 	}
 	return union, nil

@@ -56,64 +56,58 @@ func testPlugin(t *testing.T, raw string) *protogen.Plugin {
 	return plugin
 }
 
+//go:generate testdata/gen-elm-test-proj
+
 func (config *Config) testModule(t *testing.T, raw string) *Module {
 	t.Helper()
+	config.ModuleName = "Codec" // Override to run tests
+
 	plugin := testPlugin(t, raw)
 	elm, err := config.NewModule(plugin.Files[0])
 	assert.NoError(t, err)
 
-	// Sanity check code: always run through code gen and formatter
-	path := os.TempDir() + "/Codec.elm"
-	genFile := plugin.NewGeneratedFile(path, "")
-	GenerateCodec(elm, genFile)
-	formatted := FormatFile(plugin, path, genFile)
-	content, _ := formatted.Content()
-	assert.NotEmpty(t, content)
-	/** /
-	unformatted, _ := genFile.Content()
-	fmt.Printf("Generated code:\n\n%s\n\n", unformatted)
-	fmt.Printf("Formatted code:\n\n%s\n\n", content)
-	/**/
+	testProjectDir := "./testdata/gen-elm"
+	assertCodec := func(file string, gen func(m *Module, g *protogen.GeneratedFile)) {
+		t.Helper()
+		genFile := plugin.NewGeneratedFile(file, "")
+		gen(elm, genFile)
+		// Always format (checks Elm syntax)
+		formatted := FormatFile(plugin, file, genFile)
+		content, _ := formatted.Content()
+		assert.NotEmpty(t, content)
+		// We generated badly formatted Elm code, write unformatted instead
+		if len(content) == 0 {
+			content, _ = genFile.Content()
+		}
+		// Copy to testdata for inspection / tests
+		err = os.WriteFile(testProjectDir+"/src/"+file, content, 0644)
+		assert.NoError(t, err)
+	}
+	// Sanity check: always run through code gen
+	assertCodec("Codec.elm", GenerateCodec)
+	assertCodec("CodecTests.elm", GenerateFuzzTests)
+	// Finally, run tests
+	//err = runElmTest(testProjectDir, "src/**/*Tests.elm", DefaultFuzz)
+	assert.NoError(t, err)
 	return elm
 }
 
 func TestModuleName(t *testing.T) {
-	basic := `
+	config := TestConfig
+	plugin := testPlugin(t, `
 		syntax = "proto3";
-		package test.something;
-	`
-	elm := TestConfig.testModule(t, basic)
+		package test.something;`)
+	elm, err := config.NewModule(plugin.Files[0])
+	assert.NoError(t, err)
 	assert.Equal(t, "Test.Something", elm.Name)
 	assert.Equal(t, "Test/Something", elm.Path)
-	assert.False(t, elm.Imports.Bytes)
-	assert.False(t, elm.Imports.Dict)
-	assert.Empty(t, elm.Unions)
-	assert.Empty(t, elm.Records)
 	// With module name override
-	config := TestConfig
 	config.ModulePrefix = "Ignored."
 	config.ModuleName = "My.Override"
-	elm = config.testModule(t, basic)
+	elm, err = config.NewModule(plugin.Files[0])
+	assert.NoError(t, err)
 	assert.Equal(t, "My.Override", elm.Name)
 	assert.Equal(t, "My/Override", elm.Path)
-}
-
-func TestEmptyPackage(t *testing.T) {
-	elm := TestConfig.testModule(t, `
-		syntax = "proto3";
-		message A {
-			message B {
-				bool inner = 1;
-			}
-			B b = 1;
-		}
-	`)
-	assert.Equal(t, "Stdin.Stdin.Stdin", elm.Name)
-	assert.Equal(t, "Stdin/Stdin/Stdin", elm.Path)
-	assert.Empty(t, elm.Unions)
-	assert.Len(t, elm.Records, 2)
-	assert.Equal(t, ElmType("A"), elm.Records[0].ID)
-	assert.Equal(t, ElmType("B"), elm.Records[1].ID)
 }
 
 func TestProtoUnderscores(t *testing.T) {

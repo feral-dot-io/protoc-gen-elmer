@@ -62,24 +62,29 @@ func (m *Module) newRecord(proto *protogen.Message) (*Record, error) {
 }
 
 func (m *Module) newField(pd protoreflect.FieldDescriptor) (*Field, error) {
-	field := new(Field)
-	field.Label = m.getElmValue(protoreflect.FullName(pd.Name()))
+	var typ, decoder, encoder, fuzzer string
+	var zero interface{}
 	var err error
-	if field.Type, err = fieldType(m, pd); err != nil {
+	if typ, err = fieldType(m, pd); err != nil {
 		return nil, err
 	}
-	if field.Zero, err = fieldZero(m, pd); err != nil {
+	if zero, err = fieldZero(m, pd); err != nil {
 		return nil, err
 	}
-	if field.Decoder, err = fieldDecoder(m, pd); err != nil {
+	if decoder, err = fieldDecoder(m, pd); err != nil {
 		return nil, err
 	}
-	if field.Encoder, err = fieldEncoder(m, pd); err != nil {
+	if encoder, err = fieldEncoder(m, pd); err != nil {
 		return nil, err
 	}
-	field.WireNumber = pd.Number()
-	field.Cardinality = pd.Cardinality()
-	return field, err
+	if fuzzer, err = fieldFuzzer(m, pd); err != nil {
+		return nil, err
+	}
+	return &Field{
+		m.getElmValue(protoreflect.FullName(pd.Name())),
+		false, pd.Number(), pd.Cardinality(),
+		typ, zero, decoder, encoder, fuzzer,
+	}, nil
 }
 
 func (m *Module) newOneofField(po protoreflect.OneofDescriptor) (*Oneof, *Field, error) {
@@ -93,7 +98,8 @@ func (m *Module) newOneofField(po protoreflect.OneofDescriptor) (*Oneof, *Field,
 		"(Maybe " + string(oneof.ID) + ")",
 		"Nothing",
 		oneof.DecodeID,
-		oneof.EncodeID}
+		oneof.EncodeID,
+		oneof.FuzzerID}
 	// Optional field?
 	if oneof.IsSynthetic {
 		// Unwrap type
@@ -246,6 +252,45 @@ func fieldCodec(m *Module, lib, dir string, pd protoreflect.FieldDescriptor) (st
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		return m.getElmValue(pd.Message().FullName()) + dir, nil
 	}
-	return "", fmt.Errorf("fieldCodec: unknown protoreflect.Kind: %s",
-		pd.Kind())
+	return "", fmt.Errorf("fieldCodec: unknown protoreflect.Kind: %s", pd.Kind())
+}
+
+func fieldFuzzer(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
+	switch pd.Kind() {
+	case protoreflect.BoolKind:
+		return "Fuzz.bool", nil
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
+		m.Fuzzers.Int32 = true
+		return "fuzzInt32", nil
+	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		m.Fuzzers.Uint32 = true
+		return "fuzzUint32", nil
+
+	/* Unsupported by Elm / JS
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
+		return "int64", nil
+	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		return "uint64", nil
+	*/
+
+	case protoreflect.FloatKind:
+		m.Fuzzers.Float32 = true
+		return "fuzzFloat32", nil
+	case protoreflect.DoubleKind:
+		return "Fuzz.float", nil
+
+	case protoreflect.StringKind:
+		return "Fuzz.string", nil
+	case protoreflect.BytesKind:
+		m.Imports.Bytes = true
+		return "fuzzBytes", nil
+
+	case protoreflect.EnumKind:
+		return m.getElmValue(pd.Enum().FullName()) + "Fuzzer", nil
+
+	case protoreflect.MessageKind, protoreflect.GroupKind:
+		return m.getElmValue(pd.Message().FullName()) + "Fuzzer", nil
+	}
+
+	return "", fmt.Errorf("kindFuzzer: unknown protoreflect.Kind: %s", pd.Kind())
 }

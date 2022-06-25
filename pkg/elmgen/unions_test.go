@@ -30,14 +30,14 @@ func TestUnions(t *testing.T) {
 		Default  string
 		Variants []Variant
 	}{
-		{CodecIDs{"Abc", "emptyAbc", "abcDecoder", "abcEncoder"},
+		{CodecIDs{"Abc", "emptyAbc", "abcDecoder", "abcEncoder", "abcFuzzer"},
 			"AAbc", []Variant{{"BAbc", 1}, {"CAbc", 2}}},
-		{CodecIDs{"Choose", "emptyChoose", "chooseDecoder", "chooseEncoder"},
+		{CodecIDs{"Choose", "emptyChoose", "chooseDecoder", "chooseEncoder", "chooseFuzzer"},
 			"HandsChoose", []Variant{
 				{"FoilChoose", 1},
 				{"EpeeChoose", 2},
 				{"SabreChoose", 3}}},
-		{CodecIDs{"Minimal", "emptyMinimal", "minimalDecoder", "minimalEncoder"},
+		{CodecIDs{"Minimal", "emptyMinimal", "minimalDecoder", "minimalEncoder", "minimalFuzzer"},
 			"LowerMinimal", []Variant{}},
 	} {
 		union := elm.Unions[i]

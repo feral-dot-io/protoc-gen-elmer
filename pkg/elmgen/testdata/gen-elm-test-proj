@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -eux -o pipefail
+# Creates an empty Elm project capable of running our generated tests.
+# Expects to be run from the parent dir, not directly
+
+# Wipe and create folder
+rm -rf testdata/gen-elm || echo
+mkdir -p testdata/gen-elm
+cd testdata/gen-elm
+
+echo 'Y' | elm init
+echo 'Y' | elm install elm/bytes
+echo 'Y' | elm install elm-explorations/test
+echo 'Y' | elm install eriktim/elm-protocol-buffers

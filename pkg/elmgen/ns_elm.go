@@ -156,5 +156,9 @@ func (d *CodecIDs) register(m *Module, name protoreflect.FullName) (err error) {
 		return err
 	}
 	d.EncodeID, err = m.registerElmID(id + "Encoder")
+	if err != nil {
+		return err
+	}
+	d.FuzzerID, err = m.registerElmID(id + "Fuzzer")
 	return err
 }

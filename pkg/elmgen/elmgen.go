@@ -45,6 +45,11 @@ type (
 			Bytes bool
 			Dict  bool
 		}
+		Fuzzers struct {
+			Int32   bool
+			Uint32  bool
+			Float32 bool
+		}
 
 		Unions  Unions
 		Oneofs  Oneofs
@@ -55,6 +60,7 @@ type (
 	CodecIDs struct {
 		ID                         ElmType
 		ZeroID, DecodeID, EncodeID string
+		FuzzerID                   string
 	}
 
 	// Unions are sortable by their Elm ID.
@@ -110,6 +116,7 @@ type (
 		Type             string
 		Zero             interface{}
 		Decoder, Encoder string
+		Fuzzer           string
 	}
 )
 
