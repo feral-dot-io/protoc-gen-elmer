@@ -138,7 +138,12 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 			}
 			gFP("    in")
 		}
-		gFP("    Fuzz.map Codec.%s", r.ID)
+
+		if len(r.Fields) == 0 {
+			gFP("    Fuzz.constant Codec.%s", r.ID)
+		} else {
+			gFP("    Fuzz.map Codec.%s", r.ID)
+		}
 		for i, f := range r.Fields {
 			prefix := "        "
 			if i != 0 {

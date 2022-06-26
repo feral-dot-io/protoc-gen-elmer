@@ -102,6 +102,13 @@ func TestProtoUnderscores(t *testing.T) {
 	`)
 }
 
+func TestEmpty(t *testing.T) {
+	config := &Config{QualifyNested: true}
+	config.testModule(t, `
+		syntax = "proto3";
+		message Emptyish {}`)
+}
+
 func TestNameFromPath(t *testing.T) {
 	// Normally takes from pkg
 	name, path := TestConfig.nameAndPath("My.Path", "file.elm")
