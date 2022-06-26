@@ -92,24 +92,6 @@ func (config *Config) testModule(t *testing.T, raw string) *Module {
 	return elm
 }
 
-func TestModuleName(t *testing.T) {
-	config := TestConfig
-	plugin := testPlugin(t, `
-		syntax = "proto3";
-		package test.something;`)
-	elm, err := config.NewModule(plugin.Files[0])
-	assert.NoError(t, err)
-	assert.Equal(t, "Test.Something", elm.Name)
-	assert.Equal(t, "Test/Something", elm.Path)
-	// With module name override
-	config.ModulePrefix = "Ignored."
-	config.ModuleName = "My.Override"
-	elm, err = config.NewModule(plugin.Files[0])
-	assert.NoError(t, err)
-	assert.Equal(t, "My.Override", elm.Name)
-	assert.Equal(t, "My/Override", elm.Path)
-}
-
 func TestProtoUnderscores(t *testing.T) {
 	config := &Config{QualifyNested: true}
 	config.testModule(t, `
@@ -118,6 +100,22 @@ func TestProtoUnderscores(t *testing.T) {
 			bool _ = 1;
 		}
 	`)
+}
+
+func TestNameFromPath(t *testing.T) {
+	// Normally takes from pkg
+	name, path := TestConfig.nameAndPath("My.Path", "file.elm")
+	assert.Equal(t, "My.Path", name)
+	assert.Equal(t, "My/Path", path)
+	// Mising pkg (not in source) pulls from file
+	name, path = TestConfig.nameAndPath("", "my/proto_file.elm")
+	assert.Equal(t, "My.ProtoFile", name)
+	assert.Equal(t, "My/ProtoFile", path)
+	// Module override
+	config := &Config{ModuleName: "My.Override"}
+	name, path = config.nameAndPath("My.Path", "file.elm")
+	assert.Equal(t, "My.Override", name)
+	assert.Equal(t, "My/Override", path)
 }
 
 func TestQualified(t *testing.T) {

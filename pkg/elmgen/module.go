@@ -2,6 +2,7 @@ package elmgen
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"unicode"
 
@@ -50,7 +51,7 @@ func (config *Config) NewModule(proto *protogen.File) (*Module, error) {
 		return nil, fmt.Errorf("collision suffix must be a valid Elm identifier, got `%s`",
 			m.config.CollisionSuffix)
 	}
-	//
+	// Paths
 	m.protoPkg = proto.Desc.Package() + "."
 	m.Name, m.Path = config.nameAndPath(string(proto.Desc.Package()), proto.GeneratedFilenamePrefix)
 	// First pass: get proto Idents
@@ -71,21 +72,19 @@ func (c *Config) nameAndPath(pkg, file string) (name, path string) {
 	if c.ModuleName != "" {
 		name = c.ModuleName
 	} else {
-		// Derive pkg from generated file path if missing
+		// Derive pkg from generated file path if missing (no package = ...)
 		if pkg == "" {
-			// Proto3 "package" is a fullIdent
+			file = file[:len(file)-len(filepath.Ext(file))]
+			file = strings.ReplaceAll(file, "/", ".")
+			// Turn file into a fullIdent
 			pkg = strings.TrimFunc(file, func(r rune) bool {
-				// Non-alphanum
-				return !(unicode.IsLetter(r) || unicode.IsNumber(r))
+				// Remove non-alphanum and _
+				return !(unicode.IsLetter(r) ||
+					unicode.IsNumber(r)) ||
+					r == '_'
 			})
-			pkg = strings.ReplaceAll(pkg, "/", ".")
 		}
-		// Determine from pkg
-		tokens := strings.Split(pkg, ".")
-		for i, token := range tokens {
-			tokens[i] = strings.Title(token)
-		}
-		name = c.ModulePrefix + strings.Join(tokens, ".")
+		name = protoFullIdentToElmCasing(pkg, ".", true)
 	}
 	path = strings.ReplaceAll(name, ".", "/")
 	return
