@@ -110,11 +110,20 @@ type (
 		Label string
 		// Wire handling
 		IsOneof     bool
+		IsMap       bool
 		WireNumber  protowire.Number
 		Cardinality protoreflect.Cardinality
 		// Elm handling
 		Type             string
-		Zero             interface{}
+		Zero             string
+		Decoder, Encoder string
+		Fuzzer           string
+
+		Key *MapKey
+	}
+
+	MapKey struct {
+		Zero             string
 		Decoder, Encoder string
 		Fuzzer           string
 	}
@@ -147,4 +156,8 @@ func validPartialElmID(partial string) bool {
 	}
 	// Allow empty as well
 	return true
+}
+
+func (id ElmType) String() string {
+	return string(id)
 }

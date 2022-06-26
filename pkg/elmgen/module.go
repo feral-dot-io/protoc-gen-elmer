@@ -13,24 +13,29 @@ func (config Config) newModule() *Module {
 	m := &Module{
 		config:       config,
 		protoNS:      make(map[protoreflect.FullName]ElmType),
-		protoAliases: make(map[protoreflect.FullName]string),
-		elmNS:        make(map[string]struct{})}
-	// Elm's reserved words
-	// Source: https://github.com/elm/compiler/blob/770071accf791e8171440709effe71e78a9ab37c/compiler/src/Parse/Variable.hs
-	m.registerElmID("if")
-	m.registerElmID("then")
-	m.registerElmID("else")
-	m.registerElmID("case")
-	m.registerElmID("of")
-	m.registerElmID("let")
-	m.registerElmID("in")
-	m.registerElmID("type")
-	m.registerElmID("module")
-	m.registerElmID("where")
-	m.registerElmID("import")
-	m.registerElmID("exposing")
-	m.registerElmID("as")
-	m.registerElmID("port")
+		protoAliases: make(map[protoreflect.FullName]string)}
+	s := struct{}{}
+	m.elmNS = map[string]struct{}{
+		// Reserved words
+		// Source: https://github.com/elm/compiler/blob/770071accf791e8171440709effe71e78a9ab37c/compiler/src/Parse/Variable.hs
+		"if": s, "then": s, "else": s, "case": s, "of": s, "let": s, "in": s,
+		"type": s, "module": s, "where": s, "import": s, "exposing": s, "as": s,
+		"port": s,
+		// Prelude https://package.elm-lang.org/packages/elm/core/latest/
+		"Basics": s, "List": s, "Maybe": s, "Result": s, "String": s,
+		"Char": s, "Tuple": s, "Debug": s, "Platform": s, "Cmd": s, "Sub": s,
+		// Basics(..)
+		"Int": s, "Float": s, "toFloat": s, "round": s, "floor": s,
+		"ceiling": s, "truncate": s, "max": s, "min": s, "compare": s, "LT": s,
+		"EQ": s, "GT": s, "Bool": s, "True": s, "False": s, "not": s, "xor": s,
+		"modBy": s, "remainderBy": s, "negate": s, "abs": s, "clamp": s,
+		"sqrt": s, "logBase": s, "e": s, "degrees": s, "radians": s, "turns": s,
+		"pi": s, "cos": s, "sin": s, "tan": s, "acos": s, "asin": s, "atan": s,
+		"atan2": s, "toPolar": s, "fromPolar": s, "isNaN": s, "isInfinite": s,
+		"identity": s, "always": s, "Never": s, "never": s,
+		// Other imports (note these overlap with prelude)
+		"Just": s, "Nothing": s, "Ok": s, "Err": s, "Program": s,
+	}
 	return m
 }
 

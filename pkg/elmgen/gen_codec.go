@@ -73,7 +73,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		g.P("import Dict exposing (Dict)")
 	}
 
-	g.P("-- Records from messages")
+	// Records
 	for _, r := range m.Records {
 		g.P("type alias ", r.ID, " =")
 		g.P("    {")
@@ -87,7 +87,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		g.P("    }")
 	}
 
-	g.P("-- Unions from enums")
+	// Unions
 	for _, u := range m.Unions {
 		g.P("type ", u.ID)
 		g.P("    = ", u.DefaultVariant.ID, " Int")
@@ -100,7 +100,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		}
 	}
 
-	g.P("-- Oneofs from messages")
+	// Oneofs (nested unions)
 	for _, o := range m.Oneofs {
 		// Skip optional
 		if o.IsSynthetic {
@@ -116,40 +116,51 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		}
 	}
 
-	g.P("-- Zero (empty) record constructors")
+	// Zero records
 	for _, r := range m.Records {
 		g.P(r.ZeroID, " : ", r.ID)
 		g.P(r.ZeroID, " =")
-		zeros := []interface{}{"    ", r.ID}
+		zeros := []interface{}{"    ", r.ID.String()}
 		for _, f := range r.Fields {
-			zeros = append(zeros, " ", f.Zero)
+			zero := f.Zero
+			if f.IsMap {
+				zero = "Dict.empty"
+			}
+			zeros = append(zeros, " ", zero)
 		}
 		g.P(zeros...)
 	}
 
-	g.P("-- Zero (empty) union constructors")
+	// Zero unions
 	for _, u := range m.Unions {
 		g.P(u.ZeroID, " : ", u.ID)
 		g.P(u.ZeroID, " =")
 		g.P("    ", u.DefaultVariant.ID, " 0")
 	}
 
-	g.P("-- Record decoders")
+	// Record decoders
 	for _, r := range m.Records {
 		g.P(r.DecodeID, " : PD.Decoder ", r.ID)
 		g.P(r.DecodeID, " =")
 		// Build oneof decoders inline since they're unique to the message
+		// Ideally they'd be inline here (and in the decoder + fuzzer)
 		if len(r.Oneofs) > 0 {
 			g.P("    let")
 			for _, o := range r.Oneofs {
-				g.P("        ", o.DecodeID, " =")
+				gFP("        %s =", o.DecodeID)
+				g.P("            [")
 				for j, v := range o.Variants {
-					prefix := ","
-					if j == 0 {
-						prefix = "["
+					prefix := "            "
+					if j != 0 {
+						prefix += ","
 					}
-					gFP("                %s ( %d, PD.map %s %s )",
-						prefix, v.Field.WireNumber, v.ID, v.Field.Decoder)
+					if o.IsSynthetic { // Only field, skip map
+						gFP("%s( %d, %s )",
+							prefix, v.Field.WireNumber, v.Field.Decoder)
+					} else {
+						gFP("%s( %d, PD.map %s %s )",
+							prefix, v.Field.WireNumber, v.ID, v.Field.Decoder)
+					}
 				}
 				g.P("                ]")
 			}
@@ -162,29 +173,37 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 			if i != 0 {
 				prefix += ","
 			}
+			getter := "(\\v m -> { m | %s = v })"
 			// Pick a FieldDecoder
-			var decoder string
 			if f.IsOneof {
-				decoder = "PD.oneOf"
+				gFP("%s PD.oneOf %s "+getter, prefix, f.Decoder, f.Label)
+			} else if f.IsMap {
+				gFP("%s PD.mapped %d ( %s , %s ) %s %s .%s "+getter,
+					prefix, f.WireNumber,
+					f.Key.Zero, f.Zero, f.Key.Decoder, f.Decoder,
+					f.Label, f.Label)
 			} else {
 				switch f.Cardinality {
 				default:
 					fallthrough
 				case protoreflect.Optional:
-					decoder = fmt.Sprintf("PD.optional %d", f.WireNumber)
+					gFP("%s PD.optional %d %s "+getter,
+						prefix, f.WireNumber, f.Decoder, f.Label)
+
 				case protoreflect.Required:
-					decoder = fmt.Sprintf("PD.required %d", f.WireNumber)
+					gFP("%s PD.required %d %s "+getter,
+						prefix, f.WireNumber, f.Decoder, f.Label)
+
 				case protoreflect.Repeated:
-					decoder = fmt.Sprintf("PD.repeated %d", f.WireNumber)
+					gFP("%s PD.repeated %d %s .%s "+getter,
+						prefix, f.WireNumber, f.Decoder, f.Label, f.Label)
 				}
 			}
-			gFP("%s %s %s (\\v m -> { m | %s = v })",
-				prefix, decoder, f.Decoder, f.Label)
 		}
 		g.P("        ]")
 	}
 
-	g.P("-- Union decoders")
+	// Union decoders
 	for _, u := range m.Unions {
 		g.P(u.DecodeID, " : PD.Decoder ", u.ID)
 		g.P(u.DecodeID, " =")
@@ -201,7 +220,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		g.P("    PD.map conv PD.int32")
 	}
 
-	g.P("-- Record encoders")
+	// Record encoders
 	for _, r := range m.Records {
 		param := "v"
 		if len(r.Fields) == 0 {
@@ -218,7 +237,11 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 				ws += "        "
 				for _, v := range o.Variants {
 					f := v.Field
-					gFP("%sJust (%s data) ->", ws, v.ID)
+					id := v.ID
+					if o.IsSynthetic { // No sub-enum
+						id = ""
+					}
+					gFP("%sJust (%s data) ->", ws, id)
 					gFP("%s    [ ( %d, %s data ) ]", ws, f.WireNumber, f.Encoder)
 				}
 				// Nil isn't encoded on the wire
@@ -239,9 +262,18 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 			if written { // Can't do i != 0 because of "continue"
 				prefix += ","
 			}
+			// Special fields?
+			if f.IsMap {
+				gFP("%s ( %d, PE.dict %s %s v.%s )",
+					prefix, f.WireNumber, f.Key.Encoder, f.Encoder, f.Label)
+			} else if f.Cardinality == protoreflect.Repeated {
+				gFP("%s ( %d, PE.list %s v.%s )",
+					prefix, f.WireNumber, f.Encoder, f.Label)
+			} else {
+				gFP("%s ( %d, %s v.%s )",
+					prefix, f.WireNumber, f.Encoder, f.Label)
+			}
 			written = true
-			gFP("%s ( %d, %s v.%s )",
-				prefix, f.WireNumber, f.Encoder, f.Label)
 		}
 		g.P("        ]")
 		if len(r.Oneofs) > 0 {
@@ -256,7 +288,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		}
 	}
 
-	g.P("-- Union encoders")
+	// Union encoders
 	for _, u := range m.Unions {
 		g.P(u.EncodeID, " : ", u.ID, " -> PE.Encoder")
 		g.P(u.EncodeID, " v =")

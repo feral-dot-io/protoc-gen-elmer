@@ -62,8 +62,7 @@ func (m *Module) newRecord(proto *protogen.Message) (*Record, error) {
 }
 
 func (m *Module) newField(pd protoreflect.FieldDescriptor) (*Field, error) {
-	var typ, decoder, encoder, fuzzer string
-	var zero interface{}
+	var typ, zero, decoder, encoder, fuzzer string
 	var err error
 	if typ, err = fieldType(m, pd); err != nil {
 		return nil, err
@@ -80,10 +79,27 @@ func (m *Module) newField(pd protoreflect.FieldDescriptor) (*Field, error) {
 	if fuzzer, err = fieldFuzzer(m, pd); err != nil {
 		return nil, err
 	}
+	var key *MapKey
+	if pd.IsMap() {
+		pdKey := pd.MapKey()
+		key = new(MapKey)
+		if key.Zero, err = fieldZero(m, pdKey); err != nil {
+			return nil, err
+		}
+		if key.Decoder, err = fieldDecoder(m, pdKey); err != nil {
+			return nil, err
+		}
+		if key.Encoder, err = fieldEncoder(m, pdKey); err != nil {
+			return nil, err
+		}
+		if key.Fuzzer, err = fieldFuzzer(m, pdKey); err != nil {
+			return nil, err
+		}
+	}
 	return &Field{
 		m.getElmValue(protoreflect.FullName(pd.Name())),
-		false, pd.Number(), pd.Cardinality(),
-		typ, zero, decoder, encoder, fuzzer,
+		false, pd.IsMap(), pd.Number(), pd.Cardinality(),
+		typ, zero, decoder, encoder, fuzzer, key,
 	}, nil
 }
 
@@ -94,12 +110,13 @@ func (m *Module) newOneofField(po protoreflect.OneofDescriptor) (*Oneof, *Field,
 	}
 	field := &Field{
 		m.getElmValue(protoreflect.FullName(po.Name())),
-		true, 0, 0,
+		true, false, 0, 0,
 		"(Maybe " + string(oneof.ID) + ")",
 		"Nothing",
 		oneof.DecodeID,
 		oneof.EncodeID,
-		oneof.FuzzerID}
+		oneof.FuzzerID,
+		nil}
 	// Optional field?
 	if oneof.IsSynthetic {
 		// Unwrap type
@@ -163,9 +180,9 @@ func fieldTypeFromKind(m *Module, pd protoreflect.FieldDescriptor) (string, erro
 	return "", fmt.Errorf("fieldType: unknown protoreflect.Kind: %s", pd.Kind())
 }
 
-func fieldZero(m *Module, pd protoreflect.FieldDescriptor) (interface{}, error) {
+func fieldZero(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
 	if pd.IsMap() {
-		return "Dict.empty", nil
+		pd = pd.MapValue()
 	}
 	if pd.IsList() {
 		return "[]", nil
@@ -176,18 +193,16 @@ func fieldZero(m *Module, pd protoreflect.FieldDescriptor) (interface{}, error) 
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind,
 		protoreflect.Sfixed32Kind, protoreflect.Fixed32Kind,
 		protoreflect.FloatKind, protoreflect.DoubleKind:
-		return pd.Default(), nil
+		return pd.Default().String(), nil
 
 	// Unsupported by Elm / JS
 	//case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind,
 	//	protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind:
 
 	case protoreflect.BoolKind:
-		/* If we were to support proto2:
-		if proto.Desc.Default().Bool() {
+		if pd.Default().Bool() {
 			return "True", nil
 		}
-		*/
 		return "False", nil
 
 	case protoreflect.StringKind:
@@ -198,25 +213,29 @@ func fieldZero(m *Module, pd protoreflect.FieldDescriptor) (interface{}, error) 
 
 	case protoreflect.EnumKind:
 		id, err := m.getElmType(pd.Enum().FullName())
-		return "empty" + id, err
+		return "empty" + string(id), err
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		id, err := m.getElmType(pd.Message().FullName())
-		return "empty" + id, err
+		return "empty" + string(id), err
 	}
 
 	return "", fmt.Errorf("fieldZero: unknown protoreflect.Kind: %s", pd.Kind())
 }
 
 func fieldDecoder(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
-	return fieldCodec(m, "PD.", "Decoder", pd)
+	return fieldKindCodec(m, "PD.", "Decoder", pd)
 }
 
 func fieldEncoder(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
-	return fieldCodec(m, "PE.", "Encoder", pd)
+	return fieldKindCodec(m, "PE.", "Encoder", pd)
 }
 
-func fieldCodec(m *Module, lib, dir string, pd protoreflect.FieldDescriptor) (string, error) {
+// Just the Kind. Does not take into account special features like lists.
+func fieldKindCodec(m *Module, lib, dir string, pd protoreflect.FieldDescriptor) (string, error) {
+	if pd.IsMap() {
+		pd = pd.MapValue()
+	}
 	switch pd.Kind() {
 	case protoreflect.BoolKind:
 		return lib + "bool", nil
@@ -256,6 +275,9 @@ func fieldCodec(m *Module, lib, dir string, pd protoreflect.FieldDescriptor) (st
 }
 
 func fieldFuzzer(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
+	if pd.IsMap() {
+		pd = pd.MapValue()
+	}
 	switch pd.Kind() {
 	case protoreflect.BoolKind:
 		return "Fuzz.bool", nil

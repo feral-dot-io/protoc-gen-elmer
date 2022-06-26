@@ -87,7 +87,7 @@ func (config *Config) testModule(t *testing.T, raw string) *Module {
 	assertCodec("Codec.elm", GenerateCodec)
 	assertCodec("CodecTests.elm", GenerateFuzzTests)
 	// Finally, run tests
-	//err = runElmTest(testProjectDir, "src/**/*Tests.elm", DefaultFuzz)
+	err = runElmTest(testProjectDir, "src/**/*Tests.elm", 10)
 	assert.NoError(t, err)
 	return elm
 }
