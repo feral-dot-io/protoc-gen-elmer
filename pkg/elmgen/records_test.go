@@ -212,7 +212,8 @@ func TestMapField(t *testing.T) {
 		syntax = "proto3";
 		package test.map;
 		message A {
-			map<string, int32> a = 1;
+			bool first_field = 1;
+			map<string, int32> a = 2;
 		}
 		message B {
 			map<string, A> b = 1;
@@ -229,7 +230,9 @@ func TestMapField(t *testing.T) {
 	// Basic
 	stringKey := &MapKey{`""`, "PD.string", "PE.string", "Fuzz.string"}
 	assertFields(t, elm.Records[0].Fields,
-		&Field{"a", false, true, 1, protoreflect.Repeated,
+		&Field{"firstField", false, false, 1, opt, "Bool",
+			"False", "", "", "Fuzz.bool", nil},
+		&Field{"a", false, true, 2, protoreflect.Repeated,
 			"(Dict String Int)", "0", "", "", "", stringKey})
 	// Value is a nested message
 	assertFields(t, elm.Records[1].Fields,
