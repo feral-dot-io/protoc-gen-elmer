@@ -1,0 +1,238 @@
+syntax = "proto3";
+// Example .proto file showing a real-world usecase
+// TODO: this doesn't yet work because it relies on well-known types and 64-bit types. Satisfying this is a goal
+package feral.sflow;
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+option go_package = "rpc/sflow";
+
+/* RPC */
+
+service Sflow {
+  rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
+  rpc ListInterfaces(ListInterfacesRequest) returns (ListInterfacesResponse);
+
+  rpc ListRates(ListRatesRequest) returns (ListRatesResponse);
+  rpc ListKnownTags(ListKnownTagsRequest) returns (ListKnownTagsResponse);
+  rpc ListSamples(ListSamplesRequest) returns (ListSamplesResponse);
+}
+
+/* Request / responses */
+
+message ListAgentsRequest {}
+message ListAgentsResponse {
+  repeated Agent results = 1;
+}
+
+message ListInterfacesRequest {}
+message ListInterfacesResponse {
+  repeated Interface results = 1;
+}
+
+message ListRatesRequest {
+  Window window = 1;
+  optional string agent = 2;
+  optional uint32 if_index = 3;
+  optional Role role = 4;
+}
+message ListRatesResponse {
+  repeated Rates results = 1;
+}
+
+message ListKnownTagsRequest {}
+message ListKnownTagsResponse {
+  KnownTags results = 1;
+}
+
+message ListSamplesRequest {
+  Window window = 1;
+  TagFilter filter = 2;
+  uint32 top = 3;
+
+  enum Group {
+    NONE = 0;
+
+    ROLE = 1;
+    AGENT = 2;
+    INTERFACE = 3;
+
+    INPUT = 4;
+    OUTPUT = 5;
+    INPUT_DISCARD = 6;
+    OUTPUT_DISCARD = 7;
+    L3_PROTOCOL = 8;
+    L4_PROTOCOL = 9;
+
+    SRC_MAC = 10;
+    SRC_ASN = 11;
+    SRC_NEXT_ASN = 12;
+    SRC_PREFIX = 13;
+    SRC_IP = 14;
+    SRC_PORT = 15;
+
+    DST_MAC = 16;
+    DST_ASN = 17;
+    DST_NEXT_ASN = 18;
+    DST_PREFIX = 19;
+    DST_IP = 20;
+    DST_PORT = 21;
+  }
+  repeated Group groups = 4;
+}
+message ListSamplesResponse {
+  Series results = 1;
+}
+
+/* Generic counters */
+
+message Window {
+  google.protobuf.Timestamp before = 1;
+  google.protobuf.Duration interval = 2;
+  uint32 limit = 3;
+}
+
+enum Role {
+  OPAQUE = 0;
+  ROUTER = 1;
+  SERVER = 2;
+  OOB = 3;
+}
+
+message Agent {
+  enum Slot {
+    NONE = 0;
+    CAPACITY = 1;
+    CAPABILITY = 2;
+  }
+  // TODO: is there a better first option to represent ???
+  enum Boot {
+    DISK = 0;
+    PXE = 1;
+  };
+
+  string agent = 1;
+  string name = 2; // Blank = unknown
+  string oob = 3;
+  Role role = 4;
+  Slot slot = 5;
+  Boot boot = 6;
+  string disk = 7;
+}
+
+message Interface {
+  string agent = 1;
+  uint32 if_index = 2;
+  string name = 3;
+  State state = 4;
+  Rates rates = 5;
+}
+
+message State {
+  // Derived from MAU MIB (RFC 2668)
+  // TODO: remove _DUPLEX suffix
+  enum Duplex {
+    UNKNOWN_DUPLEX = 0;
+    FULL_DUPLEX = 1;
+    HALF_DUPLEX = 2;
+    IN_DUPLEX = 3;
+    OUT_DUPLEX = 4;
+  }
+
+  uint64 id = 1;
+  string agent = 2;
+  uint32 if_index = 3;
+  google.protobuf.Timestamp received = 4;
+
+  uint32 type = 5;
+  uint64 speed = 6; // Mbit/s
+  Duplex direction = 7;
+  bool promiscuous = 8;
+  bool admin = 9;
+  bool oper = 10;
+}
+
+message Rates {
+  google.protobuf.Timestamp interval = 1;
+  string agent = 2;
+  uint32 if_index = 3;
+
+  google.protobuf.DoubleValue in_octets = 4;
+  google.protobuf.DoubleValue in_unicast = 5;
+  google.protobuf.DoubleValue in_multicast = 6;
+  google.protobuf.DoubleValue in_broadcast = 7;
+  google.protobuf.DoubleValue in_discards = 8;
+  google.protobuf.DoubleValue in_errors = 9;
+  google.protobuf.DoubleValue in_unknown_protos = 10;
+  
+  google.protobuf.DoubleValue out_octets = 11;
+  google.protobuf.DoubleValue out_unicast = 12;
+  google.protobuf.DoubleValue out_multicast = 13;
+  google.protobuf.DoubleValue out_broadcast = 14;
+  google.protobuf.DoubleValue out_discards = 15;
+  google.protobuf.DoubleValue out_errors = 16;
+}
+
+/* Samples */
+
+message KnownTags {
+  repeated uint32 input_discards = 1;
+  repeated uint32 output_discards = 2;
+  repeated uint32 l3_protocols = 3;
+  repeated uint32 l4_protocols = 4;
+}
+
+message Series {
+  map<int32, SampleTag> tags = 1;
+  repeated Samples series = 2;
+}
+
+message Samples {
+  google.protobuf.Timestamp interval = 1;
+  map<int32, Sample> samples = 2; // Key is tag ID
+}
+
+message SampleTag {
+  // TODO: rename
+  enum Type {
+    UNKOWN = 0;
+    FILTER = 1;
+    TOP = 2;
+    //DROPPED = 3;
+  }
+
+  Type type = 1;
+  TagFilter filter = 2;
+}
+
+message TagFilter {  
+  optional string role = 1;
+  optional string agent = 2;
+  optional uint32 if_index = 3;
+
+  optional uint32 input = 4;
+  optional uint32 output = 5;
+  optional uint32 input_discard = 6;
+  optional uint32 output_discard = 7;
+  optional uint32 l3_protocol = 8;
+  optional uint32 l4_protocol = 9;
+
+  optional string src_mac = 10;
+  optional uint32 src_asn = 11;
+  optional uint32 src_next_asn = 12;
+  optional string src_prefix = 13;
+  optional string src_ip = 14;
+  optional uint32 src_port = 15;
+
+  optional string dst_mac = 16;
+  optional uint32 dst_asn = 17;
+  optional uint32 dst_next_asn = 18;
+  optional string dst_prefix = 19;
+  optional string dst_ip = 20;
+  optional uint32 dst_port = 21;
+}
+
+message Sample {
+  uint64 packets = 1;
+  uint64 bytes = 2;
+}

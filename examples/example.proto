@@ -1,0 +1,60 @@
+syntax = "proto3";
+// Provides examples of various features
+package example;
+
+// This is ignored by Elmer but since we rely on Go's codegen, it's required
+option go_package = "rpc/everything";
+
+// Base types
+message Scalar {
+    double my_double = 1;
+    float my_float = 2;
+    int32 my_int32 = 3;
+    uint32 my_uint32 = 5;
+    sint32 my_sint32 = 7;
+    fixed32 my_fixed32 = 9;
+    sfixed32 my_sfixed32 = 11;
+    // Underling eriktim/elm-protocol-buffers library does not support 64-bit
+    //int64 my_int64 = 4;
+    //uint64 my_uint64 = 6;
+    //sint64 my_sint64 = 8;
+    //fixed64 my_fixed64 = 10;
+    //sfixed64 my_sfixed64 = 12;
+    bool my_bool = 13;
+    string my_string = 14;
+    bytes my_bytes = 15;
+}
+
+// A complex record with lots of features
+message AllTogether {
+    // Lists
+    repeated string my_list = 1;
+    // Maps
+    map<string, bool> my_map = 2;
+
+    // A nilable sum type
+    oneof favourite {
+        string my_str = 3;
+        int32 my_num = 4;
+        Scalar selection = 5;
+    }
+
+    // Normally missing fields take the zero field. This wraps a Maybe instead
+    optional string my_name = 6; // Optional, in case you've forgotten
+
+    // We can nest messages
+    message NestedABC {
+        int32 a = 1;
+        int32 b = 2;
+        int32 c = 3;
+    }
+    NestedABC abc = 7;
+
+    // Enums!
+    enum Answer {
+        MAYBE = 0;
+        YES = 1;
+        NO = 2;
+    }
+    Answer answer = 8;
+}
