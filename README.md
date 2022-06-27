@@ -5,45 +5,45 @@ A protoc code generator that produces decoders, encoders and RPC clients for Elm
 Under heavy / active development. Speak to @Joshua on Slack if needed.
 
 ## Motivation
-    - Elm decoders and encoders are a pain:
-        - Easy to write,
-        - usually long and repetitive,
-        - subtleties like nullable leads to accidental footguns,
-        - writing them is simply not valuable:
-            - just take time
-            - usually when you least want to e.g. making changes elsewhere, head full of ideas of your actual problem
-    - RPC clients
-        - we have to define a protocol: a form of client <> server
-        - the semantics of communicating with an external service are known
-            - message passing to TEA
-        - so ultimately: trigger (probably init) -> cmd -> ... -> msg
-        - Also a boring problem
-    - Server side
-        - Not unique to Elm, this pain is everywhere
-        - unless you have the same language on front and back plus a transport
-        - This sucks too!
-    - backwards / future compatability
-        - dealing with change
-        - remarkably little opinion on how to deal with this, I just want instruction
+- Elm decoders and encoders are a pain:
+    - Easy to write,
+    - usually long and repetitive,
+    - subtleties like nullable leads to accidental footguns,
+    - writing them is simply not valuable:
+        - just take time
+        - usually when you least want to e.g. making changes elsewhere, head full of ideas of your actual problem
+- RPC clients
+    - we have to define a protocol: a form of client <> server
+    - the semantics of communicating with an external service are known
+        - message passing to TEA
+    - so ultimately: trigger (probably init) -> cmd -> ... -> msg
+    - Also a boring problem
+- Server side
+    - Not unique to Elm, this pain is everywhere
+    - unless you have the same language on front and back plus a transport
+    - This sucks too!
+- backwards / future compatability
+    - dealing with change
+    - remarkably little opinion on how to deal with this, I just want instruction
 
 Why now? There's a good protobuf library that deals with the wire format. A couple of codegen projects but they're not feature complete and don't go far as they could. For example, well-known type support is missing and no RPC clients. This is in part because the PB browser support is poor. I think this is a missed opportunity for Elm and missing puzzle piece.
 
 In summary: let's minimise this problem and not think about it ever again.
 
 ### What for real
-    - Types without borders
-        - Specify an API
-        - Clients use the API, servers implement it
-        - and watch codegen / well-established libraries propagate from this
-    - Protobuf
-        - IDL
-        - Lots of codegen, probably covering your language (now including Elm!)
-        - Specifies compatability layer and how to deal with change
-        - they've thought about it! They have an answer! They have opinions on it!
-    - Elm has a good base protobuf codec library
-        - It's binary (presumably faster),
-        - it's feature complete / stays true to Protobuf
-    - Provide answers and clear guidelines for server-side support.
+- Types without borders
+    - Specify an API
+    - Clients use the API, servers implement it
+    - and watch codegen / well-established libraries propagate from this
+- Protobuf
+    - IDL
+    - Lots of codegen, probably covering your language (now including Elm!)
+    - Specifies compatability layer and how to deal with change
+    - they've thought about it! They have an answer! They have opinions on it!
+- Elm has a good base protobuf codec library
+    - It's binary (presumably faster),
+    - it's feature complete / stays true to Protobuf
+- Provide answers and clear guidelines for server-side support.
 
 Bring all this together and write a client-side generator for:
     - codecs
@@ -60,9 +60,9 @@ show example of small Protobuf: message+enum with a few values
 ```
 
 Translate it for the reader.
-    - messages = records
-    - enum = sum type
-    - show example Elm output
+- messages = records
+- enum = sum type
+- show example Elm output
 
 Example of RPC:
 
@@ -101,11 +101,11 @@ This section is TODO. For now, check the examples folder. Also see ##Development
 
 ### Ecosystem
 
-    - https://github.com/eriktim/elm-protocol-buffers Underlying Protobuf transport library. It's a good foundation.
-    - https://github.com/andreasewering/protoc-gen-elm An alternative codegen solving the same or similar problems.
-    - https://github.com/tiziano88/elm-protobuf
-    - #elm-protobuf
-    - TODO: alternatives to IDL+RPC approach. Graphql?
+- https://github.com/eriktim/elm-protocol-buffers Underlying Protobuf transport library. It's a good foundation.
+- https://github.com/andreasewering/protoc-gen-elm An alternative codegen solving the same or similar problems.
+- https://github.com/tiziano88/elm-protobuf
+- #elm-protobuf
+- TODO: alternatives to IDL+RPC approach. Graphql?
 
 ## Installing
 
