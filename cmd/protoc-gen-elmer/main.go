@@ -11,5 +11,5 @@ import (
 func main() {
 	opts := protogen.Options{
 		ParamFunc: flag.CommandLine.Set}
-	opts.Run(cmdgen.RunGenerator(elmgen.GenerateCodec))
+	opts.Run(cmdgen.RunGenerator(".elm", elmgen.GenerateCodec))
 }

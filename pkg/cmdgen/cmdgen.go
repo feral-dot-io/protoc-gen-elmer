@@ -56,7 +56,7 @@ func NewFlags() *Flags {
 
 type Generator func(*elmgen.Module, *protogen.GeneratedFile)
 
-func RunGenerator(generator Generator) func(*protogen.Plugin) error {
+func RunGenerator(suffix string, generator Generator) func(*protogen.Plugin) error {
 	return func(plugin *protogen.Plugin) error {
 		plugin.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 		flags := NewFlags()
@@ -69,7 +69,7 @@ func RunGenerator(generator Generator) func(*protogen.Plugin) error {
 			elm, err := flags.Config.NewModule(file)
 			plugin.Error(err)
 			// Write to file
-			path := flags.FilePrefix + elm.Path + ".elm"
+			path := flags.FilePrefix + elm.Path + suffix
 			genFile := plugin.NewGeneratedFile(path, "")
 			generator(elm, genFile)
 			// Format file?
