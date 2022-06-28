@@ -154,14 +154,12 @@ Provide examples. Add hat making service to `examples/` to show end-to-end usage
 
 ## Development
 
-You don't need to read this section to use `protoc-gen-elmer`.
-
-Set up:
-    - Install https://grpc.io/docs/protoc-installation/ (note just the compiler, we're explicitly avoiding GRPC)
-    - Install Go (1.16 min)
-    - Install `elm`, `elm-format` and `elm-test`
-    - Put `bin/` in your $PATH and see ##installing
-    - Run `go generate ./...` (for tests)
+You don't need to read this section to use `protoc-gen-elmer`. Steps to set up a development environment:
+- Install https://grpc.io/docs/protoc-installation/ (note just the compiler, we're explicitly avoiding GRPC)
+- Install Go (1.16 min)
+- Install `elm`, `elm-format` and `elm-test`
+- Put `bin/` in your $PATH and see ##installing
+- Run `go generate ./...` (for tests)
 
 Tests can then be run with: `go test ./...` Most test cases specify a Protobuf file, run it through codec and fuzzer codegen, `elm-format` and finally `elm-test`. If you run an individual test case you can see the code generated in `pkg/elmgen/testdata/gen-elm/src/`
 
@@ -184,28 +182,27 @@ Finally we also have `cmdgen`. A small pkg that holds common options and helpers
 This is my dev scratchpad of ideas and in-progress notes.
 
 Major goals to complete:
-    - Well-known types: Any, Timestamp, Duration, Wrappers, etc
-    - Protobuf comment passthru
-    - 64-bit support
-    - Existing options have caveats (e.g., partial feature support). Avoid this.
-    - Twirp client options (URL prefix, auth, etc)
-
-Review and compare https://developers.google.com/protocol-buffers/docs/reference/go-generated
-test for proto2 syntax
+- Well-known types: Any, Timestamp, Duration, Wrappers, etc
+- Protobuf comment passthru
+- 64-bit support
+- Existing options have caveats (e.g., partial feature support). Avoid this.
+- Twirp client options (URL prefix, auth, etc)
 
 I've aimed for a fully designed naming system assuming full control over client, API and server in the aim to avoid naming collisions. However this doesn't take into account future change eg., Elm could add reserved words. At that point the API shouldn't be revised beyond the Protobuf rules
 
-limited enums for when we really don't care about compat control?
-comments with Elm naming commands? e.g., [elm=HelloEnum]
-enums with allow_alias=true prefixes alias function
-imports
-unknown types result in a panic
-change do not edit line to:
-    ^// Code generated .* DO NOT EDIT\.$
+Minor goals:
+- Review and compare https://developers.google.com/protocol-buffers/docs/reference/go-generated
+- proto2 syntax
+- limited enums for when we really don't care about compat control?
+- comments with Elm naming commands? e.g., [elm=HelloEnum]
+- enums with allow_alias=true prefixes alias function
+- imports
+- unknown types result in a panic
+- change do not edit line to match: ^// Code generated .* DO NOT EDIT\.$
 
-code quality
-    - naming has two paths, it over complicates elmgen
-    - elmgen/Field is overloaded, needs to be an interface
+code quality:
+- naming has two paths, it over complicates elmgen
+- elmgen/Field is overloaded, needs to be an interface
 
 ## Bugs, other
 
