@@ -128,7 +128,7 @@ Alternatively, use options to prefix everything. This looks a lot more likely wh
 ```
 protoc --elmer_out=examples --elmer_opt="qualify=t" examples/example.proto
 protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=t" examples/example.proto
-protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=t,rpc_prefixes=t" examples/example.proto
+protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=t" examples/example.proto
 ```
 
 TODO comment on how to organise .proto. Best practices, etc
@@ -188,7 +188,6 @@ Major goals to complete:
 - Twirp client options (URL prefix, auth, etc)
 
 Smaller steps:
-- Review and compare https://developers.google.com/protocol-buffers/docs/reference/go-generated
 - proto2 syntax
 - limited enums for when we really don't care about compat control?
 - comments with Elm naming commands? e.g., [elm=HelloEnum]
@@ -197,7 +196,7 @@ Smaller steps:
 - unknown types result in a panic
 - change do not edit line to match: ^// Code generated .* DO NOT EDIT\.$
 - reserved names (enums) should be registered so collisions end up with _
-- cmdgen.rpcPrefixes isn't applied to config
+- variants are suffixed but Go codegen prefixes. Presumably because it's closer to proto's ns
 
 code quality:
 - naming has two paths, it over complicates elmgen

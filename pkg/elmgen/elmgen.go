@@ -16,8 +16,6 @@ type Config struct {
 	ModuleName string
 	// Proto allows nesting. When we decide on a name, do we use the last (deepest) name or qualify all?
 	QualifyNested bool
-	// Whether to prefix RPC methods with their service name
-	RPCPrefixes bool
 }
 
 var DefaultConfig = Config{

@@ -9,8 +9,8 @@ import Protobuf.Decode as PD
 import Protobuf.Encode as PE
 
 
-anotherMethod : (Result Http.Error Data.Scalar -> msg) -> String -> Data.AllTogether -> Cmd msg
-anotherMethod msg api data =
+ourService_AnotherMethod : (Result Http.Error Data.Scalar -> msg) -> String -> Data.AllTogether -> Cmd msg
+ourService_AnotherMethod msg api data =
     Http.post
         { url = api ++ "/example.OurService/AnotherMethod"
         , body =
@@ -21,8 +21,8 @@ anotherMethod msg api data =
         }
 
 
-ourRpcMethod : (Result Http.Error Data.AllTogether -> msg) -> String -> Data.Scalar -> Cmd msg
-ourRpcMethod msg api data =
+ourService_OurRpcMethod : (Result Http.Error Data.AllTogether -> msg) -> String -> Data.Scalar -> Cmd msg
+ourService_OurRpcMethod msg api data =
     Http.post
         { url = api ++ "/example.OurService/OurRPCMethod"
         , body =

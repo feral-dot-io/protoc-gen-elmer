@@ -13,11 +13,7 @@ func (m *Module) regMethods(protoServices []*protogen.Service) {
 		for _, proto := range protoService.Methods {
 			pd := proto.Desc
 			// Prefix ID with service?
-			alias := string(pd.Name())
-			if m.config.RPCPrefixes {
-				alias = service + "." + alias
-			}
-
+			alias := service + "." + string(pd.Name())
 			m.registerProtoName(pd.FullName(), alias)
 			m.protoMethods = append(m.protoMethods, proto)
 		}

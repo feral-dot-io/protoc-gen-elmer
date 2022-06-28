@@ -30,7 +30,7 @@ func TestRPC(t *testing.T) {
 	for i, rpc := range elm.RPCs {
 		assert.Equal(t, protoreflect.FullName("test.service.HelloWorld"), rpc.Service)
 		assert.Equal(t, protoreflect.Name(fmt.Sprintf("Hello%d", i+1)), rpc.Method)
-		assert.Equal(t, fmt.Sprintf("hello%d", i+1), rpc.MethodID)
+		assert.Equal(t, fmt.Sprintf("helloWorld_Hello%d", i+1), rpc.MethodID)
 		assert.Equal(t, "HelloReq", rpc.In)
 		assert.Equal(t, "HelloResp", rpc.Out)
 		assert.Equal(t, "helloReqEncoder", rpc.InEncoder)
@@ -39,22 +39,4 @@ func TestRPC(t *testing.T) {
 		assert.False(t, rpc.OutStreaming)
 	}
 	// It would be great to test the generated code but can't process a Cmd
-}
-
-func TestRPCPrefixes(t *testing.T) {
-	config := TestConfig
-	config.RPCPrefixes = true
-	elm := config.testModule(t, `
-		syntax = "proto3";
-		message Empty {}
-		service Hello {
-			rpc World(Empty) returns (Empty);
-		}
-	`)
-	assert.Len(t, elm.Records, 1)
-	assert.Len(t, elm.RPCs, 1)
-	rpc := elm.RPCs[0]
-	assert.Equal(t, protoreflect.FullName("Hello"), rpc.Service)
-	assert.Equal(t, protoreflect.Name("World"), rpc.Method)
-	assert.Equal(t, "hello_World", rpc.MethodID)
 }

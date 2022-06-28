@@ -21,8 +21,6 @@ var (
 
 	qualifyNested = flag.Bool("qualify", elmgen.DefaultConfig.QualifyNested,
 		"When dealing with nested Protobuf we can choose to fully qualify them or not. For example `Message.Enum` becomes `MessageEnum` or just `Enum`.")
-	rpcPrefixes = flag.Bool("rpc_prefix", elmgen.DefaultConfig.RPCPrefixes,
-		"Prefixes RPC methods with the service name. For example `service Service { rpc Method... }` becomes `ServiceMethod`.")
 )
 
 type Flags struct {
