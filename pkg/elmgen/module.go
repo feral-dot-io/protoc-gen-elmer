@@ -56,11 +56,15 @@ func (config *Config) NewModule(proto *protogen.File) (*Module, error) {
 	// First pass: get proto Idents
 	m.regEnums(proto.Enums)
 	m.regMessages(proto.Messages)
+	m.regMethods(proto.Services)
 	// Next: translate proto -> elm. Ordering matters: name clashes are suffixed
 	if err := m.addEnums(); err != nil {
 		return nil, err
 	}
 	if err := m.addRecords(); err != nil {
+		return nil, err
+	}
+	if err := m.addRPCs(); err != nil {
 		return nil, err
 	}
 	return m, nil

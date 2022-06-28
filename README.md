@@ -122,12 +122,14 @@ There are two methods. Trying to get "normal" looking names but increase potenti
 ```
 protoc --elmer_out=examples --elmer_opt="qualify=f,separator=,collision=_" examples/example.proto
 protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=f,separator=,collision=_" examples/example.proto
+protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=f,separator=,collision=_" examples/example.proto
 ```
 
 Alternatively, use options to prefix everything (note: `collision=` will give an error if a collision is encountered). This looks a lot more likely what you'd expect codegen to produce:
 ```
 protoc --elmer_out=examples --elmer_opt="qualify=t,separator=_,collision=" examples/example.proto
 protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=t,separator=_,collision=" examples/example.proto
+protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=t,separator=_,collision=,rpc_prefixes=t" examples/example.proto
 ```
 
 TODO comment on how to organise .proto. Best practices, etc
@@ -167,6 +169,7 @@ Build the `protoc-gen-elmer` binaries:
 ```
 go build -o bin/protoc-gen-elmer cmd/protoc-gen-elmer/main.go
 go build -o bin/protoc-gen-elm-fuzzer cmd/protoc-gen-elm-fuzzer/main.go
+go build -o bin/protoc-gen-elm-twirp cmd/protoc-gen-elm-twirp/main.go
 ```
 
 An approximate, high-level view: `.proto` (stdin) -> `protogen` (PB library used by cmd/) -> `elmgen` (core pkg in this repo) -> `gen_*.go` -> `*.elm` (stdout).
@@ -183,9 +186,9 @@ This is my dev scratchpad of ideas and in-progress notes.
 Major goals to complete:
     - Well-known types: Any, Timestamp, Duration, Wrappers, etc
     - Protobuf comment passthru
-    - Twirp client
     - 64-bit support
     - Existing options have caveats (e.g., partial feature support). Avoid this.
+    - Twirp client options (URL prefix, auth, etc)
 
 Review and compare https://developers.google.com/protocol-buffers/docs/reference/go-generated
 test for proto2 syntax
@@ -197,6 +200,8 @@ comments with Elm naming commands? e.g., [elm=HelloEnum]
 enums with allow_alias=true prefixes alias function
 imports
 unknown types result in a panic
+change do not edit line to:
+    ^// Code generated .* DO NOT EDIT\.$
 
 code quality
     - naming has two paths, it over complicates elmgen

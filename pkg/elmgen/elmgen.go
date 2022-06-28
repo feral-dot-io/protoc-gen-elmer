@@ -18,10 +18,12 @@ type Config struct {
 	QualifyNested bool
 	// Replaces a Protobuf namespace separator (a dot, `.`) with this string in Elm code
 	QualifiedSeparator string
-	// Variants created from enums and oneofs are suffixed with their parent
-	VariantSuffixes bool
 	// When mapping Protobuf idents to Elm we may up with a naming collision. Resolve this collision by appending this to the second ID generated or returning an error if blank
 	CollisionSuffix string
+	// Variants created from enums and oneofs are suffixed with their parent
+	VariantSuffixes bool
+	// Whether to prefix RPC methods with their service name
+	RPCPrefixes bool
 }
 
 var DefaultConfig = Config{
@@ -38,6 +40,7 @@ type (
 		protoAliases  map[protoreflect.FullName]string
 		protoEnums    []*protogen.Enum
 		protoMessages []*protogen.Message
+		protoMethods  []*protogen.Method
 		elmNS         map[string]struct{} // Top-level types and functions
 
 		Name, Path string
@@ -54,6 +57,8 @@ type (
 		Unions  Unions
 		Oneofs  Oneofs
 		Records Records
+
+		RPCs RPCs
 	}
 
 	ElmType  string
@@ -127,6 +132,17 @@ type (
 		Decoder, Encoder string
 		Fuzzer           string
 	}
+
+	RPCs []*RPC
+	RPC  struct {
+		Service protoreflect.FullName
+		Method  protoreflect.Name
+
+		MethodID                  string
+		In, Out                   string
+		InEncoder, OutDecoder     string
+		InStreaming, OutStreaming bool
+	}
 )
 
 func (a Unions) Len() int           { return len(a) }
@@ -140,6 +156,10 @@ func (a Oneofs) Less(i, j int) bool { return a[i].ID < a[j].ID }
 func (a Records) Len() int           { return len(a) }
 func (a Records) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a Records) Less(i, j int) bool { return a[i].ID < a[j].ID }
+
+func (a RPCs) Len() int           { return len(a) }
+func (a RPCs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a RPCs) Less(i, j int) bool { return a[i].MethodID < a[j].MethodID }
 
 func validElmID(id string) bool {
 	runes := []rune(id)

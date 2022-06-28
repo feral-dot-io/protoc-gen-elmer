@@ -58,3 +58,9 @@ message AllTogether {
     }
     Answer answer = 8;
 }
+
+// We can define RPC methods and generate a Twirp client
+service OurService {
+    rpc OurRPCMethod(Scalar) returns (AllTogether);
+    rpc AnotherMethod(AllTogether) returns (Scalar);
+}

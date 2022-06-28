@@ -86,6 +86,9 @@ func (config *Config) testModule(t *testing.T, raw string) *Module {
 	// Sanity check: always run through code gen
 	assertCodec("Codec.elm", GenerateCodec)
 	assertCodec("CodecTests.elm", GenerateFuzzTests)
+	if len(elm.protoMethods) > 0 {
+		assertCodec("CodecTwirp.elm", GenerateTwirp)
+	}
 	// Finally, run tests
 	err = runElmTest(testProjectDir, "src/**/*Tests.elm", 10)
 	assert.NoError(t, err)
