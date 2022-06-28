@@ -3,6 +3,7 @@ package elmgen
 import (
 	"os"
 	"os/exec"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,27 +16,40 @@ import (
 var TestConfig = Config{
 	VariantSuffixes: true}
 
-func testPlugin(t *testing.T, raw string) *protogen.Plugin {
+func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 	t.Helper()
 	// Due to https://github.com/protocolbuffers/protobuf/issues/4163
 	// We need to pass files to protoc instead of connecting stdin / stdout
-	// Write file stdin
+	// Write all specs to files
 	tmpDir := t.TempDir()
-	stdin, stdout := tmpDir+"/stdin", tmpDir+"/stdout"
-	err := os.WriteFile(stdin, []byte(raw), 0644)
-	assert.NoError(t, err)
+	var stdin, stdout, genReqparams string
+	for i, spec := range specs {
+		proto := "test" + strconv.Itoa(i)
+		prefix := tmpDir + "/" + proto
+		stdinI := prefix + ".proto"
+		// Keep first, our main test file
+		if i == 0 {
+			stdin = stdinI
+			stdout = prefix + ".desc"
+		}
+		genReqparams += "M" + proto + ".proto=" + proto + "/" + proto + ","
+		// Write file
+		err := os.WriteFile(stdinI, []byte(spec), 0644)
+		assert.NoError(t, err)
+	}
 	// Invoke protoc's parser
 	cmd := exec.Command(
 		"protoc",
 		"--proto_path="+tmpDir,
+		"--include_imports",
 		"--descriptor_set_out="+stdout,
 		stdin)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-	err = cmd.Run()
+	err := cmd.Run()
 	assert.NoError(t, err)
 	// Read contents of file stdout
-	descriptorBytes, err := os.ReadFile(tmpDir + "/stdout")
+	descriptorBytes, err := os.ReadFile(stdout)
 	assert.NoError(t, err)
 
 	// Read into pb
@@ -43,28 +57,37 @@ func testPlugin(t *testing.T, raw string) *protogen.Plugin {
 	err = proto.Unmarshal(descriptorBytes, protoFiles)
 	assert.NoError(t, err)
 	// Create new codegen request
-	params := "Mstdin=stdin/stdin"
 	req := &pluginpb.CodeGeneratorRequest{
-		FileToGenerate: []string{"stdin"},
-		Parameter:      &params,
+		FileToGenerate: []string{"test0.proto"},
+		Parameter:      &genReqparams,
 		ProtoFile:      protoFiles.File,
 	}
 	plugin, err := (protogen.Options{}).New(req)
 	assert.NoError(t, err)
 	// Build Module from File
-	assert.Len(t, plugin.Files, 1)
+	assert.Len(t, plugin.Files, len(specs))
 	return plugin
 }
 
 //go:generate testdata/gen-elm-test-proj
 
-func (config *Config) testModule(t *testing.T, raw string) *Module {
+func (config *Config) testModule(t *testing.T, specs ...string) *Module {
 	t.Helper()
 	config.ModuleName = "Codec" // Override to run tests
 
-	plugin := testPlugin(t, raw)
-	elm, err := config.NewModule(plugin.Files[0])
-	assert.NoError(t, err)
+	plugin := testPlugin(t, specs...)
+	var elm *Module
+	// One file should have Generate=true. Run NewModule on it
+	for _, f := range plugin.Files {
+		if f.Generate {
+			if elm != nil {
+				t.Fail()
+			}
+			var err error
+			elm, err = config.NewModule(f)
+			assert.NoError(t, err)
+		}
+	}
 
 	testProjectDir := "./testdata/gen-elm"
 	assertCodec := func(file string, gen func(m *Module, g *protogen.GeneratedFile)) {
@@ -80,7 +103,7 @@ func (config *Config) testModule(t *testing.T, raw string) *Module {
 			content, _ = genFile.Content()
 		}
 		// Copy to testdata for inspection / tests
-		err = os.WriteFile(testProjectDir+"/src/"+file, content, 0644)
+		err := os.WriteFile(testProjectDir+"/src/"+file, content, 0644)
 		assert.NoError(t, err)
 	}
 	// Sanity check: always run through code gen
@@ -90,7 +113,7 @@ func (config *Config) testModule(t *testing.T, raw string) *Module {
 		assertCodec("CodecTwirp.elm", GenerateTwirp)
 	}
 	// Finally, run tests
-	err = runElmTest(testProjectDir, "src/**/*Tests.elm", 10)
+	err := runElmTest(testProjectDir, "src/**/*Tests.elm", 10)
 	assert.NoError(t, err)
 	return elm
 }
@@ -199,4 +222,27 @@ func TestQualified(t *testing.T) {
 	// With invalid separator
 	_, err := (&Config{QualifiedSeparator: " "}).NewModule(nil)
 	assert.ErrorContains(t, err, "separator")
+}
+
+func _TestImports(t *testing.T) {
+	config := &Config{QualifyNested: true}
+	elm := config.testModule(t, `
+		syntax = "proto3";
+		import "test1.proto";
+		message MyMessage {
+			test1.Other out_of_this_world = 1;
+		}`, `
+		syntax = "proto3";
+		package test1;
+		message Other {
+			int32 a = 1;
+			int32 b = 2;
+			int32 c = 3;
+		}`)
+	assert.Len(t, elm.Records, 1)
+	assert.Equal(t, ElmType("MyMessage"), elm.Records[0].ID)
+	f := elm.Records[0].Fields[0]
+	assert.Equal(t, "out_of_this_world", f.Label)
+	assert.Equal(t, "Other", f.Type)
+	// TODO: this requires a lot of work on naming
 }

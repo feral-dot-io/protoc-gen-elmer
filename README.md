@@ -190,7 +190,7 @@ Major goals to complete:
 
 I've aimed for a fully designed naming system assuming full control over client, API and server in the aim to avoid naming collisions. However this doesn't take into account future change eg., Elm could add reserved words. At that point the API shouldn't be revised beyond the Protobuf rules
 
-Minor goals:
+Smaller steps:
 - Review and compare https://developers.google.com/protocol-buffers/docs/reference/go-generated
 - proto2 syntax
 - limited enums for when we really don't care about compat control?
