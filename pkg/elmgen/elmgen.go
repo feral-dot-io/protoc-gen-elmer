@@ -16,15 +16,12 @@ type Config struct {
 	ModuleName string
 	// Proto allows nesting. When we decide on a name, do we use the last (deepest) name or qualify all?
 	QualifyNested bool
-	// Variants created from enums and oneofs are suffixed with their parent
-	VariantSuffixes bool
 	// Whether to prefix RPC methods with their service name
 	RPCPrefixes bool
 }
 
 var DefaultConfig = Config{
-	VariantSuffixes: true,
-	QualifyNested:   true}
+	QualifyNested: true}
 
 type (
 	Module struct {

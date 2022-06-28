@@ -69,10 +69,5 @@ func (m *Module) aliasName(pd protoreflect.Descriptor) string {
 }
 
 func (m *Module) variantAlias(enum, value protoreflect.Descriptor) string {
-	var suffix string
-	// Suffix variants?
-	if m.config.VariantSuffixes {
-		suffix = "." + m.aliasName(enum)
-	}
-	return string(value.Name()) + suffix
+	return string(value.Name()) + "." + m.aliasName(enum)
 }

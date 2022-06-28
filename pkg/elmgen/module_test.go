@@ -13,8 +13,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-var TestConfig = Config{
-	VariantSuffixes: true}
+var TestConfig = Config{}
 
 func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 	t.Helper()

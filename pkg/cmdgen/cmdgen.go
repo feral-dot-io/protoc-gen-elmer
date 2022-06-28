@@ -21,8 +21,6 @@ var (
 
 	qualifyNested = flag.Bool("qualify", elmgen.DefaultConfig.QualifyNested,
 		"When dealing with nested Protobuf we can choose to fully qualify them or not. For example `Message.Enum` becomes `MessageEnum` or just `Enum`.")
-	variantSuffixes = flag.Bool("variant_suffix", elmgen.DefaultConfig.VariantSuffixes,
-		"Suffixes Elm union variants with their parent's name. For example `enum Role { ... Actor ... }` becomes `ActorRole`.")
 	rpcPrefixes = flag.Bool("rpc_prefix", elmgen.DefaultConfig.RPCPrefixes,
 		"Prefixes RPC methods with the service name. For example `service Service { rpc Method... }` becomes `ServiceMethod`.")
 )
@@ -45,8 +43,7 @@ func NewFlags() *Flags {
 			ModulePrefix: *modulePrefix,
 			ModuleName:   *moduleName,
 
-			QualifyNested:   *qualifyNested,
-			VariantSuffixes: *variantSuffixes}}
+			QualifyNested: *qualifyNested}}
 }
 
 type Generator func(*elmgen.Module, *protogen.GeneratedFile)

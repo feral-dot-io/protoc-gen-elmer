@@ -59,48 +59,6 @@ func TestUnions(t *testing.T) {
 	}
 }
 
-func TestNoVariantSuffixes(t *testing.T) {
-	config := TestConfig
-	config.VariantSuffixes = false
-	elm := config.testModule(t, `
-		syntax = "proto3";
-		enum Status {
-			UNKNOWN = 0;
-			STARTED = 1;
-			STOPPED = 2;
-		}`)
-	assert.Len(t, elm.Unions, 1)
-	u := elm.Unions[0]
-	assert.Len(t, u.Variants, 2)
-	assert.Equal(t, ElmType("Unknown"), u.DefaultVariant.ID)
-	assert.Equal(t, ElmType("Started"), u.Variants[0].ID)
-	assert.Equal(t, ElmType("Stopped"), u.Variants[1].ID)
-}
-
-func TestOneofNoVariantSuffixes(t *testing.T) {
-	config := TestConfig
-	config.VariantSuffixes = false
-	elm := config.testModule(t, `
-		syntax = "proto3";
-		message Status {
-			oneof pick_me {
-				bool a = 1;
-				bool b = 2;
-				bool c = 3;
-			}
-		}`)
-	assert.Len(t, elm.Oneofs, 1)
-	assert.Len(t, elm.Records, 1)
-	r := elm.Records[0]
-	assert.Len(t, r.Oneofs, 1)
-	assert.Len(t, r.Fields, 1)
-	o := r.Oneofs[0]
-	assert.Len(t, o.Variants, 3)
-	assert.Equal(t, ElmType("A"), o.Variants[0].ID)
-	assert.Equal(t, ElmType("B"), o.Variants[1].ID)
-	assert.Equal(t, ElmType("C"), o.Variants[2].ID)
-}
-
 func TestUnionAllowAlias(t *testing.T) {
 	elm := TestConfig.testModule(t, `
 		syntax = "proto3";
