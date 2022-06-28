@@ -119,16 +119,16 @@ These commands output to `examples/`.
 There are two methods. Trying to get "normal" looking names but increase potential for naming collisions:
 
 ```
-protoc --elmer_out=examples --elmer_opt="qualify=f,separator=" examples/example.proto
-protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=f,separator=" examples/example.proto
-protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=f,separator=" examples/example.proto
+protoc --elmer_out=examples --elmer_opt="qualify=f" examples/example.proto
+protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=f" examples/example.proto
+protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=f" examples/example.proto
 ```
 
 Alternatively, use options to prefix everything. This looks a lot more likely what you'd expect codegen to produce:
 ```
-protoc --elmer_out=examples --elmer_opt="qualify=t,separator=_" examples/example.proto
-protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=t,separator=_" examples/example.proto
-protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=t,separator=_,rpc_prefixes=t" examples/example.proto
+protoc --elmer_out=examples --elmer_opt="qualify=t" examples/example.proto
+protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=t" examples/example.proto
+protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=t,rpc_prefixes=t" examples/example.proto
 ```
 
 TODO comment on how to organise .proto. Best practices, etc

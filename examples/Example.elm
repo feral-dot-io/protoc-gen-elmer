@@ -6,7 +6,7 @@ module Example exposing (..)
 -- This module is broken down into: records (messages), unions (enums), oneofs, empty constructors (zero values), decoders, and encoders
 -- Records: AllTogether NestedAbc Scalar
 -- Unions: Answer
--- Oneofs: AllTogetherFavourite
+-- Oneofs: AllTogether_Favourite
 
 import Bytes exposing (Bytes)
 import Bytes.Encode as BE
@@ -18,7 +18,7 @@ import Protobuf.Encode as PE
 type alias AllTogether =
     { myList : List String
     , myMap : Dict String Bool
-    , favourite : Maybe AllTogetherFavourite
+    , favourite : Maybe AllTogether_Favourite
     , my_name : Maybe String
     , abc : NestedAbc
     , answer : Answer
@@ -47,15 +47,15 @@ type alias Scalar =
 
 
 type Answer
-    = MaybeAnswer Int
-    | YesAnswer
-    | NoAnswer
+    = Maybe_Answer Int
+    | Yes_Answer
+    | No_Answer
 
 
-type AllTogetherFavourite
-    = MyStrFavourite String
-    | MyNumFavourite Int
-    | SelectionFavourite Scalar
+type AllTogether_Favourite
+    = MyStr_Favourite String
+    | MyNum_Favourite Int
+    | Selection_Favourite Scalar
 
 
 emptyAllTogether : AllTogether
@@ -75,27 +75,27 @@ emptyScalar =
 
 emptyAnswer : Answer
 emptyAnswer =
-    MaybeAnswer 0
+    Maybe_Answer 0
 
 
 allTogetherDecoder : PD.Decoder AllTogether
 allTogetherDecoder =
     let
-        allTogetherFavouriteDecoder =
-            [ ( 3, PD.map MyStrFavourite PD.string )
-            , ( 4, PD.map MyNumFavourite PD.int32 )
-            , ( 5, PD.map SelectionFavourite scalarDecoder )
+        allTogether_FavouriteDecoder =
+            [ ( 3, PD.map MyStr_Favourite PD.string )
+            , ( 4, PD.map MyNum_Favourite PD.int32 )
+            , ( 5, PD.map Selection_Favourite scalarDecoder )
             ]
 
-        exampleAllTogetherMyNameDecoder =
+        example_AllTogether_MyNameDecoder =
             [ ( 6, PD.string )
             ]
     in
     PD.message emptyAllTogether
         [ PD.repeated 1 PD.string .myList (\v m -> { m | myList = v })
         , PD.mapped 2 ( "", False ) PD.string PD.bool .myMap (\v m -> { m | myMap = v })
-        , PD.oneOf allTogetherFavouriteDecoder (\v m -> { m | favourite = v })
-        , PD.oneOf exampleAllTogetherMyNameDecoder (\v m -> { m | my_name = v })
+        , PD.oneOf allTogether_FavouriteDecoder (\v m -> { m | favourite = v })
+        , PD.oneOf example_AllTogether_MyNameDecoder (\v m -> { m | my_name = v })
         , PD.optional 7 nestedAbcDecoder (\v m -> { m | abc = v })
         , PD.optional 8 answerDecoder (\v m -> { m | answer = v })
         ]
@@ -132,13 +132,13 @@ answerDecoder =
         conv v =
             case v of
                 1 ->
-                    YesAnswer
+                    Yes_Answer
 
                 2 ->
-                    NoAnswer
+                    No_Answer
 
                 wire ->
-                    MaybeAnswer wire
+                    Maybe_Answer wire
     in
     PD.map conv PD.int32
 
@@ -146,21 +146,21 @@ answerDecoder =
 allTogetherEncoder : AllTogether -> PE.Encoder
 allTogetherEncoder v =
     let
-        allTogetherFavouriteEncoder o =
+        allTogether_FavouriteEncoder o =
             case o of
-                Just (MyStrFavourite data) ->
+                Just (MyStr_Favourite data) ->
                     [ ( 3, PE.string data ) ]
 
-                Just (MyNumFavourite data) ->
+                Just (MyNum_Favourite data) ->
                     [ ( 4, PE.int32 data ) ]
 
-                Just (SelectionFavourite data) ->
+                Just (Selection_Favourite data) ->
                     [ ( 5, scalarEncoder data ) ]
 
                 Nothing ->
                     []
 
-        exampleAllTogetherMyNameEncoder o =
+        example_AllTogether_MyNameEncoder o =
             case o of
                 Just data ->
                     [ ( 6, PE.string data ) ]
@@ -174,8 +174,8 @@ allTogetherEncoder v =
         , ( 7, nestedAbcEncoder v.abc )
         , ( 8, answerEncoder v.answer )
         ]
-            ++ allTogetherFavouriteEncoder v.favourite
-            ++ exampleAllTogetherMyNameEncoder v.my_name
+            ++ allTogether_FavouriteEncoder v.favourite
+            ++ example_AllTogether_MyNameEncoder v.my_name
 
 
 nestedAbcEncoder : NestedAbc -> PE.Encoder
@@ -208,13 +208,13 @@ answerEncoder v =
     let
         conv =
             case v of
-                MaybeAnswer wire ->
+                Maybe_Answer wire ->
                     wire
 
-                YesAnswer ->
+                Yes_Answer ->
                     1
 
-                NoAnswer ->
+                No_Answer ->
                     2
     in
     PE.int32 conv

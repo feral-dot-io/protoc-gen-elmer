@@ -43,7 +43,6 @@ func TestRPC(t *testing.T) {
 
 func TestRPCPrefixes(t *testing.T) {
 	config := TestConfig
-	config.QualifiedSeparator = "_"
 	config.RPCPrefixes = true
 	elm := config.testModule(t, `
 		syntax = "proto3";

@@ -1,7 +1,6 @@
 package elmgen
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -41,11 +40,6 @@ func (config Config) newModule() *Module {
 
 func (config *Config) NewModule(proto *protogen.File) (*Module, error) {
 	m := config.newModule()
-	// Check config is valid
-	if !validPartialElmID(m.config.QualifiedSeparator) {
-		return nil, fmt.Errorf("qualified separator must be a valid Elm identifier, got `%s`",
-			m.config.QualifiedSeparator)
-	}
 	// Paths
 	m.protoPkg = proto.Desc.Package() + "."
 	m.Name, m.Path = config.nameAndPath(string(proto.Desc.Package()), proto.GeneratedFilenamePrefix)

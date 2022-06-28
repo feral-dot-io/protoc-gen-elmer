@@ -174,7 +174,6 @@ func TestQualified(t *testing.T) {
 	`
 	config := TestConfig
 	config.QualifyNested = true
-	config.QualifiedSeparator = "_"
 	elm := config.testModule(t, nestedProto)
 	assert.Len(t, elm.Unions, 1)
 	assert.Len(t, elm.Records, 2)
@@ -218,10 +217,6 @@ func TestQualified(t *testing.T) {
 	assert.Equal(t, ElmType("Inner_Conundrum"), o.ID)
 	assert.Equal(t, ElmType("Or_Conundrum"), o.Variants[0].ID)
 	assert.Equal(t, ElmType("And_Conundrum"), o.Variants[1].ID)
-
-	// With invalid separator
-	_, err := (&Config{QualifiedSeparator: " "}).NewModule(nil)
-	assert.ErrorContains(t, err, "separator")
 }
 
 func _TestImports(t *testing.T) {

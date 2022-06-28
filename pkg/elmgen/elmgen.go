@@ -16,8 +16,6 @@ type Config struct {
 	ModuleName string
 	// Proto allows nesting. When we decide on a name, do we use the last (deepest) name or qualify all?
 	QualifyNested bool
-	// Replaces a Protobuf namespace separator (a dot, `.`) with this string in Elm code
-	QualifiedSeparator string
 	// Variants created from enums and oneofs are suffixed with their parent
 	VariantSuffixes bool
 	// Whether to prefix RPC methods with their service name
@@ -25,9 +23,8 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
-	VariantSuffixes:    true,
-	QualifyNested:      true,
-	QualifiedSeparator: "_"}
+	VariantSuffixes: true,
+	QualifyNested:   true}
 
 type (
 	Module struct {

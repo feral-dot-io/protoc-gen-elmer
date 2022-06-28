@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	//sep             = "_"
-	collisionSuffix = "_"
+	qualifiedSeparator = "_"
+	collisionSuffix    = "_"
 )
 
 /*
@@ -105,7 +105,7 @@ func (m *Module) protoFullIdentToElmID(name protoreflect.FullName, isType bool) 
 		// No alias, drop pkg prefix from full
 		alias = strings.TrimPrefix(string(name), string(m.protoPkg))
 	}
-	return protoFullIdentToElmCasing(alias, m.config.QualifiedSeparator, isType)
+	return protoFullIdentToElmCasing(alias, qualifiedSeparator, isType)
 }
 
 func (m *Module) getElmType(name protoreflect.FullName) ElmType {

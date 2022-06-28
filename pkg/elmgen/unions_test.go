@@ -31,14 +31,14 @@ func TestUnions(t *testing.T) {
 		Variants []Variant
 	}{
 		{CodecIDs{"Abc", "emptyAbc", "abcDecoder", "abcEncoder", "abcFuzzer"},
-			"AAbc", []Variant{{"BAbc", 1}, {"CAbc", 2}}},
+			"A_Abc", []Variant{{"B_Abc", 1}, {"C_Abc", 2}}},
 		{CodecIDs{"Choose", "emptyChoose", "chooseDecoder", "chooseEncoder", "chooseFuzzer"},
-			"HandsChoose", []Variant{
-				{"FoilChoose", 1},
-				{"EpeeChoose", 2},
-				{"SabreChoose", 3}}},
+			"Hands_Choose", []Variant{
+				{"Foil_Choose", 1},
+				{"Epee_Choose", 2},
+				{"Sabre_Choose", 3}}},
 		{CodecIDs{"Minimal", "emptyMinimal", "minimalDecoder", "minimalEncoder", "minimalFuzzer"},
-			"LowerMinimal", []Variant{}},
+			"Lower_Minimal", []Variant{}},
 	} {
 		union := elm.Unions[i]
 		// IDs
@@ -114,7 +114,7 @@ func TestUnionAllowAlias(t *testing.T) {
 	alias := elm.Unions[0]
 	assert.Len(t, alias.Variants, 1)
 	assert.Len(t, alias.Aliases, 1)
-	assert.Equal(t, ElmType("StartedAlias"), alias.Variants[0].ID)
-	assert.Equal(t, "runningAlias", alias.Aliases[0].Alias)
-	assert.Equal(t, ElmType("StartedAlias"), alias.Aliases[0].ID)
+	assert.Equal(t, ElmType("Started_Alias"), alias.Variants[0].ID)
+	assert.Equal(t, "running_Alias", alias.Aliases[0].Alias)
+	assert.Equal(t, ElmType("Started_Alias"), alias.Aliases[0].ID)
 }

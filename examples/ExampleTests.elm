@@ -40,23 +40,23 @@ fuzzBytes =
 answerFuzzer : Fuzzer Codec.Answer
 answerFuzzer =
     Fuzz.oneOf
-        [ Fuzz.map Codec.MaybeAnswer fuzzInt32
-        , Fuzz.constant Codec.YesAnswer
-        , Fuzz.constant Codec.NoAnswer
+        [ Fuzz.map Codec.Maybe_Answer fuzzInt32
+        , Fuzz.constant Codec.Yes_Answer
+        , Fuzz.constant Codec.No_Answer
         ]
 
 
 allTogetherFuzzer : Fuzzer Codec.AllTogether
 allTogetherFuzzer =
     let
-        allTogetherFavouriteFuzzer =
+        allTogether_FavouriteFuzzer =
             Fuzz.oneOf
-                [ Fuzz.map Codec.MyStrFavourite Fuzz.string
-                , Fuzz.map Codec.MyNumFavourite fuzzInt32
-                , Fuzz.map Codec.SelectionFavourite scalarFuzzer
+                [ Fuzz.map Codec.MyStr_Favourite Fuzz.string
+                , Fuzz.map Codec.MyNum_Favourite fuzzInt32
+                , Fuzz.map Codec.Selection_Favourite scalarFuzzer
                 ]
 
-        exampleAllTogetherMyNameFuzzer =
+        example_AllTogether_MyNameFuzzer =
             Fuzz.oneOf
                 [ Fuzz.string
                 ]
@@ -67,8 +67,8 @@ allTogetherFuzzer =
             (Fuzz.map Dict.fromList
                 (Fuzz.list (Fuzz.tuple ( Fuzz.string, Fuzz.bool )))
             )
-        |> Fuzz.andMap (Fuzz.maybe allTogetherFavouriteFuzzer)
-        |> Fuzz.andMap (Fuzz.maybe exampleAllTogetherMyNameFuzzer)
+        |> Fuzz.andMap (Fuzz.maybe allTogether_FavouriteFuzzer)
+        |> Fuzz.andMap (Fuzz.maybe example_AllTogether_MyNameFuzzer)
         |> Fuzz.andMap nestedAbcFuzzer
         |> Fuzz.andMap answerFuzzer
 
