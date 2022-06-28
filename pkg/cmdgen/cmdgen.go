@@ -23,8 +23,6 @@ var (
 		"When dealing with nested Protobuf we can choose to fully qualify them or not. For example `Message.Enum` becomes `MessageEnum` or just `Enum`.")
 	qualifiedSeparator = flag.String("separator", elmgen.DefaultConfig.QualifiedSeparator,
 		"Use a separator when transforming nested Protobuf to an Elm ID. For example `Nested.Message` becomes `Nested_Message` in Elm with `_`.")
-	collisionSuffix = flag.String("collision", elmgen.DefaultConfig.CollisionSuffix,
-		"Suffix applied to an Elm ID to resolve collision. If empty, returns an error instead.")
 	variantSuffixes = flag.Bool("variant_suffix", elmgen.DefaultConfig.VariantSuffixes,
 		"Suffixes Elm union variants with their parent's name. For example `enum Role { ... Actor ... }` becomes `ActorRole`.")
 	rpcPrefixes = flag.Bool("rpc_prefix", elmgen.DefaultConfig.RPCPrefixes,
@@ -51,8 +49,7 @@ func NewFlags() *Flags {
 
 			QualifyNested:      *qualifyNested,
 			QualifiedSeparator: *qualifiedSeparator,
-			VariantSuffixes:    *variantSuffixes,
-			CollisionSuffix:    *collisionSuffix}}
+			VariantSuffixes:    *variantSuffixes}}
 }
 
 type Generator func(*elmgen.Module, *protogen.GeneratedFile)

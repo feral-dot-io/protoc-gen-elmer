@@ -39,14 +39,8 @@ func (m *Module) addRPCs() error {
 func (m *Module) newRPC(method *protogen.Method) (*RPC, error) {
 	md := method.Desc
 	methodID := m.protoFullIdentToElmID(md.FullName(), false)
-	in, err := m.getElmType(md.Input().FullName())
-	if err != nil {
-		return nil, err
-	}
-	out, err := m.getElmType(md.Output().FullName())
-	if err != nil {
-		return nil, err
-	}
+	in := m.getElmType(md.Input().FullName())
+	out := m.getElmType(md.Output().FullName())
 	// Already registered. Total mess
 	inEncoder := m.getElmValue(protoreflect.FullName(in)) + "Encoder"
 	outDecoder := m.getElmValue(protoreflect.FullName(out)) + "Decoder"

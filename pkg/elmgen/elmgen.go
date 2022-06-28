@@ -18,8 +18,6 @@ type Config struct {
 	QualifyNested bool
 	// Replaces a Protobuf namespace separator (a dot, `.`) with this string in Elm code
 	QualifiedSeparator string
-	// When mapping Protobuf idents to Elm we may up with a naming collision. Resolve this collision by appending this to the second ID generated or returning an error if blank
-	CollisionSuffix string
 	// Variants created from enums and oneofs are suffixed with their parent
 	VariantSuffixes bool
 	// Whether to prefix RPC methods with their service name

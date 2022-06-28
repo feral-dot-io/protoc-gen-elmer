@@ -194,7 +194,6 @@ func TestRecordErrors(t *testing.T) {
 
 func TestListField(t *testing.T) {
 	config := TestConfig
-	//config.CollisionSuffix = "_"
 	elm := config.testModule(t, `
 		syntax = "proto3";
 		package test.list;

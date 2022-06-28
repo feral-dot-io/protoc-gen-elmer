@@ -7,24 +7,17 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func (m *Module) addEnums() error {
+func (m *Module) addEnums() {
 	for _, proto := range m.protoEnums {
-		union, err := m.newUnion(proto)
-		if err != nil {
-			return err
-		}
-		m.Unions = append(m.Unions, union)
+		m.Unions = append(m.Unions,
+			m.newUnion(proto))
 	}
 	sort.Sort(m.Unions)
-	return nil
 }
 
-func (m *Module) newUnion(proto *protogen.Enum) (*Union, error) {
+func (m *Module) newUnion(proto *protogen.Enum) *Union {
 	union := new(Union)
-	err := union.CodecIDs.register(m, proto.Desc.FullName())
-	if err != nil {
-		return nil, err
-	}
+	union.CodecIDs.register(m, proto.Desc.FullName())
 	// Add variants
 	aliases := make(map[protoreflect.EnumNumber]*Variant)
 	for i, protoVal := range proto.Values {
@@ -36,10 +29,7 @@ func (m *Module) newUnion(proto *protogen.Enum) (*Union, error) {
 				&VariantAlias{original, elmID})
 		} else {
 			// Create
-			id, err := m.getElmType(protoVal.Desc.FullName())
-			if err != nil {
-				return nil, err
-			}
+			id := m.getElmType(protoVal.Desc.FullName())
 			v := &Variant{id, num}
 			// Add
 			if i == 0 { // First is the default
@@ -50,25 +40,21 @@ func (m *Module) newUnion(proto *protogen.Enum) (*Union, error) {
 			aliases[v.Number] = v
 		}
 	}
-	return union, nil
+	return union
 }
 
 func (m *Module) newOneof(proto protoreflect.OneofDescriptor) (*Oneof, error) {
 	oneof := new(Oneof)
 	oneof.IsSynthetic = proto.IsSynthetic()
 	// Register codec IDs
-	err := oneof.CodecIDs.register(m, proto.FullName())
-	if err != nil {
-		return nil, err
-	}
+	oneof.CodecIDs.register(m, proto.FullName())
 	// Add field types
 	fields := proto.Fields()
 	for i := 0; i < fields.Len(); i++ {
 		field := fields.Get(i)
 		v := new(OneofVariant)
-		if v.ID, err = m.getElmType(field.FullName()); err != nil {
-			return nil, err
-		}
+		v.ID = m.getElmType(field.FullName())
+		var err error
 		if v.Field, err = m.newField(field); err != nil {
 			return nil, err
 		}

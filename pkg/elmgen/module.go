@@ -46,10 +46,6 @@ func (config *Config) NewModule(proto *protogen.File) (*Module, error) {
 		return nil, fmt.Errorf("qualified separator must be a valid Elm identifier, got `%s`",
 			m.config.QualifiedSeparator)
 	}
-	if !validPartialElmID(m.config.CollisionSuffix) {
-		return nil, fmt.Errorf("collision suffix must be a valid Elm identifier, got `%s`",
-			m.config.CollisionSuffix)
-	}
 	// Paths
 	m.protoPkg = proto.Desc.Package() + "."
 	m.Name, m.Path = config.nameAndPath(string(proto.Desc.Package()), proto.GeneratedFilenamePrefix)
@@ -58,9 +54,7 @@ func (config *Config) NewModule(proto *protogen.File) (*Module, error) {
 	m.regMessages(proto.Messages)
 	m.regMethods(proto.Services)
 	// Next: translate proto -> elm. Ordering matters: name clashes are suffixed
-	if err := m.addEnums(); err != nil {
-		return nil, err
-	}
+	m.addEnums()
 	if err := m.addRecords(); err != nil {
 		return nil, err
 	}

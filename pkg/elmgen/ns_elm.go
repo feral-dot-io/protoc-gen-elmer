@@ -1,12 +1,16 @@
 package elmgen
 
 import (
-	"fmt"
 	"log"
 	"strings"
 	"unicode"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
+)
+
+const (
+	//sep             = "_"
+	collisionSuffix = "_"
 )
 
 /*
@@ -104,61 +108,44 @@ func (m *Module) protoFullIdentToElmID(name protoreflect.FullName, isType bool) 
 	return protoFullIdentToElmCasing(alias, m.config.QualifiedSeparator, isType)
 }
 
-func (m *Module) getElmType(name protoreflect.FullName) (ElmType, error) {
+func (m *Module) getElmType(name protoreflect.FullName) ElmType {
 	elmID, ok := m.protoNS[name]
 	// This should never happen. All proto names should be registered before use
 	if !ok {
 		log.Panicf("missing protoreflect.FullName: %s", name)
 	}
 	// First retrieval: create
-	var err error
 	if elmID == "" {
 		candidate := m.protoFullIdentToElmID(name, true)
-		candidate, err = m.registerElmID(candidate)
+		candidate = m.registerElmID(candidate)
 		elmID = ElmType(candidate)
 		m.protoNS[name] = elmID
 	}
-	return elmID, err
+	return elmID
 }
 
 func (m *Module) getElmValue(name protoreflect.FullName) string {
 	return m.protoFullIdentToElmID(name, false)
 }
 
-func (m *Module) registerElmID(id string) (string, error) {
+func (m *Module) registerElmID(id string) string {
 	if !validElmID(id) {
 		log.Panicf("invalid Elm ID: %s", id)
 	}
 	// Already registered?
 	if _, ok := m.elmNS[id]; ok {
-		// Generate an error?
-		if m.config.CollisionSuffix == "" {
-			return "", fmt.Errorf("protobuf schema generates a name collision with ID `%s` and current config (%#v) prevents us from resolving it",
-				id, m.config)
-		}
 		// Add suffix to ID
-		id += m.config.CollisionSuffix
-		return m.registerElmID(id)
+		return m.registerElmID(id + collisionSuffix)
 	}
 	m.elmNS[id] = struct{}{}
-	return id, nil
+	return id
 }
 
-func (d *CodecIDs) register(m *Module, name protoreflect.FullName) (err error) {
-	if d.ID, err = m.getElmType(name); err != nil {
-		return err
-	}
-	if d.ZeroID, err = m.registerElmID("empty" + string(d.ID)); err != nil {
-		return err
-	}
+func (d *CodecIDs) register(m *Module, name protoreflect.FullName) {
+	d.ID = m.getElmType(name)
+	d.ZeroID = m.registerElmID("empty" + string(d.ID))
 	id := m.getElmValue(name)
-	if d.DecodeID, err = m.registerElmID(id + "Decoder"); err != nil {
-		return err
-	}
-	d.EncodeID, err = m.registerElmID(id + "Encoder")
-	if err != nil {
-		return err
-	}
-	d.FuzzerID, err = m.registerElmID(id + "Fuzzer")
-	return err
+	d.DecodeID = m.registerElmID(id + "Decoder")
+	d.EncodeID = m.registerElmID(id + "Encoder")
+	d.FuzzerID = m.registerElmID(id + "Fuzzer")
 }

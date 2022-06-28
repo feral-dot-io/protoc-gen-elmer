@@ -28,10 +28,7 @@ func (m *Module) addRecords() error {
 
 func (m *Module) newRecord(proto *protogen.Message) (*Record, error) {
 	var record Record
-	err := record.CodecIDs.register(m, proto.Desc.FullName())
-	if err != nil {
-		return nil, err
-	}
+	record.CodecIDs.register(m, proto.Desc.FullName())
 	oneofsSeen := make(map[protoreflect.FullName]bool)
 	for _, proto := range proto.Fields {
 		// Part of a oneof field?
@@ -169,12 +166,10 @@ func fieldTypeFromKind(m *Module, pd protoreflect.FieldDescriptor) (string, erro
 		return "Bytes", nil
 
 	case protoreflect.EnumKind:
-		id, err := m.getElmType(pd.Enum().FullName())
-		return string(id), err
+		return string(m.getElmType(pd.Enum().FullName())), nil
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
-		id, err := m.getElmType(pd.Message().FullName())
-		return string(id), err
+		return string(m.getElmType(pd.Message().FullName())), nil
 	}
 
 	return "", fmt.Errorf("fieldType: unknown protoreflect.Kind: %s", pd.Kind())
@@ -212,12 +207,12 @@ func fieldZero(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
 		return "(BE.encode (BE.sequence []))", nil
 
 	case protoreflect.EnumKind:
-		id, err := m.getElmType(pd.Enum().FullName())
-		return "empty" + string(id), err
+		id := m.getElmType(pd.Enum().FullName())
+		return "empty" + string(id), nil
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
-		id, err := m.getElmType(pd.Message().FullName())
-		return "empty" + string(id), err
+		id := m.getElmType(pd.Message().FullName())
+		return "empty" + string(id), nil
 	}
 
 	return "", fmt.Errorf("fieldZero: unknown protoreflect.Kind: %s", pd.Kind())

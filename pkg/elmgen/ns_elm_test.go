@@ -87,41 +87,17 @@ func TestNS(t *testing.T) {
 	assert.Panics(t, func() {
 		m.getElmType("eek")
 	})
-	// Accidental codec registration gives a collision error
-	m = Config{}.newModule()
-	m.registerProtoName("Dupe", "")
-	cases := []string{"Dupe", "emptyDupe", "dupeDecoder", "dupeEncoder"}
-	for _, id := range cases {
-		m.registerElmID(id)
-		err := new(CodecIDs).register(m, "Dupe")
-		assert.ErrorContains(t, err, id)
-		// Unregister values
-		for _, unreg := range cases {
-			delete(m.elmNS, unreg)
-		}
-	}
 }
 
 func TestCollisionSuffix(t *testing.T) {
-	m := Config{CollisionSuffix: "___"}.newModule()
+	m := TestConfig.newModule()
 	// Duplicate Elm ID gets a suffixed
-	id, err := m.registerElmID("Hello")
-	assert.NoError(t, err)
+	id := m.registerElmID("Hello")
 	assert.Equal(t, "Hello", id)
-	id, err = m.registerElmID("Hello")
-	assert.NoError(t, err)
-	assert.Equal(t, "Hello___", id)
-	// Invalid suffix
-	_, err = (&Config{CollisionSuffix: " "}).NewModule(nil)
-	assert.ErrorContains(t, err, "collision")
+	id = m.registerElmID("Hello")
+	assert.Equal(t, "Hello_", id)
 	// Must be valid Elm
 	assert.Panics(t, func() {
 		m.registerElmID(" ")
 	})
-	// Empty suffix gives an error
-	m = Config{}.newModule()
-	_, err = m.registerElmID("getReady")
-	assert.NoError(t, err)
-	_, err = m.registerElmID("getReady")
-	assert.ErrorContains(t, err, "collision")
 }

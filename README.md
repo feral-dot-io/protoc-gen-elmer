@@ -75,13 +75,12 @@ Again, translate: service / rpc -> elm interface
 This section is TODO. For now, check the examples folder. Also see ##Development testing.
 
 ### counter-what
-    - RPC moves away from REST which existing tooling is focussed on. It limits observability.
-    - Protobufs have _opinions_. It borrows a lot from Go's semantics. Notably Go's codegen results sometimes look out of place; e.g. naming with underscores.
+- RPC moves away from REST which existing tooling is focussed on. It limits observability.
+- Protobufs have _opinions_. It borrows a lot from Go's semantics. Notably Go's codegen results sometimes look out of place; e.g. naming with underscores.
 
 ### So counter-what
-    - Codecs are the /real/ value add. Get rid of your boilerplate!
-    - Don't use RPC if you don't want to or it doesn't add much for you.
-
+- Codecs are the /real/ value add. Get rid of your boilerplate!
+- Don't use RPC if you don't want to or it doesn't add much for you.
 
 ### Trade-offs, downsides, and limitations
 
@@ -89,7 +88,7 @@ This section is TODO. For now, check the examples folder. Also see ##Development
 
 - Protobuf oneofs may be nil.
 
-- Ident mapping:
+- Ident mapping: _this section is no longer valid as naming changes_
     - Compared to Go's codegen, the name mapper is more complex but is closer to what you'd write naturally in Elm.
     - Proto makes nested namespaces easier. This can make choosing how to build Elm names harder difficult which, in comparison, is flat. When flattening you may end up with name collisions which then get suffixed with a `_` in Elm. Name collisions should be avoided at all costs as they make reading the Elm code difficult and ambiguous.
         - Ideally you would avoid nesting in your `.proto` and the resulting codegen looks natural.
@@ -120,16 +119,16 @@ These commands output to `examples/`.
 There are two methods. Trying to get "normal" looking names but increase potential for naming collisions:
 
 ```
-protoc --elmer_out=examples --elmer_opt="qualify=f,separator=,collision=_" examples/example.proto
-protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=f,separator=,collision=_" examples/example.proto
-protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=f,separator=,collision=_" examples/example.proto
+protoc --elmer_out=examples --elmer_opt="qualify=f,separator=" examples/example.proto
+protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=f,separator=" examples/example.proto
+protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=f,separator=" examples/example.proto
 ```
 
-Alternatively, use options to prefix everything (note: `collision=` will give an error if a collision is encountered). This looks a lot more likely what you'd expect codegen to produce:
+Alternatively, use options to prefix everything. This looks a lot more likely what you'd expect codegen to produce:
 ```
-protoc --elmer_out=examples --elmer_opt="qualify=t,separator=_,collision=" examples/example.proto
-protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=t,separator=_,collision=" examples/example.proto
-protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=t,separator=_,collision=,rpc_prefixes=t" examples/example.proto
+protoc --elmer_out=examples --elmer_opt="qualify=t,separator=_" examples/example.proto
+protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=t,separator=_" examples/example.proto
+protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=t,separator=_,rpc_prefixes=t" examples/example.proto
 ```
 
 TODO comment on how to organise .proto. Best practices, etc
@@ -152,7 +151,7 @@ TODO expand this section with options and commentary on each option
 
 Provide examples. Add hat making service to `examples/` to show end-to-end usage as a template / starting point. This aim is the holy grail of this library!
 
-## Development
+## Development notes
 
 You don't need to read this section to use `protoc-gen-elmer`. Steps to set up a development environment:
 - Install https://grpc.io/docs/protoc-installation/ (note just the compiler, we're explicitly avoiding GRPC)
@@ -188,22 +187,30 @@ Major goals to complete:
 - Existing options have caveats (e.g., partial feature support). Avoid this.
 - Twirp client options (URL prefix, auth, etc)
 
-I've aimed for a fully designed naming system assuming full control over client, API and server in the aim to avoid naming collisions. However this doesn't take into account future change eg., Elm could add reserved words. At that point the API shouldn't be revised beyond the Protobuf rules
-
 Smaller steps:
 - Review and compare https://developers.google.com/protocol-buffers/docs/reference/go-generated
 - proto2 syntax
 - limited enums for when we really don't care about compat control?
 - comments with Elm naming commands? e.g., [elm=HelloEnum]
 - enums with allow_alias=true prefixes alias function
-- imports
+- imports need to reference other files
 - unknown types result in a panic
 - change do not edit line to match: ^// Code generated .* DO NOT EDIT\.$
+- reserved names (enums) should be registered so collisions end up with _
+- cmdgen.rpcPrefixes isn't applied to config
 
 code quality:
 - naming has two paths, it over complicates elmgen
 - elmgen/Field is overloaded, needs to be an interface
 
+release checklist
+- Review README
+- examples folder
+
 ## Bugs, other
 
 For now, talk to @Joshua on Slack
+
+## Naming
+
+I've aimed for a fully designed naming system assuming full control over client, API and server in the aim to avoid naming collisions. However this doesn't take into account future change eg., Elm could add reserved words. At that point the API shouldn't be revised beyond the Protobuf rules
