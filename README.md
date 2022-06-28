@@ -116,19 +116,12 @@ For now, see ##Development
 
 These commands output to `examples/`.
 
-There are two methods. Trying to get "normal" looking names but increase potential for naming collisions:
+The following generates code for our example.proto:
 
 ```
-protoc --elmer_out=examples --elmer_opt="qualify=f" examples/example.proto
-protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=f" examples/example.proto
-protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=f" examples/example.proto
-```
-
-Alternatively, use options to prefix everything. This looks a lot more likely what you'd expect codegen to produce:
-```
-protoc --elmer_out=examples --elmer_opt="qualify=t" examples/example.proto
-protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="qualify=t" examples/example.proto
-protoc --elm-twirp_out=examples --elm-twirp_opt="qualify=t" examples/example.proto
+protoc --elmer_out=examples --elmer_opt="" examples/example.proto
+protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="" examples/example.proto
+protoc --elm-twirp_out=examples --elm-twirp_opt="" examples/example.proto
 ```
 
 TODO comment on how to organise .proto. Best practices, etc

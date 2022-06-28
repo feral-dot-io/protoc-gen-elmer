@@ -9,8 +9,8 @@ import Protobuf.Decode as PD
 import Protobuf.Encode as PE
 
 
-makeHat : (Result Http.Error Data.Hat -> msg) -> String -> Data.Size -> Cmd msg
-makeHat msg api data =
+haberdasher_MakeHat : (Result Http.Error Data.Hat -> msg) -> String -> Data.Size -> Cmd msg
+haberdasher_MakeHat msg api data =
     Http.post
         { url = api ++ "/gen.haberdasher.Haberdasher/MakeHat"
         , body =

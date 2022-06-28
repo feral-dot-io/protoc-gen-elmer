@@ -18,9 +18,6 @@ var (
 		"Literal prefix for generated Elm module. For example `Gen.` becomes `Gen.My.Module`.")
 	moduleName = flag.String("module", "",
 		"Overrides the module name derived from the Proto package. Used in lieu of a google.protobuf.FileOptions entry. Ignores the module_prefix option. Should be avoided where possible.")
-
-	qualifyNested = flag.Bool("qualify", elmgen.DefaultConfig.QualifyNested,
-		"When dealing with nested Protobuf we can choose to fully qualify them or not. For example `Message.Enum` becomes `MessageEnum` or just `Enum`.")
 )
 
 type Flags struct {
@@ -39,9 +36,7 @@ func NewFlags() *Flags {
 		*flagFilePrefix,
 		&elmgen.Config{
 			ModulePrefix: *modulePrefix,
-			ModuleName:   *moduleName,
-
-			QualifyNested: *qualifyNested}}
+			ModuleName:   *moduleName}}
 }
 
 type Generator func(*elmgen.Module, *protogen.GeneratedFile)

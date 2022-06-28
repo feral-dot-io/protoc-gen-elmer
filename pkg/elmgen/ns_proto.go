@@ -58,14 +58,9 @@ func (m *Module) regEnums(protoEnums []*protogen.Enum) {
 }
 
 func (m *Module) aliasName(pd protoreflect.Descriptor) string {
-	// Use full (qualified) or a minimal name?
-	if m.config.QualifyNested {
-		full := string(pd.FullName())
-		// No alias, drop pkg prefix from full
-		return strings.TrimPrefix(full, string(m.protoPkg))
-	} else {
-		return string(pd.Name())
-	}
+	full := string(pd.FullName())
+	// No alias, drop pkg prefix from full
+	return strings.TrimPrefix(full, string(m.protoPkg))
 }
 
 func (m *Module) variantAlias(enum, value protoreflect.Descriptor) string {

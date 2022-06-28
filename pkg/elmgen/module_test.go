@@ -70,7 +70,7 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 
 //go:generate testdata/gen-elm-test-proj
 
-func (config *Config) testModule(t *testing.T, specs ...string) *Module {
+func (config Config) testModule(t *testing.T, specs ...string) *Module {
 	t.Helper()
 	config.ModuleName = "Codec" // Override to run tests
 
@@ -118,8 +118,7 @@ func (config *Config) testModule(t *testing.T, specs ...string) *Module {
 }
 
 func TestProtoUnderscores(t *testing.T) {
-	config := &Config{QualifyNested: true}
-	config.testModule(t, `
+	TestConfig.testModule(t, `
 		syntax = "proto3";
 		message _ {
 			bool _ = 1;
@@ -128,8 +127,7 @@ func TestProtoUnderscores(t *testing.T) {
 }
 
 func TestEmpty(t *testing.T) {
-	config := &Config{QualifyNested: true}
-	config.testModule(t, `
+	TestConfig.testModule(t, `
 		syntax = "proto3";
 		message Emptyish {}`)
 }
@@ -151,7 +149,7 @@ func TestNameFromPath(t *testing.T) {
 }
 
 func TestQualified(t *testing.T) {
-	nestedProto := `
+	elm := TestConfig.testModule(t, `
 		syntax = "proto3";
 		message Outer {
 			enum Option {
@@ -170,10 +168,7 @@ func TestQualified(t *testing.T) {
 			}
 			Inner inner = 1;
 		}
-	`
-	config := TestConfig
-	config.QualifyNested = true
-	elm := config.testModule(t, nestedProto)
+	`)
 	assert.Len(t, elm.Unions, 1)
 	assert.Len(t, elm.Records, 2)
 	assert.Len(t, elm.Oneofs, 2)
@@ -194,33 +189,10 @@ func TestQualified(t *testing.T) {
 	assert.Equal(t, ElmType("And_Outer_Inner_Conundrum"), o.Variants[1].ID)
 	assert.Equal(t, ElmType("Outer_Inner_Maybe"), elm.Oneofs[1].ID)
 	assert.Equal(t, "outer_Inner_MaybeDecoder", elm.Oneofs[1].DecodeID)
-
-	// Again but without qualifying
-	config.QualifyNested = false
-	elm = config.testModule(t, nestedProto)
-	assert.Len(t, elm.Unions, 1)
-	assert.Len(t, elm.Records, 2)
-	assert.Len(t, elm.Oneofs, 2)
-	// Union
-	u = elm.Unions[0]
-	assert.Equal(t, ElmType("Option"), u.ID)
-	assert.Len(t, u.Variants, 2)
-	assert.Equal(t, ElmType("Hero_Option"), u.DefaultVariant.ID)
-	assert.Equal(t, ElmType("Worst_Option"), u.Variants[0].ID)
-	assert.Equal(t, ElmType("Best_Option"), u.Variants[1].ID)
-	// Records
-	assert.Equal(t, ElmType("Inner"), elm.Records[0].ID)
-	assert.Equal(t, ElmType("Outer"), elm.Records[1].ID)
-	// Oneof
-	o = elm.Oneofs[0]
-	assert.Equal(t, ElmType("Inner_Conundrum"), o.ID)
-	assert.Equal(t, ElmType("Or_Conundrum"), o.Variants[0].ID)
-	assert.Equal(t, ElmType("And_Conundrum"), o.Variants[1].ID)
 }
 
 func _TestImports(t *testing.T) {
-	config := &Config{QualifyNested: true}
-	elm := config.testModule(t, `
+	elm := TestConfig.testModule(t, `
 		syntax = "proto3";
 		import "test1.proto";
 		message MyMessage {

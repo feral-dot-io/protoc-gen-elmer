@@ -14,12 +14,7 @@ type Config struct {
 	ModulePrefix string
 	// Override our generated module's name with this value. Does not apply `ModulePrefix`
 	ModuleName string
-	// Proto allows nesting. When we decide on a name, do we use the last (deepest) name or qualify all?
-	QualifyNested bool
 }
-
-var DefaultConfig = Config{
-	QualifyNested: true}
 
 type (
 	Module struct {
