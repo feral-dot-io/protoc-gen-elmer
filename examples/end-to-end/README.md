@@ -1,6 +1,6 @@
 # End to end example
 
-An example showing the full realisation of types without borders using Elm and Go.
+An example showing the full realisation of types without borders using Elm and Go. It should give a good impression of the generated code and how little code it takes to use and implement everything.
 
 All commands are assumed to be run from this directory.
 
@@ -22,15 +22,22 @@ echo 'inches:12' \
     | protoc --decode gen.haberdasher.Hat api.proto
 ```
 
+If all goes well, you'll have a new hat 👒:
+```
+size: 12
+color: "black"
+name: "bowler"
+```
+
 ## Client
 
-It's recommended that you check in your generated code. So it's already prepared under `elm-client/src/Gen`. You can build the client with the standard tools such as `elm reactor`. I recommend using [elm-live](https://www.elm-live.com/) using:
+It's recommended that you check in your generated code. You'll find the Elm client already prepared at `elm-client/src/Gen`. You can build the client with the standard tools such as `elm reactor`. However I recommend using [elm-live](https://www.elm-live.com/):
 ```
 cd elm-client
 elm-live src/Main.elm -- --debug
 ```
 
-Then visit [http://localhost:8000] and have fun making hats 🤠
+Then visit [http://localhost:8000/](http://localhost:8000/) and have fun making hats 🤠
 
 Finally, in the same directory, you can run the generated fuzz tests with `elm-test`:
 ```
