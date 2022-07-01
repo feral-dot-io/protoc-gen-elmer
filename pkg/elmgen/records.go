@@ -168,7 +168,7 @@ func fieldZero(m *Module, pd protoreflect.FieldDescriptor) string {
 	//	protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind:
 
 	case protoreflect.BoolKind:
-		if pd.Default().Bool() { // TODO proto2 test
+		if pd.Default().Bool() {
 			return "True"
 		}
 		return "False"

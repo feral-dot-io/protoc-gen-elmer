@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -124,19 +125,31 @@ func testModule(t *testing.T, specs ...string) *Module {
 	return elm
 }
 
-func TestProtoUnderscores(t *testing.T) {
+func TestSpecialProto(t *testing.T) {
 	testModule(t, `
 		syntax = "proto3";
+		message Emptyish {}
 		message _ {
 			bool _ = 1;
 		}
 	`)
 }
 
-func TestEmpty(t *testing.T) {
-	testModule(t, `
-		syntax = "proto3";
-		message Emptyish {}`)
+func TestProto2(t *testing.T) {
+	elm := testModule(t, `
+		syntax = "proto2";
+		message SearchRequest {
+		  required string query = 1;
+		  optional bool yes = 2 [default = true];
+		  optional bool no = 3;
+		}`)
+	r := elm.Records[0]
+	assert.Equal(t, "SearchRequest", r.Type.Local())
+	assert.Equal(t, protoreflect.Required, r.Fields[0].Cardinality)
+	assert.Equal(t, protoreflect.Optional, r.Fields[1].Cardinality)
+	assert.Equal(t, protoreflect.Optional, r.Fields[2].Cardinality)
+	assert.Equal(t, "True", r.Fields[1].Zero)
+	assert.Equal(t, "False", r.Fields[2].Zero)
 }
 
 func TestQualified(t *testing.T) {

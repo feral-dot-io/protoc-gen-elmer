@@ -1,6 +1,6 @@
 # protoc-gen-elmer
 
-A protoc code generator that produces decoders, encoders and RPC clients for Elm. Written in Go.
+A protoc code generator that produces decoders, encoders and RPC clients for Elm. A solution for [types without borders] (https://www.youtube.com/watch?v=memIRXFSNkU).
 
 Under heavy / active development. Speak to @Joshua on Slack if needed.
 
@@ -128,8 +128,6 @@ TODO comment on how to organise .proto. Best practices, etc
 
 ### Options
 
-Valid `--elmer_opt`. Please see `cmd/protoc-gen-elmer/flags` or run with `-h`
-
 TODO expand this section with options and commentary on each option
 
 ## Server-side
@@ -181,18 +179,13 @@ Major goals to complete:
 - Twirp client options (URL prefix, auth, etc)
 
 Smaller steps:
-- proto2 syntax
 - limited enums for when we really don't care about compat control?
 - comments with Elm naming commands? e.g., [elm=HelloEnum]
-- enums with allow_alias=true prefixes alias function
 - imports need to reference other files
-- unknown types result in a panic
 - change do not edit line to match: ^// Code generated .* DO NOT EDIT\.$
-- reserved names (enums) should be registered so collisions end up with _
 - variants are suffixed but Go codegen prefixes. Presumably because it's closer to proto's ns
 
 code quality:
-- naming has two paths, it over complicates elmgen
 - elmgen/Field is overloaded, needs to be an interface
 
 release checklist
@@ -202,7 +195,3 @@ release checklist
 ## Bugs, other
 
 For now, talk to @Joshua on Slack
-
-## Naming
-
-I've aimed for a fully designed naming system assuming full control over client, API and server in the aim to avoid naming collisions. However this doesn't take into account future change eg., Elm could add reserved words. At that point the API shouldn't be revised beyond the Protobuf rules
