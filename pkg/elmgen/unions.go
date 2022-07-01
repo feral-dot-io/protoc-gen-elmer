@@ -3,26 +3,27 @@ package elmgen
 import (
 	"sort"
 
+	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func (m *Module) addUnions(enums protoreflect.EnumDescriptors) {
-	for i := 0; i < enums.Len(); i++ {
-		ed := enums.Get(i)
-		union := m.newUnion(ed)
+func (m *Module) addUnions(enums []*protogen.Enum) {
+	for _, enum := range enums {
+		union := m.newUnion(enum)
 		m.Unions = append(m.Unions, union)
 	}
 	sort.Sort(m.Unions)
 }
 
-func (m *Module) newUnion(ed protoreflect.EnumDescriptor) *Union {
+func (m *Module) newUnion(enum *protogen.Enum) *Union {
+	ed := enum.Desc
 	union := new(Union)
 	union.Type = NewElmType(ed.ParentFile(), ed)
+	union.Comments = NewCommentSet(enum.Comments)
 	// Add variants
 	aliases := make(map[protoreflect.EnumNumber]*Variant)
-	values := ed.Values()
-	for i := 0; i < values.Len(); i++ {
-		vd := values.Get(i)
+	for i, value := range enum.Values {
+		vd := value.Desc
 		num := vd.Number()
 		// Variant (type) or alias (value)?
 		if original := aliases[num]; original != nil {
@@ -32,7 +33,7 @@ func (m *Module) newUnion(ed protoreflect.EnumDescriptor) *Union {
 		} else {
 			// Create
 			id := NewElmType(vd.ParentFile(), vd).ElmRef
-			v := &Variant{&id, num}
+			v := &Variant{&id, num, NewCommentSet(value.Comments)}
 			// Add
 			if i == 0 { // First is the default
 				union.DefaultVariant = v
@@ -45,8 +46,10 @@ func (m *Module) newUnion(ed protoreflect.EnumDescriptor) *Union {
 	return union
 }
 
-func (m *Module) newOneof(od protoreflect.OneofDescriptor) *Oneof {
+func (m *Module) newOneof(protoOneof *protogen.Oneof) *Oneof {
+	od := protoOneof.Desc
 	oneof := new(Oneof)
+	oneof.Comments = NewCommentSet(protoOneof.Comments)
 	oneof.IsSynthetic = od.IsSynthetic()
 	if oneof.IsSynthetic {
 		firstField := od.Fields().Get(0)
@@ -55,12 +58,11 @@ func (m *Module) newOneof(od protoreflect.OneofDescriptor) *Oneof {
 		oneof.Type = NewElmType(od.ParentFile(), od)
 	}
 	// Add field types
-	fields := od.Fields()
-	for i := 0; i < fields.Len(); i++ {
-		fd := fields.Get(i)
+	for _, field := range protoOneof.Fields {
+		fd := field.Desc
 		v := &OneofVariant{
 			&NewElmType(fd.ParentFile(), fd).ElmRef,
-			m.newField(fd)}
+			m.newField(field)}
 		oneof.Variants = append(oneof.Variants, v)
 	}
 	return oneof

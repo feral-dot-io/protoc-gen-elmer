@@ -1,10 +1,12 @@
 package elmgen
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,6 +42,7 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 		"protoc",
 		"--proto_path="+tmpDir,
 		"--include_imports",
+		"--include_source_info",
 		"--descriptor_set_out="+stdout,
 		stdin)
 	cmd.Stderr = os.Stderr
@@ -70,6 +73,7 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 //go:generate testdata/gen-elm-test-proj
 
 var changedTestDir bool
+var testFileContents map[string][]byte // For comment testing
 
 func testModule(t *testing.T, specs ...string) *Module {
 	t.Helper()
@@ -82,7 +86,7 @@ func testModule(t *testing.T, specs ...string) *Module {
 				t.Fail()
 			}
 			var err error
-			elm = NewModule("", f.Desc)
+			elm = NewModule("", f)
 			assert.NoError(t, err)
 		}
 	}
@@ -94,6 +98,7 @@ func testModule(t *testing.T, specs ...string) *Module {
 	err = os.MkdirAll(testProjectDir+"/src", 0755)
 	assert.NoError(t, err)
 
+	testFileContents = make(map[string][]byte)
 	assertCodec := func(suffix string, gen func(m *Module, g *protogen.GeneratedFile)) {
 		t.Helper()
 		file := elm.Path + suffix + ".elm"
@@ -114,11 +119,13 @@ func testModule(t *testing.T, specs ...string) *Module {
 		// Copy to testdata for inspection / tests
 		err = os.WriteFile(fullFile, content, 0644)
 		assert.NoError(t, err)
+		// Make available
+		testFileContents[file] = content
 	}
 	// Sanity check: always run through code gen
 	assertCodec("", GenerateCodec)
 	assertCodec("Tests", GenerateFuzzTests)
-	if len(elm.RPCs) > 0 {
+	if len(elm.Services) > 0 {
 		assertCodec("Twirp", GenerateTwirp)
 	}
 	// Finally, run tests
@@ -159,21 +166,42 @@ func TestProto2(t *testing.T) {
 	assert.Equal(t, "False", r.Fields[2].Zero)
 }
 
-func TestQualified(t *testing.T) {
+func TestQualifiedWithComments(t *testing.T) {
 	elm := testModule(t, `
 		syntax = "proto3";
+		package comments;
 		message Outer {
+
+			// enum comment 0
+			// enum comment 1
+
+			// enum comment 2
+			// enum comment 3
 			enum Option {
-				Hero = 0;
+				// variant comment 0
+				Hero = 0; // variant comment 1
+				// variant comment 2
+
+				// variant comment 3
 				Worst = 1;
 				Best = 2;
 			}
+
+			// message comment 0
+			// message comment 1
 			message Inner {
-				bool a = 1;
+				// field comment 0
+				bool a = 1; // field comment 1
+
+				// field comment 2
 				Option o = 2;
+				
+				// oneof comment 0
 				oneof conundrum {
-					bool or = 3;
-					bool and = 4;
+					// oneof comment 1
+					bool or = 3; // oneof comment 2
+
+					bool and = 4; // oneof comment 3
 				};
 				optional bool maybe = 5;
 			}
@@ -200,6 +228,16 @@ func TestQualified(t *testing.T) {
 	assert.Equal(t, "Outer_Inner_And", o.Variants[1].ID.Local())
 	assert.Equal(t, "Outer_Inner_Maybe", elm.Oneofs[1].Type.Local())
 	assert.Equal(t, "outer_Inner_MaybeDecoder", elm.Oneofs[1].Type.Decoder().Local())
+	// Check comments
+	content := string(testFileContents["Comments.elm"])
+	for placement, max := range map[string]int{
+		"enum": 3, "variant": 3, "message": 1, "field": 2, "oneof": 4,
+	} {
+		for i := 0; i < max; i++ {
+			check := fmt.Sprintf("%s comment %d", placement, i)
+			assert.True(t, strings.Contains(content, check), check)
+		}
+	}
 }
 
 func _TestImports(t *testing.T) {

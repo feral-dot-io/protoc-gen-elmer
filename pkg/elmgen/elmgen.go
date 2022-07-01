@@ -1,6 +1,7 @@
 package elmgen
 
 import (
+	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -18,11 +19,10 @@ type (
 			Float32 bool
 		}
 
-		Unions  Unions
-		Oneofs  Oneofs
-		Records Records
-
-		RPCs RPCs
+		Unions   Unions
+		Oneofs   Oneofs
+		Records  Records
+		Services Services
 	}
 
 	ElmRef struct {
@@ -33,6 +33,13 @@ type (
 		asValue string
 	}
 
+	CommentSet struct {
+		LeadingDetached []Comments
+		Leading         Comments
+		Trailing        Comments
+	}
+	Comments string
+
 	// Unions are sortable by their Elm ID.
 	Unions []*Union
 	// Union is a sum type of simple tags (i.e., no other data). Has a default tag holding an unknown value.
@@ -41,11 +48,13 @@ type (
 		DefaultVariant *Variant
 		Variants       []*Variant
 		Aliases        []*VariantAlias
+		Comments       *CommentSet
 	}
 	// Variant represents an enum option.
 	Variant struct {
-		ID     *ElmRef
-		Number protoreflect.EnumNumber
+		ID       *ElmRef
+		Number   protoreflect.EnumNumber
+		Comments *CommentSet
 	}
 	// VariantAlias is a Variant with an alternative name. Identified by having the same wire number. First Variant seen is the real one, subsequent are alternate names.
 	VariantAlias struct {
@@ -60,6 +69,7 @@ type (
 		Type        *ElmType
 		IsSynthetic bool
 		Variants    []*OneofVariant
+		Comments    *CommentSet
 	}
 	// Like a union's Variant but holds a field
 	OneofVariant struct {
@@ -70,14 +80,16 @@ type (
 	// Records are sortable by their Elm ID
 	Records []*Record
 	Record  struct {
-		Type   *ElmType
-		Oneofs []*Oneof
-		Fields []*Field
+		Type     *ElmType
+		Oneofs   []*Oneof
+		Fields   []*Field
+		Comments *CommentSet
 	}
 
 	// Represents an Elm record field
 	Field struct {
-		Label string
+		Label    string
+		Comments *CommentSet
 		// Wire handling
 		IsOneof     bool
 		IsMap       bool
@@ -98,6 +110,12 @@ type (
 		Fuzzer           string
 	}
 
+	Services []*Service
+	Service  struct {
+		Label    string
+		Methods  RPCs
+		Comments *CommentSet
+	}
 	RPCs []*RPC
 	RPC  struct {
 		ID      *ElmRef
@@ -105,8 +123,9 @@ type (
 
 		InStreaming, OutStreaming bool
 
-		Service protoreflect.FullName
-		Method  protoreflect.Name
+		Service  protoreflect.FullName
+		Method   protoreflect.Name
+		Comments *CommentSet
 	}
 )
 
@@ -122,19 +141,34 @@ func (a Records) Len() int           { return len(a) }
 func (a Records) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a Records) Less(i, j int) bool { return a[i].Type.String() < a[j].Type.String() }
 
+func (a Services) Len() int           { return len(a) }
+func (a Services) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a Services) Less(i, j int) bool { return a[i].Label < a[j].Label }
+
 func (a RPCs) Len() int           { return len(a) }
 func (a RPCs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a RPCs) Less(i, j int) bool { return a[i].ID.String() < a[j].ID.String() }
 
-func NewModule(prefix string, fd protoreflect.FileDescriptor) *Module {
+func NewModule(prefix string, file *protogen.File) *Module {
 	m := new(Module)
 	// Paths
-	pkg := prefix + string(fd.Package())
+	pkg := prefix + string(file.Desc.Package())
 	m.Name = protoFullIdentToElmCasing(pkg, ".", true)
 	m.Path = protoFullIdentToElmCasing(pkg, "/", true)
 	// Parse file
-	m.addUnions(fd.Enums())
-	m.addRecords(fd.Messages())
-	m.addRPCs(fd.Services())
+	m.addUnions(file.Enums)
+	m.addRecords(file.Messages)
+	m.addRPCs(file.Services)
 	return m
+}
+
+func NewCommentSet(set protogen.CommentSet) *CommentSet {
+	out := new(CommentSet)
+	for _, c := range set.LeadingDetached {
+		out.LeadingDetached = append(out.LeadingDetached,
+			Comments(c))
+	}
+	out.Leading = Comments(set.Leading)
+	out.Trailing = Comments(set.Trailing)
+	return out
 }

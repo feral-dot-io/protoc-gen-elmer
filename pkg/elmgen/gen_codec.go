@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -39,6 +40,45 @@ func printDoNotEdit(g *protogen.GeneratedFile) {
 	g.P("-}")
 }
 
+func (c Comments) String() (block string) {
+	if c == "" {
+		return ""
+	}
+	dropTrailingNl := strings.TrimSuffix(string(c), "\n")
+	for _, line := range strings.Split(dropTrailingNl, "\n") {
+		block += "-- " + line + "\n"
+	}
+	return
+}
+
+func (set *CommentSet) printBlock(g *protogen.GeneratedFile) {
+	for _, c := range set.LeadingDetached {
+		g.P(c)
+	}
+	if set.Leading != "" {
+		g.P("{-| ", string(set.Leading), " -}")
+	}
+}
+
+func (set *CommentSet) printBlockTrailing(g *protogen.GeneratedFile) {
+	g.P(set.Trailing)
+}
+
+// Prints all comments with a `-- ` prefix. Includes trailing as the formatter will get rid of excess new lines.
+func (set *CommentSet) printDashDash(g *protogen.GeneratedFile) {
+	if len(set.LeadingDetached) > 0 {
+		for _, c := range set.LeadingDetached {
+			g.P(c)
+		}
+		g.P("-- ")
+	}
+	g.P(set.Leading)
+	if set.Trailing != "" {
+		g.P("-- ")
+		g.P(set.Trailing)
+	}
+}
+
 func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	gFP := func(formatter string, args ...interface{}) {
 		g.P(fmt.Sprintf(formatter, args...))
@@ -56,8 +96,26 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		g.P("import Dict exposing (Dict)")
 	}
 
+	// Unions
+	for _, u := range m.Unions {
+		u.Comments.printBlock(g)
+		g.P("type ", u.Type.Local())
+		u.DefaultVariant.Comments.printDashDash(g)
+		g.P("    = ", u.DefaultVariant.ID.Local(), " Int")
+		for _, v := range u.Variants {
+			v.Comments.printDashDash(g)
+			g.P("    | ", v.ID.Local())
+		}
+		for _, a := range u.Aliases {
+			gFP("%s : %s", a.Alias.Local(), u.Type.Local())
+			gFP("%s = %s", a.Alias.Local(), a.ID.Local())
+		}
+		u.Comments.printBlockTrailing(g)
+	}
+
 	// Records
 	for _, r := range m.Records {
+		r.Comments.printBlock(g)
 		gFP("type alias %s =", r.Type.Local())
 		gFP("    {")
 		for i, f := range r.Fields {
@@ -65,22 +123,11 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 			if i == 0 {
 				prefix = ""
 			}
+			f.Comments.printDashDash(g)
 			gFP("    %s %s : %s", prefix, f.Label, f.Type)
 		}
 		gFP("    }")
-	}
-
-	// Unions
-	for _, u := range m.Unions {
-		g.P("type ", u.Type.Local())
-		g.P("    = ", u.DefaultVariant.ID.Local(), " Int")
-		for _, v := range u.Variants {
-			g.P("    | ", v.ID.Local())
-		}
-		for _, a := range u.Aliases {
-			gFP("%s : %s", a.Alias.Local(), u.Type.Local())
-			gFP("%s = %s", a.Alias.Local(), a.ID.Local())
-		}
+		r.Comments.printBlockTrailing(g)
 	}
 
 	// Oneofs (nested unions)
@@ -95,6 +142,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 			if i == 0 {
 				prefix = "="
 			}
+			v.Field.Comments.printDashDash(g)
 			gFP("    %s %s %s", prefix, v.ID.Local(), v.Field.Type)
 		}
 	}

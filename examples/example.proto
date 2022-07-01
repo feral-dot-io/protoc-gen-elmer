@@ -61,6 +61,7 @@ message AllTogether {
 
 // We can define RPC methods and generate a Twirp client
 service OurService {
+    // Each method is an HTTP request
     rpc OurRPCMethod(Scalar) returns (AllTogether);
     rpc AnotherMethod(AllTogether) returns (Scalar);
 }

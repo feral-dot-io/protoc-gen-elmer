@@ -4,65 +4,66 @@ import (
 	"log"
 	"sort"
 
+	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func (m *Module) addRecords(msgs protoreflect.MessageDescriptors) {
-	for i := 0; i < msgs.Len(); i++ {
-		md := msgs.Get(i)
-
+func (m *Module) addRecords(msgs []*protogen.Message) {
+	for _, msg := range msgs {
 		// Defer map handling to fields
-		if md.IsMapEntry() {
+		if msg.Desc.IsMapEntry() {
 			continue
 		}
 
-		m.Records = append(m.Records, m.newRecord(md))
+		m.Records = append(m.Records, m.newRecord(msg))
 		// Add nested
-		m.addUnions(md.Enums())
-		m.addRecords(md.Messages())
+		m.addUnions(msg.Enums)
+		m.addRecords(msg.Messages)
 	}
 	sort.Sort(m.Records)
 	sort.Sort(m.Oneofs)
 }
 
-func (m *Module) newRecord(md protoreflect.MessageDescriptor) *Record {
+func (m *Module) newRecord(msg *protogen.Message) *Record {
+	md := msg.Desc
 	var record Record
 	record.Type = NewElmType(md.ParentFile(), md)
+	record.Comments = NewCommentSet(msg.Comments)
 	oneofsSeen := make(map[protoreflect.FullName]bool)
 
-	fields := md.Fields()
-	for i := 0; i < fields.Len(); i++ {
-		fd := fields.Get(i)
+	for _, field := range msg.Fields {
 		// Oneof field?
-		if od := fd.ContainingOneof(); od != nil {
+		if field.Oneof != nil {
+			od := field.Oneof.Desc
 			// Only add once
 			if oneofsSeen[od.FullName()] {
 				continue
 			}
 			oneofsSeen[od.FullName()] = true
 
-			oneof, field := m.newOneofField(od)
+			oneof, field := m.newOneofField(field.Oneof)
 			m.Oneofs = append(m.Oneofs, oneof)
 			record.Oneofs = append(record.Oneofs, oneof)
 			record.Fields = append(record.Fields, field)
 		} else { // Regular field
-			field := m.newField(fd)
+			field := m.newField(field)
 			record.Fields = append(record.Fields, field)
 		}
 	}
 	return &record
 }
 
-func (m *Module) newField(pd protoreflect.FieldDescriptor) *Field {
+func (m *Module) newField(field *protogen.Field) *Field {
+	fd := field.Desc
 	var typ, zero, decoder, encoder, fuzzer string
-	typ = fieldType(m, pd)
-	zero = fieldZero(m, pd)
-	decoder = fieldDecoder(m, pd)
-	encoder = fieldEncoder(m, pd)
-	fuzzer = fieldFuzzer(m, pd)
+	typ = fieldType(m, fd)
+	zero = fieldZero(m, fd)
+	decoder = fieldDecoder(m, fd)
+	encoder = fieldEncoder(m, fd)
+	fuzzer = fieldFuzzer(m, fd)
 	var key *MapKey
-	if pd.IsMap() {
-		pdKey := pd.MapKey()
+	if fd.IsMap() {
+		pdKey := fd.MapKey()
 		key = new(MapKey)
 		key.Zero = fieldZero(m, pdKey)
 		key.Decoder = fieldDecoder(m, pdKey)
@@ -70,16 +71,19 @@ func (m *Module) newField(pd protoreflect.FieldDescriptor) *Field {
 		key.Fuzzer = fieldFuzzer(m, pdKey)
 	}
 	return &Field{
-		protoFullIdentToElmCasing(string(pd.Name()), "", false),
-		false, pd.IsMap(), pd.Number(), pd.Cardinality(),
+		protoFullIdentToElmCasing(string(fd.Name()), "", false),
+		NewCommentSet(field.Comments),
+		false, fd.IsMap(), fd.Number(), fd.Cardinality(),
 		typ, zero, decoder, encoder, fuzzer, key,
 	}
 }
 
-func (m *Module) newOneofField(po protoreflect.OneofDescriptor) (*Oneof, *Field) {
-	oneof := m.newOneof(po)
+func (m *Module) newOneofField(protoOneof *protogen.Oneof) (*Oneof, *Field) {
+	od := protoOneof.Desc
+	oneof := m.newOneof(protoOneof)
 	field := &Field{
-		protoFullIdentToElmCasing(string(po.Name()), "", false),
+		protoFullIdentToElmCasing(string(od.Name()), "", false),
+		NewCommentSet(protoOneof.Comments),
 		true, false, 0, 0,
 		"(Maybe " + oneof.Type.Local() + ")",
 		"Nothing",
@@ -90,7 +94,7 @@ func (m *Module) newOneofField(po protoreflect.OneofDescriptor) (*Oneof, *Field)
 	// Optional field?
 	if oneof.IsSynthetic {
 		// Unwrap type
-		field.Label = string(po.Fields().Get(0).Name())
+		field.Label = string(od.Fields().Get(0).Name())
 		field.Type = "(Maybe " + oneof.Variants[0].Field.Type + ")"
 	}
 	return oneof, field

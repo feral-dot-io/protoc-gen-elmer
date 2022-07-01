@@ -157,12 +157,13 @@ You'll find `printgen` is just a simple, dumb way to dump the structures of `pro
 
 Finally we also have `cmdgen`. A small pkg that holds common options and helpers for the `protoc-gen-elm*` commands.
 
+- Understanding PB comments: https://pkg.go.dev/google.golang.org/protobuf/types/descriptorpb#SourceCodeInfo_Location
+
 ### TODO
 This is my dev scratchpad of ideas and in-progress notes.
 
 Major goals to complete:
 - Well-known types: Any, Timestamp, Duration, Wrappers, etc
-- Protobuf comment passthru
 - 64-bit support
 - Existing options have caveats (e.g., partial feature support). Avoid this.
 - Twirp client options (URL prefix, auth, etc)
