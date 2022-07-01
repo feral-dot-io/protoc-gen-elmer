@@ -69,6 +69,8 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 
 //go:generate testdata/gen-elm-test-proj
 
+var changedTestDir bool
+
 func testModule(t *testing.T, specs ...string) *Module {
 	t.Helper()
 	plugin := testPlugin(t, specs...)
@@ -120,6 +122,11 @@ func testModule(t *testing.T, specs ...string) *Module {
 		assertCodec("Twirp", GenerateTwirp)
 	}
 	// Finally, run tests
+	if !changedTestDir {
+		err = os.Chdir(testProjectDir)
+		assert.NoError(t, err)
+		changedTestDir = true
+	}
 	err = runElmTest(testProjectDir, "src/**/*Tests.elm", 10)
 	assert.NoError(t, err)
 	return elm

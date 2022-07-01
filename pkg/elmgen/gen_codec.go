@@ -185,8 +185,6 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 					f.Label, f.Label)
 			} else {
 				switch f.Cardinality {
-				default:
-					fallthrough
 				case protoreflect.Optional:
 					gFP("%s PD.optional %d %s "+getter,
 						prefix, f.WireNumber, f.Decoder, f.Label)

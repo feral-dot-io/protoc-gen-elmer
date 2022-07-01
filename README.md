@@ -85,18 +85,7 @@ This section is TODO. For now, check the examples folder. Also see ##Development
 ### Trade-offs, downsides, and limitations
 
 - Protobuf enums are open, Elm wants them to be closed. Fundamental to Protobuf's opinions on API extensibility.
-
 - Protobuf oneofs may be nil.
-
-- Ident mapping: _this section is no longer valid as naming changes_
-    - Compared to Go's codegen, the name mapper is more complex but is closer to what you'd write naturally in Elm.
-    - Proto makes nested namespaces easier. This can make choosing how to build Elm names harder difficult which, in comparison, is flat. When flattening you may end up with name collisions which then get suffixed with a `_` in Elm. Name collisions should be avoided at all costs as they make reading the Elm code difficult and ambiguous.
-        - Ideally you would avoid nesting in your `.proto` and the resulting codegen looks natural.
-        - Try `qualify=t` first to qualify your identifiers.
-        - Try `separator=_` next to replace proto ns dots with underscores.
-        - If you get _any_ name collisions or this isn't possible then the next best thing is to make it look more obvious that you're dealing with an external namespace. Set `collision=_` and naming collisions get suffixed with an underscore. This should resolve all naming collisions. If not: BUG!
-        - Finally, for the ultimate in avoiding naming collisions change the separator to a unicode character that looks like a dot. For example `ꓸ` https://www.compart.com/en/unicode/U+A4F8 You'll then have a one-to-one mapping on IDs. This is a crazy idea and best avoided.
-    - Enum options are expected to be short with a high potential of overlapping names. So these are suffixed with their enum type by default. TODO option is `variant_suffix`
 
 ### Ecosystem
 
@@ -162,7 +151,7 @@ go build -o bin/protoc-gen-elm-twirp cmd/protoc-gen-elm-twirp/main.go
 
 An approximate, high-level view: `.proto` (stdin) -> `protogen` (PB library used by cmd/) -> `elmgen` (core pkg in this repo) -> `gen_*.go` -> `*.elm` (stdout).
 
-We rely on `protocolbuffers/protobuf-go` to read Protobuf. The `protogen` pkg provides helper structs to translate to Go code. So the heart of this library is `elmgen` that has a similar goal in organising ingested PBs to be consumed by Elm codegen tools. The types are specified in `elmgen.go` and the entry point is `module.go`. It's goal is to always produce valid Elm code. You'll also find the code generators in this folder as they're coupled to the internal elmgen.
+We rely on `protocolbuffers/protobuf-go` to read Protobuf. The `protogen` pkg provides helper structs to translate to Go code. So the heart of this library is `elmgen` that has a similar goal in organising ingested PBs to be consumed by Elm codegen tools. The types are specified in `elmgen.go` and the entry point is `NewModule` at the bottom. It's goal is to always produce valid Elm code (except for name collisions). You'll also find the code generators in this folder as they're coupled to the internal elmgen.
 
 You'll find `printgen` is just a simple, dumb way to dump the structures of `protogen` to better understand inputs. It aided initial development.
 

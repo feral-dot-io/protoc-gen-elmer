@@ -10,24 +10,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func runElmTest(projDir, globs string, fuzz int) (err error) {
-	// Restore pwd
-	var pwd string
-	if pwd, err = os.Getwd(); err != nil {
-		return
-	}
-	defer func() {
-		err2 := os.Chdir(pwd)
-		// Don't ovewrite our error
-		if err2 != nil && err == nil {
-			err = err2
-		}
-	}()
-	// Change pwd to root of Elm project
-	if err = os.Chdir(projDir); err != nil {
-		return
-	}
-
+func runElmTest(projDir, globs string, fuzz int) error {
 	cmd := exec.Command("elm-test")
 	if fuzz > 0 {
 		cmd.Args = append(cmd.Args, "--fuzz", strconv.Itoa(fuzz))
@@ -37,8 +20,7 @@ func runElmTest(projDir, globs string, fuzz int) (err error) {
 	}
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-	err = cmd.Run()
-	return
+	return cmd.Run()
 }
 
 func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
