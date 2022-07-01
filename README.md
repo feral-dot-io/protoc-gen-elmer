@@ -168,9 +168,14 @@ Major goals to complete:
 - Twirp client options (URL prefix, auth, etc)
 
 Smaller steps:
-- limited enums for when we really don't care about compat control?
 - comments with Elm naming commands? e.g., [elm=HelloEnum]
 - imports need to reference other files
+- any TODO comments
+
+Explore options:
+- Nested messages could be nil (incl. oneof)
+- Nested separator should be configurable. For example using `ꓸ` https://www.compart.com/en/unicode/U+A4F8 to achieve near-_zero_ naming collisions
+- Enums have a zero field that acts as an embedded option. We might want to remove this for closed enums and rejecting the whole payload (losing compatibility).
 
 code quality:
 - elmgen/Field is overloaded, needs to be an interface

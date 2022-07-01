@@ -138,37 +138,26 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 	}
 
 	// Test cases
-	// TODO these blocks are duplicate
+	var types []*ElmType
 	for _, r := range m.Records {
-		c := r.Type
-		gFP("test%s : Test", c.Local())
-		gFP("test%s =", c.Local())
-		gFP("    let")
-		// TODO move `run` to top-level
-		gFP("        run data =")
-		gFP("            PE.encode (%s data)", c.Encoder())
-		gFP("                |> PD.decode %s", c.Decoder())
-		gFP("                |> Expect.equal (Just data)")
-		gFP("    in")
-		gFP(`    Test.describe "encode then decode %s"`, c.ID)
-		gFP(`        [ test "empty" (\_ -> run %s)`, c.Zero())
-		gFP(`        , fuzz %s "fuzzer" run`, c.Fuzzer().Local())
-		gFP("        ]")
+		types = append(types, r.Type)
 	}
 	for _, u := range m.Unions {
-		c := u.Type
-		gFP("test%s : Test", c.Local())
-		gFP("test%s =", c.Local())
+		types = append(types, u.Type)
+	}
+	for _, t := range types {
+		gFP("test%s : Test", t.Local())
+		gFP("test%s =", t.Local())
 		gFP("    let")
 		// TODO move `run` to top-level
 		gFP("        run data =")
-		gFP("            PE.encode (%s data)", c.Encoder())
-		gFP("                |> PD.decode %s", c.Decoder())
+		gFP("            PE.encode (%s data)", t.Encoder())
+		gFP("                |> PD.decode %s", t.Decoder())
 		gFP("                |> Expect.equal (Just data)")
 		gFP("    in")
-		gFP(`    Test.describe "encode then decode %s"`, c.ID)
-		gFP(`        [ test "empty" (\_ -> run %s)`, c.Zero())
-		gFP(`        , fuzz %s "fuzzer" run`, c.Fuzzer().Local())
+		gFP(`    Test.describe "encode then decode %s"`, t.ID)
+		gFP(`        [ test "empty" (\_ -> run %s)`, t.Zero())
+		gFP(`        , fuzz %s "fuzzer" run`, t.Fuzzer().Local())
 		gFP("        ]")
 	}
 }
