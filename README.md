@@ -171,8 +171,6 @@ Smaller steps:
 - limited enums for when we really don't care about compat control?
 - comments with Elm naming commands? e.g., [elm=HelloEnum]
 - imports need to reference other files
-- change do not edit line to match: ^// Code generated .* DO NOT EDIT\.$
-- variants are suffixed but Go codegen prefixes. Presumably because it's closer to proto's ns
 
 code quality:
 - elmgen/Field is overloaded, needs to be an interface
