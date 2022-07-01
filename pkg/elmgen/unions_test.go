@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 func TestUnions(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		enum Choose {
 			HANDS = 0;
@@ -25,42 +26,47 @@ func TestUnions(t *testing.T) {
 		}`)
 	assert.Len(t, elm.Unions, 3)
 	assert.Empty(t, elm.Records)
+	type expVariant struct {
+		Local  string
+		Number protoreflect.EnumNumber
+	}
 	for i, exp := range []struct {
-		CodecIDs
+		Local, Zero, Decode, Encode, Fuzzer string
+
 		Default  string
-		Variants []Variant
+		Variants []expVariant
 	}{
-		{CodecIDs{"Abc", "emptyAbc", "abcDecoder", "abcEncoder", "abcFuzzer"},
-			"A_Abc", []Variant{{"B_Abc", 1}, {"C_Abc", 2}}},
-		{CodecIDs{"Choose", "emptyChoose", "chooseDecoder", "chooseEncoder", "chooseFuzzer"},
-			"Hands_Choose", []Variant{
-				{"Foil_Choose", 1},
-				{"Epee_Choose", 2},
-				{"Sabre_Choose", 3}}},
-		{CodecIDs{"Minimal", "emptyMinimal", "minimalDecoder", "minimalEncoder", "minimalFuzzer"},
-			"Lower_Minimal", []Variant{}},
+		{"Abc", "emptyAbc", "abcDecoder", "abcEncoder", "abcFuzzer",
+			"A", []expVariant{{"B", 1}, {"C", 2}}},
+		{"Choose", "emptyChoose", "chooseDecoder", "chooseEncoder", "chooseFuzzer",
+			"Hands", []expVariant{
+				{"Foil", 1},
+				{"Epee", 2},
+				{"Sabre", 3}}},
+		{"Minimal", "emptyMinimal", "minimalDecoder", "minimalEncoder", "minimalFuzzer",
+			"Lower", []expVariant{}},
 	} {
 		union := elm.Unions[i]
 		// IDs
-		assert.Equal(t, exp.ID, union.ID)
-		assert.Equal(t, exp.ZeroID, union.ZeroID)
-		assert.Equal(t, exp.DecodeID, union.DecodeID)
-		assert.Equal(t, exp.EncodeID, union.EncodeID)
+		assert.Equal(t, exp.Local, union.Type.Local())
+		assert.Equal(t, exp.Zero, union.Type.Zero().Local())
+		assert.Equal(t, exp.Decode, union.Type.Decoder().Local())
+		assert.Equal(t, exp.Encode, union.Type.Encoder().Local())
 		// Default
-		assert.Equal(t, ElmType(exp.Default), union.DefaultVariant.ID)
+		assert.Equal(t, exp.Default, union.DefaultVariant.ID.Local())
 		assert.Zero(t, union.DefaultVariant.Number)
 		// Variants
 		assert.Len(t, union.Variants, len(exp.Variants))
 		for j, v := range union.Variants {
 			expVar := exp.Variants[j]
-			assert.Equal(t, ElmType(expVar.ID), v.ID)
+			assert.Equal(t, expVar.Local, v.ID.Local())
 			assert.Equal(t, expVar.Number, v.Number)
 		}
 	}
 }
 
 func TestUnionAllowAlias(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		enum Alias {
 			option allow_alias = true;
@@ -72,7 +78,7 @@ func TestUnionAllowAlias(t *testing.T) {
 	alias := elm.Unions[0]
 	assert.Len(t, alias.Variants, 1)
 	assert.Len(t, alias.Aliases, 1)
-	assert.Equal(t, ElmType("Started_Alias"), alias.Variants[0].ID)
-	assert.Equal(t, "running_Alias", alias.Aliases[0].Alias)
-	assert.Equal(t, ElmType("Started_Alias"), alias.Aliases[0].ID)
+	assert.Equal(t, "Started", alias.Variants[0].ID.Local())
+	assert.Equal(t, "running", alias.Aliases[0].Alias.Local())
+	assert.Equal(t, "X.Started", alias.Aliases[0].ID.String())
 }

@@ -9,12 +9,12 @@ import (
 )
 
 func TestRPC(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		package test.service;
 		service HelloWorld {
-			rpc Hello1(HelloReq) returns (HelloResp);
 			rpc Hello2(HelloReq) returns (HelloResp);
+			rpc Hello1(HelloReq) returns (HelloResp);
 			rpc Hello3(HelloReq) returns (HelloResp);
 		}
 
@@ -30,11 +30,11 @@ func TestRPC(t *testing.T) {
 	for i, rpc := range elm.RPCs {
 		assert.Equal(t, protoreflect.FullName("test.service.HelloWorld"), rpc.Service)
 		assert.Equal(t, protoreflect.Name(fmt.Sprintf("Hello%d", i+1)), rpc.Method)
-		assert.Equal(t, fmt.Sprintf("helloWorld_Hello%d", i+1), rpc.MethodID)
-		assert.Equal(t, "HelloReq", rpc.In)
-		assert.Equal(t, "HelloResp", rpc.Out)
-		assert.Equal(t, "helloReqEncoder", rpc.InEncoder)
-		assert.Equal(t, "helloRespDecoder", rpc.OutDecoder)
+		assert.Equal(t, fmt.Sprintf("helloWorld_Hello%d", i+1), rpc.ID.Local())
+		assert.Equal(t, "HelloReq", rpc.In.Local())
+		assert.Equal(t, "HelloResp", rpc.Out.Local())
+		assert.Equal(t, "Test.Service.helloReqEncoder", rpc.In.Encoder().String())
+		assert.Equal(t, "Test.Service.helloRespDecoder", rpc.Out.Decoder().String())
 		assert.False(t, rpc.InStreaming)
 		assert.False(t, rpc.OutStreaming)
 	}

@@ -1,33 +1,12 @@
 package elmgen
 
 import (
-	"unicode"
-	"unicode/utf8"
-
-	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-type Config struct {
-	// Literal value to prefix our generated module's name
-	ModulePrefix string
-	// Override our generated module's name with this value. Does not apply `ModulePrefix`
-	ModuleName string
-}
-
 type (
 	Module struct {
-		config Config
-
-		protoPkg      protoreflect.FullName
-		protoNS       map[protoreflect.FullName]ElmType
-		protoAliases  map[protoreflect.FullName]string
-		protoEnums    []*protogen.Enum
-		protoMessages []*protogen.Message
-		protoMethods  []*protogen.Method
-		elmNS         map[string]struct{} // Top-level types and functions
-
 		Name, Path string
 		Imports    struct {
 			Bytes bool
@@ -46,51 +25,52 @@ type (
 		RPCs RPCs
 	}
 
-	ElmType  string
-	CodecIDs struct {
-		ID                         ElmType
-		ZeroID, DecodeID, EncodeID string
-		FuzzerID                   string
+	ElmRef struct {
+		Module, ID string
+	}
+	ElmType struct {
+		ElmRef
+		asValue string
 	}
 
 	// Unions are sortable by their Elm ID.
 	Unions []*Union
 	// Union is a sum type of simple tags (i.e., no other data). Has a default tag holding an unknown value.
 	Union struct {
-		CodecIDs
+		Type           *ElmType
 		DefaultVariant *Variant
 		Variants       []*Variant
 		Aliases        []*VariantAlias
 	}
 	// Variant represents an enum option.
 	Variant struct {
-		ID     ElmType
+		ID     *ElmRef
 		Number protoreflect.EnumNumber
 	}
 	// VariantAlias is a Variant with an alternative name. Identified by having the same wire number. First Variant seen is the real one, subsequent are alternate names.
 	VariantAlias struct {
 		*Variant
-		Alias string
+		Alias *ElmRef
 	}
 
 	// Oneofs are sortable by their Elm ID.
 	Oneofs []*Oneof
 	// Oneof is a sum type whose tags (variants) hold complex data. Oneofs are held by records as "one and only one from a selection of fields".
 	Oneof struct {
-		CodecIDs
+		Type        *ElmType
 		IsSynthetic bool
 		Variants    []*OneofVariant
 	}
 	// Like a union's Variant but holds a field
 	OneofVariant struct {
-		ID    ElmType // Promoted Field label
+		ID    *ElmRef // Promoted Field label
 		Field *Field
 	}
 
 	// Records are sortable by their Elm ID
 	Records []*Record
 	Record  struct {
-		CodecIDs
+		Type   *ElmType
 		Oneofs []*Oneof
 		Fields []*Field
 	}
@@ -120,49 +100,41 @@ type (
 
 	RPCs []*RPC
 	RPC  struct {
+		ID      *ElmRef
+		In, Out *ElmType
+
+		InStreaming, OutStreaming bool
+
 		Service protoreflect.FullName
 		Method  protoreflect.Name
-
-		MethodID                  string
-		In, Out                   string
-		InEncoder, OutDecoder     string
-		InStreaming, OutStreaming bool
 	}
 )
 
 func (a Unions) Len() int           { return len(a) }
 func (a Unions) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a Unions) Less(i, j int) bool { return a[i].ID < a[j].ID }
+func (a Unions) Less(i, j int) bool { return a[i].Type.String() < a[j].Type.String() }
 
 func (a Oneofs) Len() int           { return len(a) }
 func (a Oneofs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a Oneofs) Less(i, j int) bool { return a[i].ID < a[j].ID }
+func (a Oneofs) Less(i, j int) bool { return a[i].Type.String() < a[j].Type.String() }
 
 func (a Records) Len() int           { return len(a) }
 func (a Records) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a Records) Less(i, j int) bool { return a[i].ID < a[j].ID }
+func (a Records) Less(i, j int) bool { return a[i].Type.String() < a[j].Type.String() }
 
 func (a RPCs) Len() int           { return len(a) }
 func (a RPCs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a RPCs) Less(i, j int) bool { return a[i].MethodID < a[j].MethodID }
+func (a RPCs) Less(i, j int) bool { return a[i].ID.String() < a[j].ID.String() }
 
-func validElmID(id string) bool {
-	runes := []rune(id)
-	return utf8.ValidString(id) && id != "" && // Non-empty utf8
-		unicode.IsLetter(runes[0]) && // First char is a letter
-		validPartialElmID(string(runes[1:])) // Remaining chars are valid
-}
-
-func validPartialElmID(partial string) bool {
-	for _, r := range partial {
-		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_') {
-			return false
-		}
-	}
-	// Allow empty as well
-	return true
-}
-
-func (id ElmType) String() string {
-	return string(id)
+func NewModule(prefix string, fd protoreflect.FileDescriptor) *Module {
+	m := new(Module)
+	// Paths
+	pkg := prefix + string(fd.Package())
+	m.Name = protoFullIdentToElmCasing(pkg, ".", true)
+	m.Path = protoFullIdentToElmCasing(pkg, "/", true)
+	// Parse file
+	m.addUnions(fd.Enums())
+	m.addRecords(fd.Messages())
+	m.addRPCs(fd.Services())
+	return m
 }

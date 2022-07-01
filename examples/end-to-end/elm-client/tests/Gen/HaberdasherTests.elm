@@ -5,7 +5,7 @@ module Gen.HaberdasherTests exposing (..)
 
 import Expect
 import Fuzz exposing (Fuzzer)
-import Gen.Haberdasher as Codec
+import Gen.Haberdasher
 import Protobuf.Decode as PD
 import Protobuf.Encode as PE
 import Test exposing (Test, fuzz, test)
@@ -16,17 +16,17 @@ fuzzInt32 =
     Fuzz.intRange -2147483648 2147483647
 
 
-hatFuzzer : Fuzzer Codec.Hat
+hatFuzzer : Fuzzer Gen.Haberdasher.Hat
 hatFuzzer =
-    Fuzz.map Codec.Hat
+    Fuzz.map Gen.Haberdasher.Hat
         fuzzInt32
         |> Fuzz.andMap Fuzz.string
         |> Fuzz.andMap Fuzz.string
 
 
-sizeFuzzer : Fuzzer Codec.Size
+sizeFuzzer : Fuzzer Gen.Haberdasher.Size
 sizeFuzzer =
-    Fuzz.map Codec.Size
+    Fuzz.map Gen.Haberdasher.Size
         fuzzInt32
 
 
@@ -34,12 +34,12 @@ testHat : Test
 testHat =
     let
         run data =
-            PE.encode (Codec.hatEncoder data)
-                |> PD.decode Codec.hatDecoder
+            PE.encode (Gen.Haberdasher.hatEncoder data)
+                |> PD.decode Gen.Haberdasher.hatDecoder
                 |> Expect.equal (Just data)
     in
     Test.describe "encode then decode Hat"
-        [ test "empty" (\_ -> run Codec.emptyHat)
+        [ test "empty" (\_ -> run Gen.Haberdasher.emptyHat)
         , fuzz hatFuzzer "fuzzer" run
         ]
 
@@ -48,11 +48,11 @@ testSize : Test
 testSize =
     let
         run data =
-            PE.encode (Codec.sizeEncoder data)
-                |> PD.decode Codec.sizeDecoder
+            PE.encode (Gen.Haberdasher.sizeEncoder data)
+                |> PD.decode Gen.Haberdasher.sizeDecoder
                 |> Expect.equal (Just data)
     in
     Test.describe "encode then decode Size"
-        [ test "empty" (\_ -> run Codec.emptySize)
+        [ test "empty" (\_ -> run Gen.Haberdasher.emptySize)
         , fuzz sizeFuzzer "fuzzer" run
         ]

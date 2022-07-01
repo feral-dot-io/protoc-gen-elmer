@@ -3,34 +3,36 @@ package elmgen
 import (
 	"sort"
 
-	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func (m *Module) addEnums() {
-	for _, proto := range m.protoEnums {
-		m.Unions = append(m.Unions,
-			m.newUnion(proto))
+func (m *Module) addUnions(enums protoreflect.EnumDescriptors) {
+	for i := 0; i < enums.Len(); i++ {
+		ed := enums.Get(i)
+		union := m.newUnion(ed)
+		m.Unions = append(m.Unions, union)
 	}
 	sort.Sort(m.Unions)
 }
 
-func (m *Module) newUnion(proto *protogen.Enum) *Union {
+func (m *Module) newUnion(ed protoreflect.EnumDescriptor) *Union {
 	union := new(Union)
-	union.CodecIDs.register(m, proto.Desc.FullName())
+	union.Type = NewElmType(ed.ParentFile(), ed)
 	// Add variants
 	aliases := make(map[protoreflect.EnumNumber]*Variant)
-	for i, protoVal := range proto.Values {
-		num := protoVal.Desc.Number()
+	values := ed.Values()
+	for i := 0; i < values.Len(); i++ {
+		vd := values.Get(i)
+		num := vd.Number()
 		// Variant (type) or alias (value)?
 		if original := aliases[num]; original != nil {
-			elmID := m.getElmValue(protoVal.Desc.FullName())
+			alias := NewElmValue(vd.ParentFile(), vd)
 			union.Aliases = append(union.Aliases,
-				&VariantAlias{original, elmID})
+				&VariantAlias{original, alias})
 		} else {
 			// Create
-			id := m.getElmType(protoVal.Desc.FullName())
-			v := &Variant{id, num}
+			id := NewElmType(vd.ParentFile(), vd).ElmRef
+			v := &Variant{&id, num}
 			// Add
 			if i == 0 { // First is the default
 				union.DefaultVariant = v
@@ -43,22 +45,23 @@ func (m *Module) newUnion(proto *protogen.Enum) *Union {
 	return union
 }
 
-func (m *Module) newOneof(proto protoreflect.OneofDescriptor) (*Oneof, error) {
+func (m *Module) newOneof(od protoreflect.OneofDescriptor) *Oneof {
 	oneof := new(Oneof)
-	oneof.IsSynthetic = proto.IsSynthetic()
-	// Register codec IDs
-	oneof.CodecIDs.register(m, proto.FullName())
+	oneof.IsSynthetic = od.IsSynthetic()
+	if oneof.IsSynthetic {
+		firstField := od.Fields().Get(0)
+		oneof.Type = NewElmType(firstField.ParentFile(), firstField)
+	} else {
+		oneof.Type = NewElmType(od.ParentFile(), od)
+	}
 	// Add field types
-	fields := proto.Fields()
+	fields := od.Fields()
 	for i := 0; i < fields.Len(); i++ {
-		field := fields.Get(i)
-		v := new(OneofVariant)
-		v.ID = m.getElmType(field.FullName())
-		var err error
-		if v.Field, err = m.newField(field); err != nil {
-			return nil, err
-		}
+		fd := fields.Get(i)
+		v := &OneofVariant{
+			&NewElmType(fd.ParentFile(), fd).ElmRef,
+			m.newField(fd)}
 		oneof.Variants = append(oneof.Variants, v)
 	}
-	return oneof, nil
+	return oneof
 }

@@ -1,118 +1,91 @@
 package elmgen
 
 import (
-	"fmt"
+	"log"
 	"sort"
 
-	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func (m *Module) addRecords() error {
-	for _, proto := range m.protoMessages {
+func (m *Module) addRecords(msgs protoreflect.MessageDescriptors) {
+	for i := 0; i < msgs.Len(); i++ {
+		md := msgs.Get(i)
+
 		// Defer map handling to fields
-		if proto.Desc.IsMapEntry() {
+		if md.IsMapEntry() {
 			continue
 		}
 
-		record, err := m.newRecord(proto)
-		if err != nil {
-			return err
-		}
-		m.Records = append(m.Records, record)
+		m.Records = append(m.Records, m.newRecord(md))
+		// Add nested
+		m.addUnions(md.Enums())
+		m.addRecords(md.Messages())
 	}
 	sort.Sort(m.Records)
 	sort.Sort(m.Oneofs)
-	return nil
 }
 
-func (m *Module) newRecord(proto *protogen.Message) (*Record, error) {
+func (m *Module) newRecord(md protoreflect.MessageDescriptor) *Record {
 	var record Record
-	record.CodecIDs.register(m, proto.Desc.FullName())
+	record.Type = NewElmType(md.ParentFile(), md)
 	oneofsSeen := make(map[protoreflect.FullName]bool)
-	for _, proto := range proto.Fields {
-		// Part of a oneof field?
-		if po := proto.Oneof; po != nil {
+
+	fields := md.Fields()
+	for i := 0; i < fields.Len(); i++ {
+		fd := fields.Get(i)
+		// Oneof field?
+		if od := fd.ContainingOneof(); od != nil {
 			// Only add once
-			if oneofsSeen[po.Desc.FullName()] {
+			if oneofsSeen[od.FullName()] {
 				continue
 			}
-			oneofsSeen[po.Desc.FullName()] = true
+			oneofsSeen[od.FullName()] = true
 
-			oneof, field, err := m.newOneofField(po.Desc)
-			if err != nil {
-				return nil, err
-			}
+			oneof, field := m.newOneofField(od)
 			m.Oneofs = append(m.Oneofs, oneof)
 			record.Oneofs = append(record.Oneofs, oneof)
 			record.Fields = append(record.Fields, field)
-		} else {
-			// Regular field
-			field, err := m.newField(proto.Desc)
-			if err != nil {
-				return nil, err
-			}
+		} else { // Regular field
+			field := m.newField(fd)
 			record.Fields = append(record.Fields, field)
 		}
 	}
-	return &record, nil
+	return &record
 }
 
-func (m *Module) newField(pd protoreflect.FieldDescriptor) (*Field, error) {
+func (m *Module) newField(pd protoreflect.FieldDescriptor) *Field {
 	var typ, zero, decoder, encoder, fuzzer string
-	var err error
-	if typ, err = fieldType(m, pd); err != nil {
-		return nil, err
-	}
-	if zero, err = fieldZero(m, pd); err != nil {
-		return nil, err
-	}
-	if decoder, err = fieldDecoder(m, pd); err != nil {
-		return nil, err
-	}
-	if encoder, err = fieldEncoder(m, pd); err != nil {
-		return nil, err
-	}
-	if fuzzer, err = fieldFuzzer(m, pd); err != nil {
-		return nil, err
-	}
+	typ = fieldType(m, pd)
+	zero = fieldZero(m, pd)
+	decoder = fieldDecoder(m, pd)
+	encoder = fieldEncoder(m, pd)
+	fuzzer = fieldFuzzer(m, pd)
 	var key *MapKey
 	if pd.IsMap() {
 		pdKey := pd.MapKey()
 		key = new(MapKey)
-		if key.Zero, err = fieldZero(m, pdKey); err != nil {
-			return nil, err
-		}
-		if key.Decoder, err = fieldDecoder(m, pdKey); err != nil {
-			return nil, err
-		}
-		if key.Encoder, err = fieldEncoder(m, pdKey); err != nil {
-			return nil, err
-		}
-		if key.Fuzzer, err = fieldFuzzer(m, pdKey); err != nil {
-			return nil, err
-		}
+		key.Zero = fieldZero(m, pdKey)
+		key.Decoder = fieldDecoder(m, pdKey)
+		key.Encoder = fieldEncoder(m, pdKey)
+		key.Fuzzer = fieldFuzzer(m, pdKey)
 	}
 	return &Field{
-		m.getElmValue(protoreflect.FullName(pd.Name())),
+		protoFullIdentToElmCasing(string(pd.Name()), "", false),
 		false, pd.IsMap(), pd.Number(), pd.Cardinality(),
 		typ, zero, decoder, encoder, fuzzer, key,
-	}, nil
+	}
 }
 
-func (m *Module) newOneofField(po protoreflect.OneofDescriptor) (*Oneof, *Field, error) {
-	oneof, err := m.newOneof(po)
-	if err != nil {
-		return nil, nil, err
-	}
+func (m *Module) newOneofField(po protoreflect.OneofDescriptor) (*Oneof, *Field) {
+	oneof := m.newOneof(po)
 	field := &Field{
-		m.getElmValue(protoreflect.FullName(po.Name())),
+		protoFullIdentToElmCasing(string(po.Name()), "", false),
 		true, false, 0, 0,
-		"(Maybe " + string(oneof.ID) + ")",
+		"(Maybe " + oneof.Type.Local() + ")",
 		"Nothing",
-		oneof.DecodeID,
-		oneof.EncodeID,
-		oneof.FuzzerID,
+		oneof.Type.Decoder().Local(),
+		oneof.Type.Encoder().Local(),
+		oneof.Type.Fuzzer().Local(),
 		nil}
 	// Optional field?
 	if oneof.IsSynthetic {
@@ -120,67 +93,67 @@ func (m *Module) newOneofField(po protoreflect.OneofDescriptor) (*Oneof, *Field,
 		field.Label = string(po.Fields().Get(0).Name())
 		field.Type = "(Maybe " + oneof.Variants[0].Field.Type + ")"
 	}
-	return oneof, field, nil
+	return oneof, field
 }
 
-func fieldType(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
+func fieldType(m *Module, pd protoreflect.FieldDescriptor) string {
 	if pd.IsMap() {
-		key, err := fieldType(m, pd.MapKey())
-		if err != nil {
-			return "", err
-		}
-		val, err := fieldType(m, pd.MapValue())
+		key := fieldType(m, pd.MapKey())
+		val := fieldType(m, pd.MapValue())
 		m.Imports.Dict = true
-		return "(Dict " + key + " " + val + ")", err
+		return "(Dict " + key + " " + val + ")"
 	}
 
 	if pd.IsList() {
-		val, err := fieldTypeFromKind(m, pd)
-		return "(List " + val + ")", err
+		val := fieldTypeFromKind(m, pd)
+		return "(List " + val + ")"
 	}
 
 	return fieldTypeFromKind(m, pd)
 }
 
-func fieldTypeFromKind(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
+func fieldTypeFromKind(m *Module, pd protoreflect.FieldDescriptor) string {
 	switch pd.Kind() {
 	case protoreflect.BoolKind:
-		return "Bool", nil
+		return "Bool"
 
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind,
 		protoreflect.Sfixed32Kind, protoreflect.Fixed32Kind:
-		return "Int", nil
+		return "Int"
 
 	// Unsupported by Elm / JS
 	//case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind,
 	//	protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind:
 
 	case protoreflect.FloatKind, protoreflect.DoubleKind:
-		return "Float", nil
+		return "Float"
 
 	case protoreflect.StringKind:
-		return "String", nil
+		return "String"
 
 	case protoreflect.BytesKind:
 		m.Imports.Bytes = true
-		return "Bytes", nil
+		return "Bytes"
 
 	case protoreflect.EnumKind:
-		return string(m.getElmType(pd.Enum().FullName())), nil
+		ed := pd.Enum()
+		return NewElmType(ed.ParentFile(), ed).Local()
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
-		return string(m.getElmType(pd.Message().FullName())), nil
+		md := pd.Message()
+		return NewElmType(md.ParentFile(), md).Local()
 	}
 
-	return "", fmt.Errorf("fieldType: unknown protoreflect.Kind: %s", pd.Kind())
+	log.Panicf("fieldType: unknown protoreflect.Kind: %s", pd.Kind())
+	return ""
 }
 
-func fieldZero(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
+func fieldZero(m *Module, pd protoreflect.FieldDescriptor) string {
 	if pd.IsMap() {
 		pd = pd.MapValue()
 	}
 	if pd.IsList() {
-		return "[]", nil
+		return "[]"
 	}
 
 	switch pd.Kind() {
@@ -188,100 +161,105 @@ func fieldZero(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind,
 		protoreflect.Sfixed32Kind, protoreflect.Fixed32Kind,
 		protoreflect.FloatKind, protoreflect.DoubleKind:
-		return pd.Default().String(), nil
+		return pd.Default().String()
 
 	// Unsupported by Elm / JS
 	//case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind,
 	//	protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind:
 
 	case protoreflect.BoolKind:
-		if pd.Default().Bool() {
-			return "True", nil
+		if pd.Default().Bool() { // TODO proto2 test
+			return "True"
 		}
-		return "False", nil
+		return "False"
 
 	case protoreflect.StringKind:
-		return `""`, nil
+		return `""`
 
 	case protoreflect.BytesKind:
-		return "(BE.encode (BE.sequence []))", nil
+		return "(BE.encode (BE.sequence []))"
 
 	case protoreflect.EnumKind:
-		id := m.getElmType(pd.Enum().FullName())
-		return "empty" + string(id), nil
+		ed := pd.Enum()
+		return NewElmType(ed.ParentFile(), ed).Zero().Local()
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
-		id := m.getElmType(pd.Message().FullName())
-		return "empty" + string(id), nil
+		md := pd.Message()
+		return NewElmType(md.ParentFile(), md).Zero().Local()
 	}
 
-	return "", fmt.Errorf("fieldZero: unknown protoreflect.Kind: %s", pd.Kind())
+	log.Panicf("fieldZero: unknown protoreflect.Kind: %s", pd.Kind())
+	return ""
 }
 
-func fieldDecoder(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
+func fieldDecoder(m *Module, pd protoreflect.FieldDescriptor) string {
 	return fieldKindCodec(m, "PD.", "Decoder", pd)
 }
 
-func fieldEncoder(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
+func fieldEncoder(m *Module, pd protoreflect.FieldDescriptor) string {
 	return fieldKindCodec(m, "PE.", "Encoder", pd)
 }
 
 // Just the Kind. Does not take into account special features like lists.
-func fieldKindCodec(m *Module, lib, dir string, pd protoreflect.FieldDescriptor) (string, error) {
+func fieldKindCodec(m *Module, lib, dir string, pd protoreflect.FieldDescriptor) string {
 	if pd.IsMap() {
 		pd = pd.MapValue()
 	}
 	switch pd.Kind() {
 	case protoreflect.BoolKind:
-		return lib + "bool", nil
+		return lib + "bool"
 
 	case protoreflect.Int32Kind:
-		return lib + "int32", nil
+		return lib + "int32"
 	case protoreflect.Sint32Kind:
-		return lib + "sint32", nil
+		return lib + "sint32"
 	case protoreflect.Uint32Kind:
-		return lib + "uint32", nil
+		return lib + "uint32"
 	case protoreflect.Sfixed32Kind:
-		return lib + "sfixed32", nil
+		return lib + "sfixed32"
 	case protoreflect.Fixed32Kind:
-		return lib + "fixed32", nil
+		return lib + "fixed32"
 
 	// Unsupported by Elm / JS
 	//case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind, protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind:
 
 	case protoreflect.FloatKind:
-		return lib + "float", nil
+		return lib + "float"
 	case protoreflect.DoubleKind:
-		return lib + "double", nil
+		return lib + "double"
 
 	case protoreflect.StringKind:
-		return lib + "string", nil
+		return lib + "string"
 
 	case protoreflect.BytesKind:
-		return lib + "bytes", nil
+		return lib + "bytes"
 
 	case protoreflect.EnumKind:
-		return m.getElmValue(pd.Enum().FullName()) + dir, nil
+		ed := pd.Enum()
+		return NewElmValue(ed.ParentFile(), ed).Local() + dir
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
-		return m.getElmValue(pd.Message().FullName()) + dir, nil
+		md := pd.Message()
+		return NewElmValue(md.ParentFile(), md).Local() + dir
 	}
-	return "", fmt.Errorf("fieldCodec: unknown protoreflect.Kind: %s", pd.Kind())
+
+	log.Panicf("fieldCodec: unknown protoreflect.Kind: %s", pd.Kind())
+	return ""
 }
 
-func fieldFuzzer(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
+func fieldFuzzer(m *Module, pd protoreflect.FieldDescriptor) string {
 	if pd.IsMap() {
 		pd = pd.MapValue()
 	}
 	switch pd.Kind() {
 	case protoreflect.BoolKind:
-		return "Fuzz.bool", nil
+		return "Fuzz.bool"
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
 		m.Fuzzers.Int32 = true
-		return "fuzzInt32", nil
+		return "fuzzInt32"
 	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
 		m.Fuzzers.Uint32 = true
-		return "fuzzUint32", nil
+		return "fuzzUint32"
 
 	/* Unsupported by Elm / JS
 	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
@@ -292,22 +270,25 @@ func fieldFuzzer(m *Module, pd protoreflect.FieldDescriptor) (string, error) {
 
 	case protoreflect.FloatKind:
 		m.Fuzzers.Float32 = true
-		return "fuzzFloat32", nil
+		return "fuzzFloat32"
 	case protoreflect.DoubleKind:
-		return "Fuzz.float", nil
+		return "Fuzz.float"
 
 	case protoreflect.StringKind:
-		return "Fuzz.string", nil
+		return "Fuzz.string"
 	case protoreflect.BytesKind:
 		m.Imports.Bytes = true
-		return "fuzzBytes", nil
+		return "fuzzBytes"
 
 	case protoreflect.EnumKind:
-		return m.getElmValue(pd.Enum().FullName()) + "Fuzzer", nil
+		ed := pd.Enum()
+		return NewElmType(ed.ParentFile(), ed).Fuzzer().Local()
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
-		return m.getElmValue(pd.Message().FullName()) + "Fuzzer", nil
+		md := pd.Message()
+		return NewElmType(md.ParentFile(), md).Fuzzer().Local()
 	}
 
-	return "", fmt.Errorf("kindFuzzer: unknown protoreflect.Kind: %s", pd.Kind())
+	log.Panicf("kindFuzzer: unknown protoreflect.Kind: %s", pd.Kind())
+	return ""
 }

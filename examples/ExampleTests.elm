@@ -6,7 +6,7 @@ module ExampleTests exposing (..)
 import Bytes exposing (Bytes)
 import Bytes.Encode as BE
 import Dict
-import Example as Codec
+import Example
 import Expect
 import Fuzz exposing (Fuzzer)
 import Protobuf.Decode as PD
@@ -37,53 +37,53 @@ fuzzBytes =
         |> Fuzz.map (BE.sequence >> BE.encode)
 
 
-allTogether_AnswerFuzzer : Fuzzer Codec.AllTogether_Answer
+allTogether_AnswerFuzzer : Fuzzer Example.AllTogether_Answer
 allTogether_AnswerFuzzer =
     Fuzz.oneOf
-        [ Fuzz.map Codec.Maybe_AllTogether_Answer fuzzInt32
-        , Fuzz.constant Codec.Yes_AllTogether_Answer
-        , Fuzz.constant Codec.No_AllTogether_Answer
+        [ Fuzz.map Example.AllTogether_Maybe fuzzInt32
+        , Fuzz.constant Example.AllTogether_Yes
+        , Fuzz.constant Example.AllTogether_No
         ]
 
 
-allTogetherFuzzer : Fuzzer Codec.AllTogether
+allTogetherFuzzer : Fuzzer Example.AllTogether
 allTogetherFuzzer =
     let
         allTogether_FavouriteFuzzer =
             Fuzz.oneOf
-                [ Fuzz.map Codec.MyStr_AllTogether_Favourite Fuzz.string
-                , Fuzz.map Codec.MyNum_AllTogether_Favourite fuzzInt32
-                , Fuzz.map Codec.Selection_AllTogether_Favourite scalarFuzzer
+                [ Fuzz.map Example.AllTogether_MyStr Fuzz.string
+                , Fuzz.map Example.AllTogether_MyNum fuzzInt32
+                , Fuzz.map Example.AllTogether_Selection scalarFuzzer
                 ]
 
-        example_AllTogether_MyNameFuzzer =
+        allTogether_MyNameFuzzer =
             Fuzz.oneOf
                 [ Fuzz.string
                 ]
     in
-    Fuzz.map Codec.AllTogether
+    Fuzz.map Example.AllTogether
         (Fuzz.list Fuzz.string)
         |> Fuzz.andMap
             (Fuzz.map Dict.fromList
                 (Fuzz.list (Fuzz.tuple ( Fuzz.string, Fuzz.bool )))
             )
         |> Fuzz.andMap (Fuzz.maybe allTogether_FavouriteFuzzer)
-        |> Fuzz.andMap (Fuzz.maybe example_AllTogether_MyNameFuzzer)
+        |> Fuzz.andMap (Fuzz.maybe allTogether_MyNameFuzzer)
         |> Fuzz.andMap allTogether_NestedAbcFuzzer
         |> Fuzz.andMap allTogether_AnswerFuzzer
 
 
-allTogether_NestedAbcFuzzer : Fuzzer Codec.AllTogether_NestedAbc
+allTogether_NestedAbcFuzzer : Fuzzer Example.AllTogether_NestedAbc
 allTogether_NestedAbcFuzzer =
-    Fuzz.map Codec.AllTogether_NestedAbc
+    Fuzz.map Example.AllTogether_NestedAbc
         fuzzInt32
         |> Fuzz.andMap fuzzInt32
         |> Fuzz.andMap fuzzInt32
 
 
-scalarFuzzer : Fuzzer Codec.Scalar
+scalarFuzzer : Fuzzer Example.Scalar
 scalarFuzzer =
-    Fuzz.map Codec.Scalar
+    Fuzz.map Example.Scalar
         Fuzz.float
         |> Fuzz.andMap fuzzFloat32
         |> Fuzz.andMap fuzzInt32
@@ -100,12 +100,12 @@ testAllTogether : Test
 testAllTogether =
     let
         run data =
-            PE.encode (Codec.allTogetherEncoder data)
-                |> PD.decode Codec.allTogetherDecoder
+            PE.encode (Example.allTogetherEncoder data)
+                |> PD.decode Example.allTogetherDecoder
                 |> Expect.equal (Just data)
     in
     Test.describe "encode then decode AllTogether"
-        [ test "empty" (\_ -> run Codec.emptyAllTogether)
+        [ test "empty" (\_ -> run Example.emptyAllTogether)
         , fuzz allTogetherFuzzer "fuzzer" run
         ]
 
@@ -114,12 +114,12 @@ testAllTogether_NestedAbc : Test
 testAllTogether_NestedAbc =
     let
         run data =
-            PE.encode (Codec.allTogether_NestedAbcEncoder data)
-                |> PD.decode Codec.allTogether_NestedAbcDecoder
+            PE.encode (Example.allTogether_NestedAbcEncoder data)
+                |> PD.decode Example.allTogether_NestedAbcDecoder
                 |> Expect.equal (Just data)
     in
     Test.describe "encode then decode AllTogether_NestedAbc"
-        [ test "empty" (\_ -> run Codec.emptyAllTogether_NestedAbc)
+        [ test "empty" (\_ -> run Example.emptyAllTogether_NestedAbc)
         , fuzz allTogether_NestedAbcFuzzer "fuzzer" run
         ]
 
@@ -128,12 +128,12 @@ testScalar : Test
 testScalar =
     let
         run data =
-            PE.encode (Codec.scalarEncoder data)
-                |> PD.decode Codec.scalarDecoder
+            PE.encode (Example.scalarEncoder data)
+                |> PD.decode Example.scalarDecoder
                 |> Expect.equal (Just data)
     in
     Test.describe "encode then decode Scalar"
-        [ test "empty" (\_ -> run Codec.emptyScalar)
+        [ test "empty" (\_ -> run Example.emptyScalar)
         , fuzz scalarFuzzer "fuzzer" run
         ]
 
@@ -142,11 +142,11 @@ testAllTogether_Answer : Test
 testAllTogether_Answer =
     let
         run data =
-            PE.encode (Codec.allTogether_AnswerEncoder data)
-                |> PD.decode Codec.allTogether_AnswerDecoder
+            PE.encode (Example.allTogether_AnswerEncoder data)
+                |> PD.decode Example.allTogether_AnswerDecoder
                 |> Expect.equal (Just data)
     in
     Test.describe "encode then decode AllTogether_Answer"
-        [ test "empty" (\_ -> run Codec.emptyAllTogether_Answer)
+        [ test "empty" (\_ -> run Example.emptyAllTogether_Answer)
         , fuzz allTogether_AnswerFuzzer "fuzzer" run
         ]

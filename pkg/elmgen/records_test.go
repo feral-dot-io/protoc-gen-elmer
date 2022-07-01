@@ -43,7 +43,7 @@ func assertFields(t *testing.T, fields []*Field, exp ...*Field) {
 }
 
 func TestScalarRecord(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		package test.scalar;
 		message Scalar {
@@ -73,10 +73,10 @@ func TestScalarRecord(t *testing.T) {
 	assert.Len(t, elm.Records, 1)
 	scalar := elm.Records[0]
 	// IDs
-	assert.Equal(t, ElmType("Scalar"), scalar.ID)
-	assert.Equal(t, "emptyScalar", scalar.ZeroID)
-	assert.Equal(t, "scalarDecoder", scalar.DecodeID)
-	assert.Equal(t, "scalarEncoder", scalar.EncodeID)
+	assert.Equal(t, "Scalar", scalar.Type.Local())
+	assert.Equal(t, "emptyScalar", scalar.Type.Zero().Local())
+	assert.Equal(t, "scalarDecoder", scalar.Type.Decoder().Local())
+	assert.Equal(t, "scalarEncoder", scalar.Type.Encoder().Local())
 	// Fields
 	assertFields(t, scalar.Fields,
 		&Field{"myDouble", false, false, 1, opt, "Float", "0", "", "", "Fuzz.float", nil},
@@ -92,7 +92,7 @@ func TestScalarRecord(t *testing.T) {
 }
 
 func TestRecordFieldEnum(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		package test.enum_field;
 		message Loaded {
@@ -111,14 +111,14 @@ func TestRecordFieldEnum(t *testing.T) {
 }
 
 func TestRecordFieldMessage(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		package test.msg_field;
-		message First {
-			double my_one = 123;
-		}
 		message Second {
 			double my_two = 123;
+		}
+		message First {
+			double my_one = 123;
 		}
 		message Zombined {
 			First first = 1;
@@ -134,7 +134,7 @@ func TestRecordFieldMessage(t *testing.T) {
 }
 
 func TestRecordNestedMessage(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		package test.nested;
 		message Nested {
@@ -174,25 +174,29 @@ func TestRecordErrors(t *testing.T) {
 	field := plugin.Files[0].Messages[0].Fields[0]
 	assert.Equal(t, "my_int64", string(field.Desc.Name()))
 	// Field type
-	_, err := fieldType(nil, field.Desc)
-	assert.ErrorContains(t, err, "protoreflect.Kind")
+	assert.Panics(t, func() {
+		fieldType(nil, field.Desc)
+	})
 	// Field zero
-	_, err = fieldZero(nil, field.Desc)
-	assert.ErrorContains(t, err, "protoreflect.Kind")
+	assert.Panics(t, func() {
+		fieldZero(nil, field.Desc)
+	})
 	// Field codec
-	_, err = fieldKindCodec(nil, "PE.", "encode", field.Desc)
-	assert.ErrorContains(t, err, "protoreflect.Kind")
+	assert.Panics(t, func() {
+		fieldKindCodec(nil, "PE.", "encode", field.Desc)
+	})
 	// Field fuzzer
-	_, err = fieldFuzzer(nil, field.Desc)
-	assert.ErrorContains(t, err, "protoreflect.Kind")
+	assert.Panics(t, func() {
+		fieldFuzzer(nil, field.Desc)
+	})
 	// General error path (fails on fieldType)
-	_, err = TestConfig.NewModule(plugin.Files[0])
-	assert.ErrorContains(t, err, "protoreflect.Kind")
+	assert.Panics(t, func() {
+		NewModule("", plugin.Files[0].Desc)
+	})
 }
 
 func TestListField(t *testing.T) {
-	config := TestConfig
-	elm := config.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		package test.list;
 		message Lister {
@@ -205,7 +209,7 @@ func TestListField(t *testing.T) {
 }
 
 func TestMapField(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		package test.map;
 		message A {
@@ -242,7 +246,7 @@ func TestMapField(t *testing.T) {
 }
 
 func TestOneOf(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		message Multi {
 			oneof pick_one {
@@ -259,7 +263,7 @@ func TestOneOf(t *testing.T) {
 	assert.Len(t, elm.Oneofs, 2)
 	r := elm.Records[0]
 	assert.Len(t, r.Oneofs, 2)
-	assert.Equal(t, ElmType("Multi"), r.ID)
+	assert.Equal(t, "Multi", r.Type.Local())
 	assertFields(t, r.Fields,
 		&Field{"pickOne", true, false, 0, 0, "(Maybe Multi_PickOne)", "Nothing",
 			"multi_PickOneDecoder", "multi_PickOneEncoder", "multi_PickOneFuzzer", nil},
@@ -268,7 +272,7 @@ func TestOneOf(t *testing.T) {
 }
 
 func TestOptionalField(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		message Night {
 			optional bool shadow = 666;
@@ -277,12 +281,12 @@ func TestOptionalField(t *testing.T) {
 	assert.Len(t, elm.Records, 1)
 	assert.Len(t, elm.Oneofs, 1)
 	r := elm.Records[0]
-	assert.Equal(t, ElmType("Night"), r.ID)
+	assert.Equal(t, "Night", r.Type.Local())
 	assertFields(t, r.Fields,
 		&Field{"shadow", true, false, 0, 0, "(Maybe Bool)", "Nothing",
 			"night_ShadowDecoder", "night_ShadowEncoder", "night_ShadowFuzzer", nil})
 	// Again but nested
-	elm = TestConfig.testModule(t, `
+	elm = testModule(t, `
 		syntax = "proto3";
 		message Day {
 			message Night {
@@ -294,12 +298,12 @@ func TestOptionalField(t *testing.T) {
 	assert.Len(t, elm.Records, 2)
 	assert.Len(t, elm.Oneofs, 1)
 	r = elm.Records[0]
-	assert.Equal(t, ElmType("Day"), r.ID)
+	assert.Equal(t, "Day", r.Type.Local())
 	assertFields(t, r.Fields,
 		&Field{"sun", false, false, 1, opt, "Day_Night", "emptyDay_Night",
 			"day_NightDecoder", "day_NightEncoder", "day_NightFuzzer", nil})
 	r = elm.Records[1]
-	assert.Equal(t, ElmType("Day_Night"), r.ID)
+	assert.Equal(t, "Day_Night", r.Type.Local())
 	assertFields(t, r.Fields,
 		&Field{"shadow", true, false, 0, 0, "(Maybe Bool)", "Nothing",
 			"day_Night_ShadowDecoder", "day_Night_ShadowEncoder", "day_Night_ShadowFuzzer", nil})

@@ -3,6 +3,7 @@ package elmgen
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"testing"
 
@@ -13,8 +14,6 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-var TestConfig = Config{}
-
 func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 	t.Helper()
 	// Due to https://github.com/protocolbuffers/protobuf/issues/4163
@@ -23,17 +22,16 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 	tmpDir := t.TempDir()
 	var stdin, stdout, genReqparams string
 	for i, spec := range specs {
-		proto := "test" + strconv.Itoa(i)
-		prefix := tmpDir + "/" + proto
-		stdinI := prefix + ".proto"
+		proto := "test" + strconv.Itoa(i) + ".proto"
+		fullProto := tmpDir + "/" + proto
 		// Keep first, our main test file
 		if i == 0 {
-			stdin = stdinI
-			stdout = prefix + ".desc"
+			stdin = fullProto
+			stdout = fullProto + ".desc"
 		}
-		genReqparams += "M" + proto + ".proto=" + proto + "/" + proto + ","
+		genReqparams += "M" + proto + "=" + proto + "/" + proto + ","
 		// Write file
-		err := os.WriteFile(stdinI, []byte(spec), 0644)
+		err := os.WriteFile(fullProto, []byte(spec), 0644)
 		assert.NoError(t, err)
 	}
 	// Invoke protoc's parser
@@ -70,10 +68,8 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 
 //go:generate testdata/gen-elm-test-proj
 
-func (config Config) testModule(t *testing.T, specs ...string) *Module {
+func testModule(t *testing.T, specs ...string) *Module {
 	t.Helper()
-	config.ModuleName = "Codec" // Override to run tests
-
 	plugin := testPlugin(t, specs...)
 	var elm *Module
 	// One file should have Generate=true. Run NewModule on it
@@ -83,14 +79,21 @@ func (config Config) testModule(t *testing.T, specs ...string) *Module {
 				t.Fail()
 			}
 			var err error
-			elm, err = config.NewModule(f)
+			elm = NewModule("", f.Desc)
 			assert.NoError(t, err)
 		}
 	}
 
 	testProjectDir := "./testdata/gen-elm"
-	assertCodec := func(file string, gen func(m *Module, g *protogen.GeneratedFile)) {
+	// Remove old tests
+	err := os.RemoveAll(testProjectDir + "/src")
+	assert.NoError(t, err)
+	err = os.MkdirAll(testProjectDir+"/src", 0755)
+	assert.NoError(t, err)
+
+	assertCodec := func(suffix string, gen func(m *Module, g *protogen.GeneratedFile)) {
 		t.Helper()
+		file := elm.Path + suffix + ".elm"
 		genFile := plugin.NewGeneratedFile(file, "")
 		gen(elm, genFile)
 		// Always format (checks Elm syntax)
@@ -101,24 +104,28 @@ func (config Config) testModule(t *testing.T, specs ...string) *Module {
 		if len(content) == 0 {
 			content, _ = genFile.Content()
 		}
+		// Ensure folder path exists
+		fullFile := testProjectDir + "/src/" + file
+		err = os.MkdirAll(filepath.Dir(fullFile), 0755)
+		assert.NoError(t, err)
 		// Copy to testdata for inspection / tests
-		err := os.WriteFile(testProjectDir+"/src/"+file, content, 0644)
+		err = os.WriteFile(fullFile, content, 0644)
 		assert.NoError(t, err)
 	}
 	// Sanity check: always run through code gen
-	assertCodec("Codec.elm", GenerateCodec)
-	assertCodec("CodecTests.elm", GenerateFuzzTests)
-	if len(elm.protoMethods) > 0 {
-		assertCodec("CodecTwirp.elm", GenerateTwirp)
+	assertCodec("", GenerateCodec)
+	assertCodec("Tests", GenerateFuzzTests)
+	if len(elm.RPCs) > 0 {
+		assertCodec("Twirp", GenerateTwirp)
 	}
 	// Finally, run tests
-	err := runElmTest(testProjectDir, "src/**/*Tests.elm", 10)
+	err = runElmTest(testProjectDir, "src/**/*Tests.elm", 10)
 	assert.NoError(t, err)
 	return elm
 }
 
 func TestProtoUnderscores(t *testing.T) {
-	TestConfig.testModule(t, `
+	testModule(t, `
 		syntax = "proto3";
 		message _ {
 			bool _ = 1;
@@ -127,29 +134,13 @@ func TestProtoUnderscores(t *testing.T) {
 }
 
 func TestEmpty(t *testing.T) {
-	TestConfig.testModule(t, `
+	testModule(t, `
 		syntax = "proto3";
 		message Emptyish {}`)
 }
 
-func TestNameFromPath(t *testing.T) {
-	// Normally takes from pkg
-	name, path := TestConfig.nameAndPath("My.Path", "file.elm")
-	assert.Equal(t, "My.Path", name)
-	assert.Equal(t, "My/Path", path)
-	// Mising pkg (not in source) pulls from file
-	name, path = TestConfig.nameAndPath("", "my/proto_file.elm")
-	assert.Equal(t, "My.ProtoFile", name)
-	assert.Equal(t, "My/ProtoFile", path)
-	// Module override
-	config := &Config{ModuleName: "My.Override"}
-	name, path = config.nameAndPath("My.Path", "file.elm")
-	assert.Equal(t, "My.Override", name)
-	assert.Equal(t, "My/Override", path)
-}
-
 func TestQualified(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		message Outer {
 			enum Option {
@@ -174,25 +165,25 @@ func TestQualified(t *testing.T) {
 	assert.Len(t, elm.Oneofs, 2)
 	// Union
 	u := elm.Unions[0]
-	assert.Equal(t, ElmType("Outer_Option"), u.ID)
+	assert.Equal(t, "Outer_Option", u.Type.Local())
 	assert.Len(t, u.Variants, 2)
-	assert.Equal(t, ElmType("Hero_Outer_Option"), u.DefaultVariant.ID)
-	assert.Equal(t, ElmType("Worst_Outer_Option"), u.Variants[0].ID)
-	assert.Equal(t, ElmType("Best_Outer_Option"), u.Variants[1].ID)
+	assert.Equal(t, "Outer_Hero", u.DefaultVariant.ID.Local())
+	assert.Equal(t, "Outer_Worst", u.Variants[0].ID.Local())
+	assert.Equal(t, "Outer_Best", u.Variants[1].ID.Local())
 	// Records
-	assert.Equal(t, ElmType("Outer"), elm.Records[0].ID)
-	assert.Equal(t, ElmType("Outer_Inner"), elm.Records[1].ID)
+	assert.Equal(t, "Outer", elm.Records[0].Type.Local())
+	assert.Equal(t, "Outer_Inner", elm.Records[1].Type.Local())
 	// Oneof
 	o := elm.Oneofs[0]
-	assert.Equal(t, ElmType("Outer_Inner_Conundrum"), o.ID)
-	assert.Equal(t, ElmType("Or_Outer_Inner_Conundrum"), o.Variants[0].ID)
-	assert.Equal(t, ElmType("And_Outer_Inner_Conundrum"), o.Variants[1].ID)
-	assert.Equal(t, ElmType("Outer_Inner_Maybe"), elm.Oneofs[1].ID)
-	assert.Equal(t, "outer_Inner_MaybeDecoder", elm.Oneofs[1].DecodeID)
+	assert.Equal(t, "Outer_Inner_Conundrum", o.Type.Local())
+	assert.Equal(t, "Outer_Inner_Or", o.Variants[0].ID.Local())
+	assert.Equal(t, "Outer_Inner_And", o.Variants[1].ID.Local())
+	assert.Equal(t, "Outer_Inner_Maybe", elm.Oneofs[1].Type.Local())
+	assert.Equal(t, "outer_Inner_MaybeDecoder", elm.Oneofs[1].Type.Decoder().Local())
 }
 
 func _TestImports(t *testing.T) {
-	elm := TestConfig.testModule(t, `
+	elm := testModule(t, `
 		syntax = "proto3";
 		import "test1.proto";
 		message MyMessage {
@@ -206,7 +197,7 @@ func _TestImports(t *testing.T) {
 			int32 c = 3;
 		}`)
 	assert.Len(t, elm.Records, 1)
-	assert.Equal(t, ElmType("MyMessage"), elm.Records[0].ID)
+	assert.Equal(t, "MyMessage", elm.Records[0].Type.Local())
 	f := elm.Records[0].Fields[0]
 	assert.Equal(t, "out_of_this_world", f.Label)
 	assert.Equal(t, "Other", f.Type)

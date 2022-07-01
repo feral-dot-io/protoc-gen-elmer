@@ -69,7 +69,7 @@ update msg model =
         MakeHatRequest ->
             ( model
             , Haberdasher.Size model.selectedInches
-                |> Rpc.makeHat HatResult api
+                |> Rpc.haberdasher_MakeHat HatResult api
             )
 
         HatResult result ->

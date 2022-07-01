@@ -43,14 +43,14 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	g.P("-- This module is broken down into: records (messages), unions (enums), oneofs, empty constructors (zero values), decoders, and encoders")
 	var recordIDs, unionIDs, oneofIDs []string
 	for _, r := range m.Records {
-		recordIDs = append(recordIDs, string(r.ID))
+		recordIDs = append(recordIDs, string(r.Type.Local()))
 	}
 	for _, u := range m.Unions {
-		unionIDs = append(unionIDs, string(u.ID))
+		unionIDs = append(unionIDs, string(u.Type.Local()))
 	}
 	for _, o := range m.Oneofs {
 		if !o.IsSynthetic {
-			oneofIDs = append(oneofIDs, string(o.ID))
+			oneofIDs = append(oneofIDs, string(o.Type.Local()))
 		}
 	}
 	idsToStr := func(ids []string) string {
@@ -75,28 +75,28 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 
 	// Records
 	for _, r := range m.Records {
-		g.P("type alias ", r.ID, " =")
-		g.P("    {")
+		gFP("type alias %s =", r.Type.Local())
+		gFP("    {")
 		for i, f := range r.Fields {
 			prefix := ","
 			if i == 0 {
 				prefix = ""
 			}
-			g.P("    ", prefix, " ", f.Label, " : ", f.Type)
+			gFP("    %s %s : %s", prefix, f.Label, f.Type)
 		}
-		g.P("    }")
+		gFP("    }")
 	}
 
 	// Unions
 	for _, u := range m.Unions {
-		g.P("type ", u.ID)
-		g.P("    = ", u.DefaultVariant.ID, " Int")
+		g.P("type ", u.Type.Local())
+		g.P("    = ", u.DefaultVariant.ID.Local(), " Int")
 		for _, v := range u.Variants {
-			g.P("    | ", v.ID)
+			g.P("    | ", v.ID.Local())
 		}
 		for _, a := range u.Aliases {
-			g.P(a.Alias, " : ", u.ID)
-			g.P(a.Alias, " = ", a.ID)
+			gFP("%s : %s", a.Alias.Local(), u.Type.Local())
+			gFP("%s = %s", a.Alias.Local(), a.ID.Local())
 		}
 	}
 
@@ -106,21 +106,21 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		if o.IsSynthetic {
 			continue
 		}
-		g.P("type ", o.ID)
+		gFP("type %s", o.Type.Local())
 		for i, v := range o.Variants {
 			prefix := "|"
 			if i == 0 {
 				prefix = "="
 			}
-			g.P("    ", prefix, " ", v.ID, " ", v.Field.Type)
+			gFP("    %s %s %s", prefix, v.ID.Local(), v.Field.Type)
 		}
 	}
 
 	// Zero records
 	for _, r := range m.Records {
-		g.P(r.ZeroID, " : ", r.ID)
-		g.P(r.ZeroID, " =")
-		zeros := []interface{}{"    ", r.ID.String()}
+		gFP("%s : %s", r.Type.Zero().Local(), r.Type.Local())
+		gFP("%s =", r.Type.Zero().Local())
+		zeros := []interface{}{"    ", r.Type.Local()}
 		for _, f := range r.Fields {
 			zero := f.Zero
 			if f.IsMap {
@@ -133,21 +133,22 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 
 	// Zero unions
 	for _, u := range m.Unions {
-		g.P(u.ZeroID, " : ", u.ID)
-		g.P(u.ZeroID, " =")
-		g.P("    ", u.DefaultVariant.ID, " 0")
+		t := u.Type
+		gFP("%s : %s", t.Zero().Local(), t.Local())
+		gFP("%s =", t.Zero().Local())
+		gFP("    %s 0", u.DefaultVariant.ID.Local())
 	}
 
 	// Record decoders
 	for _, r := range m.Records {
-		g.P(r.DecodeID, " : PD.Decoder ", r.ID)
-		g.P(r.DecodeID, " =")
+		gFP("%s : PD.Decoder %s", r.Type.Decoder().Local(), r.Type.Local())
+		gFP("%s =", r.Type.Decoder().Local())
 		// Build oneof decoders inline since they're unique to the message
 		// Ideally they'd be inline here (and in the decoder + fuzzer)
 		if len(r.Oneofs) > 0 {
 			g.P("    let")
 			for _, o := range r.Oneofs {
-				gFP("        %s =", o.DecodeID)
+				gFP("        %s =", o.Type.Decoder().Local())
 				g.P("            [")
 				for j, v := range o.Variants {
 					prefix := "            "
@@ -159,14 +160,14 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 							prefix, v.Field.WireNumber, v.Field.Decoder)
 					} else {
 						gFP("%s( %d, PD.map %s %s )",
-							prefix, v.Field.WireNumber, v.ID, v.Field.Decoder)
+							prefix, v.Field.WireNumber, v.ID.Local(), v.Field.Decoder)
 					}
 				}
 				g.P("                ]")
 			}
 			g.P("    in")
 		}
-		g.P("    PD.message ", r.ZeroID)
+		g.P("    PD.message ", r.Type.Zero().Local())
 		g.P("        [")
 		for i, f := range r.Fields {
 			prefix := "            "
@@ -205,17 +206,18 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 
 	// Union decoders
 	for _, u := range m.Unions {
-		g.P(u.DecodeID, " : PD.Decoder ", u.ID)
-		g.P(u.DecodeID, " =")
+		t := u.Type
+		gFP("%s : PD.Decoder %s", t.Decoder().Local(), t.Local())
+		gFP("%s =", t.Decoder().Local())
 		g.P("    let")
 		g.P("        conv v =")
 		g.P("            case v of")
 		for _, v := range u.Variants {
 			g.P("                ", v.Number, " ->")
-			g.P("                    ", v.ID)
+			g.P("                    ", v.ID.Local())
 		}
 		g.P("                wire ->")
-		g.P("                    ", u.DefaultVariant.ID, " wire")
+		g.P("                    ", u.DefaultVariant.ID.Local(), " wire")
 		g.P("    in")
 		g.P("    PD.map conv PD.int32")
 	}
@@ -226,18 +228,18 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		if len(r.Fields) == 0 {
 			param = "_"
 		}
-		g.P(r.EncodeID, " : ", r.ID, " -> PE.Encoder")
-		g.P(r.EncodeID, " ", param, " =")
+		gFP("%s : %s -> PE.Encoder", r.Type.Encoder().Local(), r.Type.Local())
+		gFP("%s %s =", r.Type.Encoder().Local(), param)
 		if len(r.Oneofs) > 0 {
 			g.P("    let")
 			for _, o := range r.Oneofs {
 				ws := "        "
-				gFP("%s%s o =", ws, o.EncodeID)
+				gFP("%s%s o =", ws, o.Type.Encoder().Local())
 				gFP("%s    case o of", ws)
 				ws += "        "
 				for _, v := range o.Variants {
 					f := v.Field
-					id := v.ID
+					id := v.ID.Local()
 					if o.IsSynthetic { // No sub-enum
 						id = ""
 					}
@@ -290,15 +292,16 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 
 	// Union encoders
 	for _, u := range m.Unions {
-		g.P(u.EncodeID, " : ", u.ID, " -> PE.Encoder")
-		g.P(u.EncodeID, " v =")
+		t := u.Type
+		gFP("%s : %s -> PE.Encoder", t.Encoder().Local(), t.Local())
+		gFP("%s v =", t.Encoder().Local())
 		g.P("    let")
 		g.P("        conv =")
 		g.P("            case v of")
-		g.P("                ", u.DefaultVariant.ID, " wire ->")
+		g.P("                ", u.DefaultVariant.ID.Local(), " wire ->")
 		g.P("                    wire")
 		for _, v := range u.Variants {
-			g.P("                ", v.ID, " ->")
+			g.P("                ", v.ID.Local(), " ->")
 			g.P("                    ", v.Number)
 		}
 		g.P("    in")

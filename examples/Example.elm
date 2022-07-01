@@ -47,15 +47,15 @@ type alias Scalar =
 
 
 type AllTogether_Answer
-    = Maybe_AllTogether_Answer Int
-    | Yes_AllTogether_Answer
-    | No_AllTogether_Answer
+    = AllTogether_Maybe Int
+    | AllTogether_Yes
+    | AllTogether_No
 
 
 type AllTogether_Favourite
-    = MyStr_AllTogether_Favourite String
-    | MyNum_AllTogether_Favourite Int
-    | Selection_AllTogether_Favourite Scalar
+    = AllTogether_MyStr String
+    | AllTogether_MyNum Int
+    | AllTogether_Selection Scalar
 
 
 emptyAllTogether : AllTogether
@@ -75,19 +75,19 @@ emptyScalar =
 
 emptyAllTogether_Answer : AllTogether_Answer
 emptyAllTogether_Answer =
-    Maybe_AllTogether_Answer 0
+    AllTogether_Maybe 0
 
 
 allTogetherDecoder : PD.Decoder AllTogether
 allTogetherDecoder =
     let
         allTogether_FavouriteDecoder =
-            [ ( 3, PD.map MyStr_AllTogether_Favourite PD.string )
-            , ( 4, PD.map MyNum_AllTogether_Favourite PD.int32 )
-            , ( 5, PD.map Selection_AllTogether_Favourite scalarDecoder )
+            [ ( 3, PD.map AllTogether_MyStr PD.string )
+            , ( 4, PD.map AllTogether_MyNum PD.int32 )
+            , ( 5, PD.map AllTogether_Selection scalarDecoder )
             ]
 
-        example_AllTogether_MyNameDecoder =
+        allTogether_MyNameDecoder =
             [ ( 6, PD.string )
             ]
     in
@@ -95,7 +95,7 @@ allTogetherDecoder =
         [ PD.repeated 1 PD.string .myList (\v m -> { m | myList = v })
         , PD.mapped 2 ( "", False ) PD.string PD.bool .myMap (\v m -> { m | myMap = v })
         , PD.oneOf allTogether_FavouriteDecoder (\v m -> { m | favourite = v })
-        , PD.oneOf example_AllTogether_MyNameDecoder (\v m -> { m | my_name = v })
+        , PD.oneOf allTogether_MyNameDecoder (\v m -> { m | my_name = v })
         , PD.optional 7 allTogether_NestedAbcDecoder (\v m -> { m | abc = v })
         , PD.optional 8 allTogether_AnswerDecoder (\v m -> { m | answer = v })
         ]
@@ -132,13 +132,13 @@ allTogether_AnswerDecoder =
         conv v =
             case v of
                 1 ->
-                    Yes_AllTogether_Answer
+                    AllTogether_Yes
 
                 2 ->
-                    No_AllTogether_Answer
+                    AllTogether_No
 
                 wire ->
-                    Maybe_AllTogether_Answer wire
+                    AllTogether_Maybe wire
     in
     PD.map conv PD.int32
 
@@ -148,19 +148,19 @@ allTogetherEncoder v =
     let
         allTogether_FavouriteEncoder o =
             case o of
-                Just (MyStr_AllTogether_Favourite data) ->
+                Just (AllTogether_MyStr data) ->
                     [ ( 3, PE.string data ) ]
 
-                Just (MyNum_AllTogether_Favourite data) ->
+                Just (AllTogether_MyNum data) ->
                     [ ( 4, PE.int32 data ) ]
 
-                Just (Selection_AllTogether_Favourite data) ->
+                Just (AllTogether_Selection data) ->
                     [ ( 5, scalarEncoder data ) ]
 
                 Nothing ->
                     []
 
-        example_AllTogether_MyNameEncoder o =
+        allTogether_MyNameEncoder o =
             case o of
                 Just data ->
                     [ ( 6, PE.string data ) ]
@@ -175,7 +175,7 @@ allTogetherEncoder v =
         , ( 8, allTogether_AnswerEncoder v.answer )
         ]
             ++ allTogether_FavouriteEncoder v.favourite
-            ++ example_AllTogether_MyNameEncoder v.my_name
+            ++ allTogether_MyNameEncoder v.my_name
 
 
 allTogether_NestedAbcEncoder : AllTogether_NestedAbc -> PE.Encoder
@@ -208,13 +208,13 @@ allTogether_AnswerEncoder v =
     let
         conv =
             case v of
-                Maybe_AllTogether_Answer wire ->
+                AllTogether_Maybe wire ->
                     wire
 
-                Yes_AllTogether_Answer ->
+                AllTogether_Yes ->
                     1
 
-                No_AllTogether_Answer ->
+                AllTogether_No ->
                     2
     in
     PE.int32 conv

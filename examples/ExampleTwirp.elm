@@ -3,31 +3,31 @@
 
 module ExampleTwirp exposing (..)
 
-import Example as Data
+import Example
 import Http
 import Protobuf.Decode as PD
 import Protobuf.Encode as PE
 
 
-ourService_AnotherMethod : (Result Http.Error Data.Scalar -> msg) -> String -> Data.AllTogether -> Cmd msg
+ourService_AnotherMethod : (Result Http.Error Example.Scalar -> msg) -> String -> Example.AllTogether -> Cmd msg
 ourService_AnotherMethod msg api data =
     Http.post
         { url = api ++ "/example.OurService/AnotherMethod"
         , body =
-            Data.allTogetherEncoder data
+            Example.allTogetherEncoder data
                 |> PE.encode
                 |> Http.bytesBody "application/protobuf"
-        , expect = PD.expectBytes msg Data.scalarDecoder
+        , expect = PD.expectBytes msg Example.scalarDecoder
         }
 
 
-ourService_OurRpcMethod : (Result Http.Error Data.AllTogether -> msg) -> String -> Data.Scalar -> Cmd msg
+ourService_OurRpcMethod : (Result Http.Error Example.AllTogether -> msg) -> String -> Example.Scalar -> Cmd msg
 ourService_OurRpcMethod msg api data =
     Http.post
         { url = api ++ "/example.OurService/OurRPCMethod"
         , body =
-            Data.scalarEncoder data
+            Example.scalarEncoder data
                 |> PE.encode
                 |> Http.bytesBody "application/protobuf"
-        , expect = PD.expectBytes msg Data.allTogetherDecoder
+        , expect = PD.expectBytes msg Example.allTogetherDecoder
         }

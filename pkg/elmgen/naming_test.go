@@ -76,28 +76,39 @@ func TestNaming(t *testing.T) {
 	}
 }
 
-func TestNS(t *testing.T) {
-	m := TestConfig.newModule()
-	// Trying to register duplicate proto ident
-	m.registerProtoName(protoreflect.FullName("test"), "")
-	assert.Panics(t, func() {
-		m.registerProtoName(protoreflect.FullName("test"), "")
-	})
-	// Getting an Elm ID from an unregistered proto ident
-	assert.Panics(t, func() {
-		m.getElmType("eek")
-	})
+type protoTest struct {
+	pkg, name string
 }
 
-func TestCollisionSuffix(t *testing.T) {
-	m := TestConfig.newModule()
-	// Duplicate Elm ID gets a suffixed
-	id := m.registerElmID("Hello")
-	assert.Equal(t, "Hello", id)
-	id = m.registerElmID("Hello")
-	assert.Equal(t, "Hello_", id)
-	// Must be valid Elm
-	assert.Panics(t, func() {
-		m.registerElmID(" ")
-	})
+func (t *protoTest) Package() protoreflect.FullName {
+	return protoreflect.FullName(t.pkg)
+}
+
+func (t *protoTest) FullName() protoreflect.FullName {
+	return protoreflect.FullName(t.name)
+}
+
+func TestProtoToElm(t *testing.T) {
+	ex := &protoTest{"package.name", "full.name"}
+	mod, asType, asVal := protoToElm(ex, ex)
+	assert.Equal(t, "Package.Name", mod)
+	assert.Equal(t, "Full_Name", asType)
+	assert.Equal(t, "full_Name", asVal)
+	// Reserved word collision
+	ex.name = "case"
+	mod, asType, asVal = protoToElm(ex, ex)
+	assert.Equal(t, "Package.Name", mod)
+	assert.Equal(t, "Case_", asType)
+	assert.Equal(t, "case_", asVal)
+}
+
+func TestValidElmID(t *testing.T) {
+	assert.True(t, validElmID("Hello"))
+	assert.True(t, validElmID("HelloWorld"))
+	assert.False(t, validElmID("_Hello"))
+	assert.True(t, validElmID("Hello_World"))
+	// Partial
+	assert.True(t, validPartialElmID("Hello123_"))
+	assert.True(t, validPartialElmID("_Hello"))
+	assert.False(t, validPartialElmID("Hello?"))
 }
