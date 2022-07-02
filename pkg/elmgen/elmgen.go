@@ -9,7 +9,7 @@ import (
 type (
 	Module struct {
 		ns       map[string][]*ElmRef
-		nonLocal bool
+		override string
 
 		Name, Path string
 		Imports    struct {
@@ -119,6 +119,7 @@ type (
 		Methods  RPCs
 		Comments *CommentSet
 	}
+
 	RPCs []*RPC
 	RPC  struct {
 		ID      *ElmRef
@@ -159,6 +160,7 @@ func NewModule(prefix string, file *protogen.File) *Module {
 	pkg := prefix + string(file.Desc.Package())
 	m.Name = protoFullIdentToElmCasing(pkg, ".", true)
 	m.Path = protoFullIdentToElmCasing(pkg, "/", true)
+	m.override = m.Name
 	// Parse file
 	m.addUnions(file.Enums)
 	m.addRecords(file.Messages)
@@ -166,17 +168,21 @@ func NewModule(prefix string, file *protogen.File) *Module {
 	return m
 }
 
-func (m *Module) SetRefLocality(local bool) {
+func (m *Module) OverrideLocality(override string) {
+	prevOverride := m.override
+	m.override = override
 	for _, refs := range m.ns {
 		for _, ref := range refs {
-			if local && ref.Module == m.Name {
+			// Undo previous override
+			if ref.Module == "" {
+				ref.Module = prevOverride
+			}
+			// Set local?
+			if ref.Module == m.override {
 				ref.Module = ""
-			} else if !local && ref.Module == "" {
-				ref.Module = m.Name
 			}
 		}
 	}
-	m.nonLocal = !local
 }
 
 func NewCommentSet(set protogen.CommentSet) *CommentSet {

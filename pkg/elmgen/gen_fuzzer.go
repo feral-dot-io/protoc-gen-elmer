@@ -24,7 +24,7 @@ func runElmTest(projDir, globs string, fuzz int) error {
 }
 
 func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
-	m.SetRefLocality(false)
+	m.OverrideLocality(m.Name + "Tests")
 	gFP := func(formatter string, args ...interface{}) {
 		g.P(fmt.Sprintf(formatter, args...))
 	}

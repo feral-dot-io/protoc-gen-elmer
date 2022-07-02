@@ -81,14 +81,14 @@ func (set *CommentSet) printDashDash(g *protogen.GeneratedFile) {
 
 func printImports(g *protogen.GeneratedFile, m *Module) {
 	for mod := range m.ns {
-		if !m.nonLocal && mod != m.Name || m.nonLocal {
+		if mod != m.override {
 			g.P("import ", mod)
 		}
 	}
 }
 
 func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
-	m.SetRefLocality(true)
+	m.OverrideLocality(m.Name)
 	gFP := func(formatter string, args ...interface{}) {
 		g.P(fmt.Sprintf(formatter, args...))
 	}

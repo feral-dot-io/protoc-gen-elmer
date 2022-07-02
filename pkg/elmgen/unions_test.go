@@ -80,5 +80,5 @@ func TestUnionAllowAlias(t *testing.T) {
 	assert.Len(t, alias.Aliases, 1)
 	assert.Equal(t, "Started", alias.Variants[0].ID.ID)
 	assert.Equal(t, "running", alias.Aliases[0].Alias.ID)
-	assert.Equal(t, "X.Started", alias.Aliases[0].ID.String())
+	assert.Equal(t, "Started", alias.Aliases[0].ID.String())
 }

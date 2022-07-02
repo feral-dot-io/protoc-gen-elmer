@@ -7,7 +7,7 @@ import (
 )
 
 func GenerateTwirp(m *Module, g *protogen.GeneratedFile) {
-	m.SetRefLocality(false)
+	m.OverrideLocality(m.Name + "Twirp")
 	gFP := func(formatter string, args ...interface{}) {
 		g.P(fmt.Sprintf(formatter, args...))
 	}

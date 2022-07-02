@@ -132,6 +132,8 @@ func testModule(t *testing.T, specs ...string) *Module {
 	}
 	err = runElmTest(testProjectDir, "src/**/*Tests.elm", 10)
 	assert.NoError(t, err)
+	// Run tests as local
+	elm.OverrideLocality(elm.Name)
 	return elm // Last file
 }
 
@@ -152,15 +154,11 @@ func TestLocality(t *testing.T) {
 	ref1 := m.newElmRef("NotOurs", "a")
 	ref2 := m.newElmRef("OurMod", "b")
 	assert.Equal(t, "NotOurs", ref1.Module)
-	assert.Empty(t, ref2.Module)
-	// Flip
-	m.SetRefLocality(false)
-	assert.Equal(t, "NotOurs", ref1.Module)
 	assert.Equal(t, "OurMod", ref2.Module)
-	// Flop
-	m.SetRefLocality(true)
+	// Flip
+	m.OverrideLocality("OurMod")
 	assert.Equal(t, "NotOurs", ref1.Module)
-	assert.Empty(t, ref2.Module)
+	assert.Equal(t, "", ref2.Module)
 }
 
 func TestProto2(t *testing.T) {
@@ -278,3 +276,15 @@ func TestImports(t *testing.T) {
 	assert.Equal(t, "AnotherPkg.otherEncoder", f.Encoder)
 	assert.Equal(t, "AnotherPkgTests.otherFuzzer", f.Fuzzer)
 }
+
+/*
+func TestWellKnown(t *testing.T) {
+	testModule(t, `
+		syntax = "proto3";
+		import "google/protobuf/timestamp.proto";
+		message MyMessage {
+			google.protobuf.Timestamp now_or_never = 1;
+			//google.protobuf.Duration stitch_in_time = 2;
+		}`)
+}
+*/

@@ -176,6 +176,7 @@ Explore options:
 - Nested messages could be nil (incl. oneof)
 - Nested separator should be configurable. For example using `ꓸ` https://www.compart.com/en/unicode/U+A4F8 to achieve near-_zero_ naming collisions
 - Enums have a zero field that acts as an embedded option. We might want to remove this for closed enums and rejecting the whole payload (losing compatibility).
+- Revert well-known types to erk/proto's "raw" interpretation
 
 code quality:
 - elmgen/Field is overloaded, needs to be an interface
