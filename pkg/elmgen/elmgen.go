@@ -8,6 +8,9 @@ import (
 
 type (
 	Module struct {
+		ns       map[string][]*ElmRef
+		nonLocal bool
+
 		Name, Path string
 		Imports    struct {
 			Bytes bool
@@ -29,7 +32,7 @@ type (
 		Module, ID string
 	}
 	ElmType struct {
-		ElmRef
+		*ElmRef
 		asValue string
 	}
 
@@ -151,6 +154,7 @@ func (a RPCs) Less(i, j int) bool { return a[i].ID.String() < a[j].ID.String() }
 
 func NewModule(prefix string, file *protogen.File) *Module {
 	m := new(Module)
+	m.ns = make(map[string][]*ElmRef)
 	// Paths
 	pkg := prefix + string(file.Desc.Package())
 	m.Name = protoFullIdentToElmCasing(pkg, ".", true)
@@ -160,6 +164,19 @@ func NewModule(prefix string, file *protogen.File) *Module {
 	m.addRecords(file.Messages)
 	m.addRPCs(file.Services)
 	return m
+}
+
+func (m *Module) SetRefLocality(local bool) {
+	for _, refs := range m.ns {
+		for _, ref := range refs {
+			if local && ref.Module == m.Name {
+				ref.Module = ""
+			} else if !local && ref.Module == "" {
+				ref.Module = m.Name
+			}
+		}
+	}
+	m.nonLocal = !local
 }
 
 func NewCommentSet(set protogen.CommentSet) *CommentSet {

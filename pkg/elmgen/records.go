@@ -27,7 +27,7 @@ func (m *Module) addRecords(msgs []*protogen.Message) {
 func (m *Module) newRecord(msg *protogen.Message) *Record {
 	md := msg.Desc
 	var record Record
-	record.Type = NewElmType(md.ParentFile(), md)
+	record.Type = m.NewElmType(md.ParentFile(), md)
 	record.Comments = NewCommentSet(msg.Comments)
 	oneofsSeen := make(map[protoreflect.FullName]bool)
 
@@ -85,11 +85,11 @@ func (m *Module) newOneofField(protoOneof *protogen.Oneof) (*Oneof, *Field) {
 		protoFullIdentToElmCasing(string(od.Name()), "", false),
 		NewCommentSet(protoOneof.Comments),
 		true, false, 0, 0,
-		"(Maybe " + oneof.Type.Local() + ")",
+		"(Maybe " + oneof.Type.String() + ")",
 		"Nothing",
-		oneof.Type.Decoder().Local(),
-		oneof.Type.Encoder().Local(),
-		oneof.Type.Fuzzer().Local(),
+		oneof.Type.Decoder().String(),
+		oneof.Type.Encoder().String(),
+		oneof.Type.Fuzzer().String(),
 		nil}
 	// Optional field?
 	if oneof.IsSynthetic {
@@ -141,11 +141,11 @@ func fieldTypeFromKind(m *Module, pd protoreflect.FieldDescriptor) string {
 
 	case protoreflect.EnumKind:
 		ed := pd.Enum()
-		return NewElmType(ed.ParentFile(), ed).Local()
+		return m.NewElmType(ed.ParentFile(), ed).String()
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		md := pd.Message()
-		return NewElmType(md.ParentFile(), md).Local()
+		return m.NewElmType(md.ParentFile(), md).String()
 	}
 
 	log.Panicf("fieldType: unknown protoreflect.Kind: %s", pd.Kind())
@@ -185,11 +185,11 @@ func fieldZero(m *Module, pd protoreflect.FieldDescriptor) string {
 
 	case protoreflect.EnumKind:
 		ed := pd.Enum()
-		return NewElmType(ed.ParentFile(), ed).Zero().Local()
+		return m.NewElmType(ed.ParentFile(), ed).Zero().String()
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		md := pd.Message()
-		return NewElmType(md.ParentFile(), md).Zero().Local()
+		return m.NewElmType(md.ParentFile(), md).Zero().String()
 	}
 
 	log.Panicf("fieldZero: unknown protoreflect.Kind: %s", pd.Kind())
@@ -240,11 +240,11 @@ func fieldKindCodec(m *Module, lib, dir string, pd protoreflect.FieldDescriptor)
 
 	case protoreflect.EnumKind:
 		ed := pd.Enum()
-		return NewElmValue(ed.ParentFile(), ed).Local() + dir
+		return m.NewElmValue(ed.ParentFile(), ed).String() + dir
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		md := pd.Message()
-		return NewElmValue(md.ParentFile(), md).Local() + dir
+		return m.NewElmValue(md.ParentFile(), md).String() + dir
 	}
 
 	log.Panicf("fieldCodec: unknown protoreflect.Kind: %s", pd.Kind())
@@ -286,11 +286,11 @@ func fieldFuzzer(m *Module, pd protoreflect.FieldDescriptor) string {
 
 	case protoreflect.EnumKind:
 		ed := pd.Enum()
-		return NewElmType(ed.ParentFile(), ed).Fuzzer().Local()
+		return m.NewElmType(ed.ParentFile(), ed).Fuzzer().String()
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		md := pd.Message()
-		return NewElmType(md.ParentFile(), md).Fuzzer().Local()
+		return m.NewElmType(md.ParentFile(), md).Fuzzer().String()
 	}
 
 	log.Panicf("kindFuzzer: unknown protoreflect.Kind: %s", pd.Kind())

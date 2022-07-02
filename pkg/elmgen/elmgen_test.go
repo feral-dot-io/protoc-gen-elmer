@@ -18,14 +18,15 @@ import (
 )
 
 func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
-	t.Helper()
 	// Due to https://github.com/protocolbuffers/protobuf/issues/4163
 	// We need to pass files to protoc instead of connecting stdin / stdout
 	// Write all specs to files
 	tmpDir := t.TempDir()
 	var stdin, stdout, genReqparams string
+	var filesToGen []string
 	for i, spec := range specs {
 		proto := "test" + strconv.Itoa(i) + ".proto"
+		filesToGen = append(filesToGen, proto)
 		fullProto := tmpDir + "/" + proto
 		// Keep first, our main test file
 		if i == 0 {
@@ -59,7 +60,7 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 	assert.NoError(t, err)
 	// Create new codegen request
 	req := &pluginpb.CodeGeneratorRequest{
-		FileToGenerate: []string{"test0.proto"},
+		FileToGenerate: filesToGen,
 		Parameter:      &genReqparams,
 		ProtoFile:      protoFiles.File,
 	}
@@ -76,57 +77,52 @@ var changedTestDir bool
 var testFileContents map[string][]byte // For comment testing
 
 func testModule(t *testing.T, specs ...string) *Module {
-	t.Helper()
 	plugin := testPlugin(t, specs...)
-	var elm *Module
-	// One file should have Generate=true. Run NewModule on it
-	for _, f := range plugin.Files {
-		if f.Generate {
-			if elm != nil {
-				t.Fail()
-			}
-			var err error
-			elm = NewModule("", f)
-			assert.NoError(t, err)
-		}
-	}
-
 	testProjectDir := "./testdata/gen-elm"
+	testFileContents = make(map[string][]byte)
+
 	// Remove old tests
 	err := os.RemoveAll(testProjectDir + "/src")
 	assert.NoError(t, err)
 	err = os.MkdirAll(testProjectDir+"/src", 0755)
 	assert.NoError(t, err)
 
-	testFileContents = make(map[string][]byte)
-	assertCodec := func(suffix string, gen func(m *Module, g *protogen.GeneratedFile)) {
-		t.Helper()
-		file := elm.Path + suffix + ".elm"
-		genFile := plugin.NewGeneratedFile(file, "")
-		gen(elm, genFile)
-		// Always format (checks Elm syntax)
-		formatted := FormatFile(plugin, file, genFile)
-		content, _ := formatted.Content()
-		assert.NotEmpty(t, content)
-		// We generated badly formatted Elm code, write unformatted instead
-		if len(content) == 0 {
-			content, _ = genFile.Content()
+	var elm *Module
+	for _, f := range plugin.Files {
+		if !f.Generate {
+			continue
 		}
-		// Ensure folder path exists
-		fullFile := testProjectDir + "/src/" + file
-		err = os.MkdirAll(filepath.Dir(fullFile), 0755)
-		assert.NoError(t, err)
-		// Copy to testdata for inspection / tests
-		err = os.WriteFile(fullFile, content, 0644)
-		assert.NoError(t, err)
-		// Make available
-		testFileContents[file] = content
-	}
-	// Sanity check: always run through code gen
-	assertCodec("", GenerateCodec)
-	assertCodec("Tests", GenerateFuzzTests)
-	if len(elm.Services) > 0 {
-		assertCodec("Twirp", GenerateTwirp)
+
+		runGenerator := func(suffix string, gen func(m *Module, g *protogen.GeneratedFile)) {
+			file := elm.Path + suffix + ".elm"
+			genFile := plugin.NewGeneratedFile(file, "")
+			gen(elm, genFile)
+			// Always format (checks Elm syntax)
+			formatted := FormatFile(plugin, file, genFile)
+			content, _ := formatted.Content()
+			assert.NotEmpty(t, content)
+			// We generated badly formatted Elm code, write unformatted instead
+			if len(content) == 0 {
+				content, _ = genFile.Content()
+			}
+			// Ensure folder path exists
+			fullFile := testProjectDir + "/src/" + file
+			err = os.MkdirAll(filepath.Dir(fullFile), 0755)
+			assert.NoError(t, err)
+			// Copy to testdata for inspection / tests
+			err = os.WriteFile(fullFile, content, 0644)
+			assert.NoError(t, err)
+			// Make available
+			testFileContents[file] = content
+		}
+
+		// Run through all of our codegen
+		elm = NewModule("", f)
+		runGenerator("", GenerateCodec)
+		runGenerator("Tests", GenerateFuzzTests)
+		if len(elm.Services) > 0 {
+			runGenerator("Twirp", GenerateTwirp)
+		}
 	}
 	// Finally, run tests
 	if !changedTestDir {
@@ -136,7 +132,7 @@ func testModule(t *testing.T, specs ...string) *Module {
 	}
 	err = runElmTest(testProjectDir, "src/**/*Tests.elm", 10)
 	assert.NoError(t, err)
-	return elm
+	return elm // Last file
 }
 
 func TestSpecialProto(t *testing.T) {
@@ -149,6 +145,24 @@ func TestSpecialProto(t *testing.T) {
 	`)
 }
 
+func TestLocality(t *testing.T) {
+	m := new(Module)
+	m.Name = "OurMod"
+	m.ns = make(map[string][]*ElmRef)
+	ref1 := m.newElmRef("NotOurs", "a")
+	ref2 := m.newElmRef("OurMod", "b")
+	assert.Equal(t, "NotOurs", ref1.Module)
+	assert.Empty(t, ref2.Module)
+	// Flip
+	m.SetRefLocality(false)
+	assert.Equal(t, "NotOurs", ref1.Module)
+	assert.Equal(t, "OurMod", ref2.Module)
+	// Flop
+	m.SetRefLocality(true)
+	assert.Equal(t, "NotOurs", ref1.Module)
+	assert.Empty(t, ref2.Module)
+}
+
 func TestProto2(t *testing.T) {
 	elm := testModule(t, `
 		syntax = "proto2";
@@ -158,7 +172,7 @@ func TestProto2(t *testing.T) {
 		  optional bool no = 3;
 		}`)
 	r := elm.Records[0]
-	assert.Equal(t, "SearchRequest", r.Type.Local())
+	assert.Equal(t, "SearchRequest", r.Type.ID)
 	assert.Equal(t, protoreflect.Required, r.Fields[0].Cardinality)
 	assert.Equal(t, protoreflect.Optional, r.Fields[1].Cardinality)
 	assert.Equal(t, protoreflect.Optional, r.Fields[2].Cardinality)
@@ -213,21 +227,21 @@ func TestQualifiedWithComments(t *testing.T) {
 	assert.Len(t, elm.Oneofs, 2)
 	// Union
 	u := elm.Unions[0]
-	assert.Equal(t, "Outer_Option", u.Type.Local())
+	assert.Equal(t, "Outer_Option", u.Type.ID)
 	assert.Len(t, u.Variants, 2)
-	assert.Equal(t, "Outer_Hero", u.DefaultVariant.ID.Local())
-	assert.Equal(t, "Outer_Worst", u.Variants[0].ID.Local())
-	assert.Equal(t, "Outer_Best", u.Variants[1].ID.Local())
+	assert.Equal(t, "Outer_Hero", u.DefaultVariant.ID.ID)
+	assert.Equal(t, "Outer_Worst", u.Variants[0].ID.ID)
+	assert.Equal(t, "Outer_Best", u.Variants[1].ID.ID)
 	// Records
-	assert.Equal(t, "Outer", elm.Records[0].Type.Local())
-	assert.Equal(t, "Outer_Inner", elm.Records[1].Type.Local())
+	assert.Equal(t, "Outer", elm.Records[0].Type.ID)
+	assert.Equal(t, "Outer_Inner", elm.Records[1].Type.ID)
 	// Oneof
 	o := elm.Oneofs[0]
-	assert.Equal(t, "Outer_Inner_Conundrum", o.Type.Local())
-	assert.Equal(t, "Outer_Inner_Or", o.Variants[0].ID.Local())
-	assert.Equal(t, "Outer_Inner_And", o.Variants[1].ID.Local())
-	assert.Equal(t, "Outer_Inner_Maybe", elm.Oneofs[1].Type.Local())
-	assert.Equal(t, "outer_Inner_MaybeDecoder", elm.Oneofs[1].Type.Decoder().Local())
+	assert.Equal(t, "Outer_Inner_Conundrum", o.Type.ID)
+	assert.Equal(t, "Outer_Inner_Or", o.Variants[0].ID.ID)
+	assert.Equal(t, "Outer_Inner_And", o.Variants[1].ID.ID)
+	assert.Equal(t, "Outer_Inner_Maybe", elm.Oneofs[1].Type.ID)
+	assert.Equal(t, "outer_Inner_MaybeDecoder", elm.Oneofs[1].Type.Decoder().ID)
 	// Check comments
 	content := string(testFileContents["Comments.elm"])
 	for placement, max := range map[string]int{
@@ -240,24 +254,27 @@ func TestQualifiedWithComments(t *testing.T) {
 	}
 }
 
-func _TestImports(t *testing.T) {
+func TestImports(t *testing.T) {
 	elm := testModule(t, `
 		syntax = "proto3";
 		import "test1.proto";
 		message MyMessage {
-			test1.Other out_of_this_world = 1;
+			AnotherPkg.Other out_of_this_world = 1;
 		}`, `
 		syntax = "proto3";
-		package test1;
+		package AnotherPkg;
 		message Other {
 			int32 a = 1;
 			int32 b = 2;
 			int32 c = 3;
 		}`)
 	assert.Len(t, elm.Records, 1)
-	assert.Equal(t, "MyMessage", elm.Records[0].Type.Local())
+	assert.Equal(t, "MyMessage", elm.Records[0].Type.ID)
 	f := elm.Records[0].Fields[0]
-	assert.Equal(t, "out_of_this_world", f.Label)
-	assert.Equal(t, "Other", f.Type)
-	// TODO: this requires a lot of work on naming
+	assert.Equal(t, "outOfThisWorld", f.Label)
+	assert.Equal(t, "AnotherPkg.Other", f.Type)
+	assert.Equal(t, "AnotherPkg.emptyOther", f.Zero)
+	assert.Equal(t, "AnotherPkg.otherDecoder", f.Decoder)
+	assert.Equal(t, "AnotherPkg.otherEncoder", f.Encoder)
+	assert.Equal(t, "AnotherPkgTests.otherFuzzer", f.Fuzzer)
 }

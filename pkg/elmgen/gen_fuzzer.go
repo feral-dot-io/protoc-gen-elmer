@@ -24,6 +24,7 @@ func runElmTest(projDir, globs string, fuzz int) error {
 }
 
 func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
+	m.SetRefLocality(false)
 	gFP := func(formatter string, args ...interface{}) {
 		g.P(fmt.Sprintf(formatter, args...))
 	}
@@ -31,7 +32,11 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 	g.P("module ", m.Name, "Tests exposing (..)")
 	printDoNotEdit(g)
 
-	gFP("import %s", m.Name)
+	g.P("import Expect")
+	g.P("import Fuzz exposing (Fuzzer)")
+	g.P("import Protobuf.Decode as PD")
+	g.P("import Protobuf.Encode as PE")
+	g.P("import Test exposing (Test, fuzz, test)")
 	if m.Imports.Bytes {
 		g.P("import Bytes exposing (Bytes)")
 		g.P("import Bytes.Encode as BE")
@@ -39,11 +44,14 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 	if m.Imports.Dict {
 		g.P("import Dict")
 	}
-	g.P("import Expect")
-	g.P("import Fuzz exposing (Fuzzer)")
-	g.P("import Protobuf.Decode as PD")
-	g.P("import Protobuf.Encode as PE")
-	g.P("import Test exposing (Test, fuzz, test)")
+	// Always import module under test
+	g.P("import ", m.Name)
+	// Import fuzzers from non-local Tests
+	for mod := range m.ns {
+		if mod != m.Name {
+			gFP("import %sTests", mod)
+		}
+	}
 
 	// Helpers
 	if m.Fuzzers.Int32 || m.Fuzzers.Float32 || len(m.Unions) > 0 {
@@ -75,8 +83,8 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 	// Union fuzzers
 	for _, u := range m.Unions {
 		t := u.Type
-		gFP("%s : Fuzzer %s", t.Fuzzer().Local(), t)
-		gFP("%s =", t.Fuzzer().Local())
+		gFP("%s : Fuzzer %s", t.Fuzzer().ID, t)
+		gFP("%s =", t.Fuzzer().ID)
 		gFP("    Fuzz.oneOf")
 		gFP("        [ Fuzz.map %s fuzzInt32", u.DefaultVariant.ID)
 		for _, v := range u.Variants {
@@ -87,12 +95,12 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 
 	// Record fuzzers
 	for _, r := range m.Records {
-		gFP("%s : Fuzzer %s", r.Type.Fuzzer().Local(), r.Type)
-		gFP("%s =", r.Type.Fuzzer().Local())
+		gFP("%s : Fuzzer %s", r.Type.Fuzzer().ID, r.Type)
+		gFP("%s =", r.Type.Fuzzer().ID)
 		if len(r.Oneofs) > 0 {
 			gFP("    let")
 			for _, o := range r.Oneofs {
-				gFP("        %s =", o.Type.Fuzzer().Local())
+				gFP("        %s =", o.Type.Fuzzer().ID)
 				gFP("            Fuzz.oneOf")
 				for j, v := range o.Variants {
 					prefix := "                "
@@ -146,8 +154,8 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 		types = append(types, u.Type)
 	}
 	for _, t := range types {
-		gFP("test%s : Test", t.Local())
-		gFP("test%s =", t.Local())
+		gFP("test%s : Test", t.ID)
+		gFP("test%s =", t.ID)
 		gFP("    let")
 		// TODO move `run` to top-level
 		gFP("        run data =")
@@ -157,7 +165,7 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 		gFP("    in")
 		gFP(`    Test.describe "encode then decode %s"`, t.ID)
 		gFP(`        [ test "empty" (\_ -> run %s)`, t.Zero())
-		gFP(`        , fuzz %s "fuzzer" run`, t.Fuzzer().Local())
+		gFP(`        , fuzz %s "fuzzer" run`, t.Fuzzer().ID)
 		gFP("        ]")
 	}
 }

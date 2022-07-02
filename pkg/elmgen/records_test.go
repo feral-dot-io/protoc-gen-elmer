@@ -73,10 +73,10 @@ func TestScalarRecord(t *testing.T) {
 	assert.Len(t, elm.Records, 1)
 	scalar := elm.Records[0]
 	// IDs
-	assert.Equal(t, "Scalar", scalar.Type.Local())
-	assert.Equal(t, "emptyScalar", scalar.Type.Zero().Local())
-	assert.Equal(t, "scalarDecoder", scalar.Type.Decoder().Local())
-	assert.Equal(t, "scalarEncoder", scalar.Type.Encoder().Local())
+	assert.Equal(t, "Scalar", scalar.Type.ID)
+	assert.Equal(t, "emptyScalar", scalar.Type.Zero().ID)
+	assert.Equal(t, "scalarDecoder", scalar.Type.Decoder().ID)
+	assert.Equal(t, "scalarEncoder", scalar.Type.Encoder().ID)
 	// Fields
 	assertFields(t, scalar.Fields,
 		&Field{"myDouble", nil, false, false, 1, opt, "Float", "0", "", "", "Fuzz.float", nil},
@@ -263,7 +263,7 @@ func TestOneOf(t *testing.T) {
 	assert.Len(t, elm.Oneofs, 2)
 	r := elm.Records[0]
 	assert.Len(t, r.Oneofs, 2)
-	assert.Equal(t, "Multi", r.Type.Local())
+	assert.Equal(t, "Multi", r.Type.ID)
 	assertFields(t, r.Fields,
 		&Field{"pickOne", nil, true, false, 0, 0, "(Maybe Multi_PickOne)", "Nothing",
 			"multi_PickOneDecoder", "multi_PickOneEncoder", "multi_PickOneFuzzer", nil},
@@ -281,7 +281,7 @@ func TestOptionalField(t *testing.T) {
 	assert.Len(t, elm.Records, 1)
 	assert.Len(t, elm.Oneofs, 1)
 	r := elm.Records[0]
-	assert.Equal(t, "Night", r.Type.Local())
+	assert.Equal(t, "Night", r.Type.ID)
 	assertFields(t, r.Fields,
 		&Field{"shadow", nil, true, false, 0, 0, "(Maybe Bool)", "Nothing",
 			"night_ShadowDecoder", "night_ShadowEncoder", "night_ShadowFuzzer", nil})
@@ -298,12 +298,12 @@ func TestOptionalField(t *testing.T) {
 	assert.Len(t, elm.Records, 2)
 	assert.Len(t, elm.Oneofs, 1)
 	r = elm.Records[0]
-	assert.Equal(t, "Day", r.Type.Local())
+	assert.Equal(t, "Day", r.Type.ID)
 	assertFields(t, r.Fields,
 		&Field{"sun", nil, false, false, 1, opt, "Day_Night", "emptyDay_Night",
 			"day_NightDecoder", "day_NightEncoder", "day_NightFuzzer", nil})
 	r = elm.Records[1]
-	assert.Equal(t, "Day_Night", r.Type.Local())
+	assert.Equal(t, "Day_Night", r.Type.ID)
 	assertFields(t, r.Fields,
 		&Field{"shadow", nil, true, false, 0, 0, "(Maybe Bool)", "Nothing",
 			"day_Night_ShadowDecoder", "day_Night_ShadowEncoder", "day_Night_ShadowFuzzer", nil})

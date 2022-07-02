@@ -48,18 +48,18 @@ func TestUnions(t *testing.T) {
 	} {
 		union := elm.Unions[i]
 		// IDs
-		assert.Equal(t, exp.Local, union.Type.Local())
-		assert.Equal(t, exp.Zero, union.Type.Zero().Local())
-		assert.Equal(t, exp.Decode, union.Type.Decoder().Local())
-		assert.Equal(t, exp.Encode, union.Type.Encoder().Local())
+		assert.Equal(t, exp.Local, union.Type.ID)
+		assert.Equal(t, exp.Zero, union.Type.Zero().ID)
+		assert.Equal(t, exp.Decode, union.Type.Decoder().ID)
+		assert.Equal(t, exp.Encode, union.Type.Encoder().ID)
 		// Default
-		assert.Equal(t, exp.Default, union.DefaultVariant.ID.Local())
+		assert.Equal(t, exp.Default, union.DefaultVariant.ID.ID)
 		assert.Zero(t, union.DefaultVariant.Number)
 		// Variants
 		assert.Len(t, union.Variants, len(exp.Variants))
 		for j, v := range union.Variants {
 			expVar := exp.Variants[j]
-			assert.Equal(t, expVar.Local, v.ID.Local())
+			assert.Equal(t, expVar.Local, v.ID.ID)
 			assert.Equal(t, expVar.Number, v.Number)
 		}
 	}
@@ -78,7 +78,7 @@ func TestUnionAllowAlias(t *testing.T) {
 	alias := elm.Unions[0]
 	assert.Len(t, alias.Variants, 1)
 	assert.Len(t, alias.Aliases, 1)
-	assert.Equal(t, "Started", alias.Variants[0].ID.Local())
-	assert.Equal(t, "running", alias.Aliases[0].Alias.Local())
+	assert.Equal(t, "Started", alias.Variants[0].ID.ID)
+	assert.Equal(t, "running", alias.Aliases[0].Alias.ID)
 	assert.Equal(t, "X.Started", alias.Aliases[0].ID.String())
 }

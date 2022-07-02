@@ -18,7 +18,7 @@ func (m *Module) addUnions(enums []*protogen.Enum) {
 func (m *Module) newUnion(enum *protogen.Enum) *Union {
 	ed := enum.Desc
 	union := new(Union)
-	union.Type = NewElmType(ed.ParentFile(), ed)
+	union.Type = m.NewElmType(ed.ParentFile(), ed)
 	union.Comments = NewCommentSet(enum.Comments)
 	// Add variants
 	aliases := make(map[protoreflect.EnumNumber]*Variant)
@@ -27,13 +27,13 @@ func (m *Module) newUnion(enum *protogen.Enum) *Union {
 		num := vd.Number()
 		// Variant (type) or alias (value)?
 		if original := aliases[num]; original != nil {
-			alias := NewElmValue(vd.ParentFile(), vd)
+			alias := m.NewElmValue(vd.ParentFile(), vd)
 			union.Aliases = append(union.Aliases,
 				&VariantAlias{original, alias})
 		} else {
 			// Create
-			id := NewElmType(vd.ParentFile(), vd).ElmRef
-			v := &Variant{&id, num, NewCommentSet(value.Comments)}
+			id := m.NewElmType(vd.ParentFile(), vd).ElmRef
+			v := &Variant{id, num, NewCommentSet(value.Comments)}
 			// Add
 			if i == 0 { // First is the default
 				union.DefaultVariant = v
@@ -53,15 +53,15 @@ func (m *Module) newOneof(protoOneof *protogen.Oneof) *Oneof {
 	oneof.IsSynthetic = od.IsSynthetic()
 	if oneof.IsSynthetic {
 		firstField := od.Fields().Get(0)
-		oneof.Type = NewElmType(firstField.ParentFile(), firstField)
+		oneof.Type = m.NewElmType(firstField.ParentFile(), firstField)
 	} else {
-		oneof.Type = NewElmType(od.ParentFile(), od)
+		oneof.Type = m.NewElmType(od.ParentFile(), od)
 	}
 	// Add field types
 	for _, field := range protoOneof.Fields {
 		fd := field.Desc
 		v := &OneofVariant{
-			&NewElmType(fd.ParentFile(), fd).ElmRef,
+			m.NewElmType(fd.ParentFile(), fd).ElmRef,
 			m.newField(field)}
 		oneof.Variants = append(oneof.Variants, v)
 	}

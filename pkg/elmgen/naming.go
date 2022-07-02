@@ -59,23 +59,31 @@ func protoToElm(p Packager, d FullNamer) (mod, asType, asValue string) {
 	return
 }
 
-func NewElmValue(p Packager, d FullNamer) *ElmRef {
-	mod, _, asValue := protoToElm(p, d)
-	return &ElmRef{mod, asValue}
+func (m *Module) newElmRef(mod, id string) *ElmRef {
+	ref := &ElmRef{mod, id}
+	if !m.nonLocal && m.Name == mod {
+		ref.Module = ""
+	}
+	m.ns[mod] = append(m.ns[mod], ref)
+	return ref
 }
 
-func NewElmType(p Packager, d FullNamer) *ElmType {
+func (m *Module) NewElmValue(p Packager, d FullNamer) *ElmRef {
+	mod, _, asValue := protoToElm(p, d)
+	return m.newElmRef(mod, asValue)
+}
+
+func (m *Module) NewElmType(p Packager, d FullNamer) *ElmType {
 	mod, asType, asValue := protoToElm(p, d)
-	ref := ElmRef{mod, asType}
+	ref := m.newElmRef(mod, asType)
 	return &ElmType{ref, asValue}
 }
 
 func (r *ElmRef) String() string {
+	if r.Module == "" { // Local ref
+		return r.ID
+	}
 	return r.Module + "." + r.ID
-}
-
-func (r *ElmRef) Local() string {
-	return r.ID
 }
 
 func (r *ElmType) derivedFn(pre, post string) *ElmRef {
@@ -92,7 +100,13 @@ func (r *ElmType) derivedFn(pre, post string) *ElmRef {
 func (r *ElmType) Zero() *ElmRef    { return r.derivedFn("empty", "") }
 func (r *ElmType) Decoder() *ElmRef { return r.derivedFn("", "Decoder") }
 func (r *ElmType) Encoder() *ElmRef { return r.derivedFn("", "Encoder") }
-func (r *ElmType) Fuzzer() *ElmRef  { return r.derivedFn("", "Fuzzer") }
+func (r *ElmType) Fuzzer() *ElmRef {
+	ref := r.derivedFn("", "Fuzzer")
+	if ref.Module != "" { // Reference tests on non-local
+		ref.Module += "Tests"
+	}
+	return ref
+}
 
 /*
 	Transforms a Protobuf fullIdent into an Elm ID. Aside from an optional namespace separator, attempts to follow Elm's naming conventions.

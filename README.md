@@ -167,10 +167,9 @@ Major goals to complete:
 - 64-bit support
 - Existing options have caveats (e.g., partial feature support). Avoid this.
 - Twirp client options (URL prefix, auth, etc)
+- Update this README
 
 Smaller steps:
-- comments with Elm naming commands? e.g., [elm=HelloEnum]
-- imports need to reference other files
 - any TODO comments
 
 Explore options:
