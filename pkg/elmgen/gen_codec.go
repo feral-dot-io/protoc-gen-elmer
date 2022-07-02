@@ -127,14 +127,16 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	for _, r := range m.Records {
 		r.Comments.printBlock(g)
 		gFP("type alias %s =", r.Type)
-		gFP("    {")
 		for i, f := range r.Fields {
 			prefix := ","
 			if i == 0 {
-				prefix = ""
+				prefix = "{"
 			}
 			f.Comments.printDashDash(g)
 			gFP("    %s %s : %s", prefix, f.Label, f.Type)
+		}
+		if len(r.Fields) == 0 {
+			gFP("    {")
 		}
 		gFP("    }")
 		r.Comments.printBlockTrailing(g)
