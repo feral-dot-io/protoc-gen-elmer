@@ -6,7 +6,7 @@ module ExampleTests exposing (..)
 
 import Bytes exposing (Bytes)
 import Bytes.Encode as BE
-import Dict
+import Dict exposing (Dict)
 import Example
 import Expect
 import Fuzz exposing (Fuzzer)
@@ -64,10 +64,7 @@ allTogetherFuzzer =
     in
     Fuzz.map Example.AllTogether
         (Fuzz.list Fuzz.string)
-        |> Fuzz.andMap
-            (Fuzz.map Dict.fromList
-                (Fuzz.list (Fuzz.tuple ( Fuzz.string, Fuzz.bool )))
-            )
+        |> Fuzz.andMap (Fuzz.map Dict.fromList (Fuzz.list (Fuzz.tuple ( Fuzz.string, Fuzz.bool ))))
         |> Fuzz.andMap (Fuzz.maybe allTogether_FavouriteFuzzer)
         |> Fuzz.andMap (Fuzz.maybe allTogether_MyNameFuzzer)
         |> Fuzz.andMap allTogether_NestedAbcFuzzer

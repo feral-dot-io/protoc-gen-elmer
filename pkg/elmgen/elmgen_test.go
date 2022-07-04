@@ -96,11 +96,10 @@ func testModule(t *testing.T, specs ...string) *Module {
 		runGenerator := func(suffix string, gen func(m *Module, g *protogen.GeneratedFile)) {
 			elm = NewModule("", suffix, f)
 			// Generate file
-			file := elm.Path + ".elm"
-			genFile := plugin.NewGeneratedFile(file, "")
+			genFile := plugin.NewGeneratedFile(elm.Path, "")
 			gen(elm, genFile)
 			// Always format (checks Elm syntax)
-			formatted := FormatFile(plugin, file, genFile)
+			formatted := FormatFile(plugin, elm.Path, genFile)
 			content, _ := formatted.Content()
 			assert.NotEmpty(t, content)
 			// We generated badly formatted Elm code, write unformatted instead
@@ -108,14 +107,14 @@ func testModule(t *testing.T, specs ...string) *Module {
 				content, _ = genFile.Content()
 			}
 			// Ensure folder path exists
-			fullFile := testProjectDir + "/src/" + file
+			fullFile := testProjectDir + "/src/" + elm.Path
 			err = os.MkdirAll(filepath.Dir(fullFile), 0755)
 			assert.NoError(t, err)
 			// Copy to testdata for inspection / tests
 			err = os.WriteFile(fullFile, content, 0644)
 			assert.NoError(t, err)
 			// Make available
-			testFileContents[file] = content
+			testFileContents[elm.Path] = content
 		}
 
 		// Run through all of our codegen

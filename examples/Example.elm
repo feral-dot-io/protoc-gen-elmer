@@ -22,8 +22,8 @@ type AllTogether_Answer
 {-| A complex record with lots of features
 -}
 type alias AllTogether =
-    { --  Lists
-      myList : List String
+    --  Lists
+    { myList : List String
 
     --  Maps
     , myMap : Dict String Bool

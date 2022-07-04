@@ -11,5 +11,5 @@ import (
 func main() {
 	opts := protogen.Options{
 		ParamFunc: flag.CommandLine.Set}
-	opts.Run(cmdgen.RunGenerator("Twirp.elm", elmgen.GenerateTwirp))
+	opts.Run(cmdgen.RunGenerator("Twirp", elmgen.GenerateTwirp))
 }

@@ -11,7 +11,7 @@ func GenerateTwirp(m *Module, g *protogen.GeneratedFile) {
 		g.P(fmt.Sprintf(formatter, args...))
 	}
 
-	gFP("module %sTwirp exposing (..)", m.Name)
+	gFP("module %s exposing (..)", m.Name)
 	printDoNotEdit(g)
 
 	gFP("import Http")

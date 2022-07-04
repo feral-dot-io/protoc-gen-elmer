@@ -140,9 +140,13 @@ func NewModule(prefix, suffix string, file *protogen.File) *Module {
 	m := new(Module)
 	m.importsSeen = make(map[string]bool)
 	// Paths
-	pkg := prefix + string(file.Desc.Package())
+	pkg := string(file.Desc.Package())
+	if pkg == "" {
+		pkg = "X"
+	}
+	pkg = prefix + pkg + suffix
 	m.Name = protoFullIdentToElmCasing(pkg, ".", true)
-	m.Path = protoFullIdentToElmCasing(pkg, "/", true) + suffix
+	m.Path = protoFullIdentToElmCasing(pkg, "/", true) + ".elm"
 	// Parse file
 	m.addUnions(file.Enums)
 	m.addRecords(file.Messages)

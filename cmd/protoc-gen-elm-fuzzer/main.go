@@ -11,5 +11,5 @@ import (
 func main() {
 	opts := protogen.Options{
 		ParamFunc: flag.CommandLine.Set}
-	opts.Run(cmdgen.RunGenerator("Tests.elm", elmgen.GenerateFuzzTests))
+	opts.Run(cmdgen.RunGenerator("Tests", elmgen.GenerateFuzzTests))
 }

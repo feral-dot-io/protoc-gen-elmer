@@ -4,6 +4,9 @@ module ExampleTwirp exposing (..)
    // Code generated protoc-gen-elmer DO NOT EDIT \\
 -}
 
+import Bytes exposing (Bytes)
+import Bytes.Encode as BE
+import Dict exposing (Dict)
 import Example
 import Http
 import Protobuf.Decode as PD
