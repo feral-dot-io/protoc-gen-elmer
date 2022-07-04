@@ -73,7 +73,6 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 
 //go:generate testdata/gen-elm-test-proj
 
-var changedTestDir bool
 var testFileContents map[string][]byte // For comment testing
 
 func testModule(t *testing.T, specs ...string) *Module {
@@ -127,13 +126,16 @@ func testModule(t *testing.T, specs ...string) *Module {
 			runGenerator("Twirp", GenerateTwirp)
 		}
 	}
+	// Change pwd to tests
+	wd, err := os.Getwd()
+	assert.NoError(t, err)
+	err = os.Chdir(testProjectDir)
+	assert.NoError(t, err)
 	// Finally, run tests
-	if !changedTestDir {
-		err = os.Chdir(testProjectDir)
-		assert.NoError(t, err)
-		changedTestDir = true
-	}
 	err = runElmTest(testProjectDir, "src/**/*Tests.elm", 10)
+	assert.NoError(t, err)
+	// Reset wd
+	err = os.Chdir(wd)
 	assert.NoError(t, err)
 	// Run tests as local codec
 	return lastCodec
