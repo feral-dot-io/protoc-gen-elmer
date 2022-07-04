@@ -72,6 +72,7 @@ func (m *Module) newField(field *protogen.Field) *Field {
 	}
 	return &Field{
 		protoFullIdentToElmCasing(string(fd.Name()), "", false),
+		fd, nil,
 		NewCommentSet(field.Comments),
 		false, fd.IsMap(), fd.Number(), fd.Cardinality(),
 		typ, zero, decoder, encoder, fuzzer, key,
@@ -83,6 +84,7 @@ func (m *Module) newOneofField(protoOneof *protogen.Oneof) (*Oneof, *Field) {
 	oneof := m.newOneof(protoOneof)
 	field := &Field{
 		protoFullIdentToElmCasing(string(od.Name()), "", false),
+		nil, od,
 		NewCommentSet(protoOneof.Comments),
 		true, false, 0, 0,
 		"(Maybe " + oneof.Type.String() + ")",
@@ -94,7 +96,8 @@ func (m *Module) newOneofField(protoOneof *protogen.Oneof) (*Oneof, *Field) {
 	// Optional field?
 	if oneof.IsSynthetic {
 		// Unwrap type
-		field.Label = string(od.Fields().Get(0).Name())
+		field.Desc = od.Fields().Get(0)
+		field.Label = string(field.Desc.Name())
 		field.Type = "(Maybe " + oneof.Variants[0].Field.Type + ")"
 	}
 	return oneof, field
@@ -104,7 +107,6 @@ func fieldType(m *Module, pd protoreflect.FieldDescriptor) string {
 	if pd.IsMap() {
 		key := fieldType(m, pd.MapKey())
 		val := fieldType(m, pd.MapValue())
-		m.Imports.Dict = true
 		return "(Dict " + key + " " + val + ")"
 	}
 
@@ -136,7 +138,7 @@ func fieldTypeFromKind(m *Module, pd protoreflect.FieldDescriptor) string {
 		return "String"
 
 	case protoreflect.BytesKind:
-		m.Imports.Bytes = true
+		m.Helpers.Bytes = true
 		return "Bytes"
 
 	case protoreflect.EnumKind:
@@ -259,10 +261,10 @@ func fieldFuzzer(m *Module, pd protoreflect.FieldDescriptor) string {
 	case protoreflect.BoolKind:
 		return "Fuzz.bool"
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
-		m.Fuzzers.Int32 = true
+		m.Helpers.FuzzInt32 = true
 		return "fuzzInt32"
 	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-		m.Fuzzers.Uint32 = true
+		m.Helpers.FuzzUint32 = true
 		return "fuzzUint32"
 
 	/* Unsupported by Elm / JS
@@ -273,7 +275,7 @@ func fieldFuzzer(m *Module, pd protoreflect.FieldDescriptor) string {
 	*/
 
 	case protoreflect.FloatKind:
-		m.Fuzzers.Float32 = true
+		m.Helpers.FuzzFloat32 = true
 		return "fuzzFloat32"
 	case protoreflect.DoubleKind:
 		return "Fuzz.float"
@@ -281,7 +283,7 @@ func fieldFuzzer(m *Module, pd protoreflect.FieldDescriptor) string {
 	case protoreflect.StringKind:
 		return "Fuzz.string"
 	case protoreflect.BytesKind:
-		m.Imports.Bytes = true
+		m.Helpers.Bytes = true
 		return "fuzzBytes"
 
 	case protoreflect.EnumKind:

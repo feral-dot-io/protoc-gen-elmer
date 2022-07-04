@@ -15,9 +15,7 @@ func GenerateTwirp(m *Module, g *protogen.GeneratedFile) {
 	printDoNotEdit(g)
 
 	gFP("import Http")
-	gFP("import Protobuf.Decode as PD")
-	gFP("import Protobuf.Encode as PE")
-	printImports(g, m)
+	printImports(g, m, true)
 
 	for _, s := range m.Services {
 		s.Comments.printDashDash(g)

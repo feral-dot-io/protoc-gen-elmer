@@ -1,6 +1,8 @@
 package elmgen
 
 import (
+	"sort"
+
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -8,17 +10,16 @@ import (
 
 type (
 	Module struct {
-		ns map[string][]*ElmRef
+		importsSeen map[string]bool
 
 		Name, Path string
-		Imports    struct {
+		Imports    []string
+		Helpers    struct {
 			Bytes bool
-			Dict  bool
-		}
-		Fuzzers struct {
-			Int32   bool
-			Uint32  bool
-			Float32 bool
+
+			FuzzInt32   bool
+			FuzzUint32  bool
+			FuzzFloat32 bool
 		}
 
 		Unions   Unions
@@ -91,6 +92,8 @@ type (
 	// Represents an Elm record field
 	Field struct {
 		Label    string
+		Desc     protoreflect.FieldDescriptor
+		Oneof    protoreflect.OneofDescriptor
 		Comments *CommentSet
 		// Wire handling
 		IsOneof     bool
@@ -154,7 +157,7 @@ func (a RPCs) Less(i, j int) bool { return a[i].ID.String() < a[j].ID.String() }
 
 func NewModule(prefix, suffix string, file *protogen.File) *Module {
 	m := new(Module)
-	m.ns = make(map[string][]*ElmRef)
+	m.importsSeen = make(map[string]bool)
 	// Paths
 	pkg := prefix + string(file.Desc.Package())
 	m.Name = protoFullIdentToElmCasing(pkg, ".", true) + suffix
@@ -163,6 +166,12 @@ func NewModule(prefix, suffix string, file *protogen.File) *Module {
 	m.addUnions(file.Enums)
 	m.addRecords(file.Messages)
 	m.addRPCs(file.Services)
+	// Imports
+	m.findImports()
+	for key := range m.importsSeen {
+		m.Imports = append(m.Imports, key)
+	}
+	sort.Strings(m.Imports)
 	return m
 }
 

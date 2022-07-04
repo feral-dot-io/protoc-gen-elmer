@@ -79,10 +79,22 @@ func (set *CommentSet) printDashDash(g *protogen.GeneratedFile) {
 	}
 }
 
-func printImports(g *protogen.GeneratedFile, m *Module) {
-	for mod := range m.ns {
-		if mod != m.Name && !strings.HasSuffix(mod, "Tests") {
-			g.P("import ", mod)
+func printImports(g *protogen.GeneratedFile, m *Module, skipTests bool) {
+	g.P("import Protobuf.Decode as PD")
+	g.P("import Protobuf.Encode as PE")
+	for _, i := range m.Imports {
+		// Skip tests? TODO remove once Fuzzer pushed to gen_*
+		if skipTests && strings.HasSuffix(i, "Tests") {
+			continue
+		}
+		switch i {
+		case "Bytes":
+			g.P("import Bytes exposing (Bytes)")
+			g.P("import Bytes.Encode as BE")
+		case "Dict":
+			g.P("import Dict exposing (Dict)")
+		default:
+			g.P("import ", i)
 		}
 	}
 }
@@ -93,17 +105,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	}
 	g.P("module ", m.Name, " exposing (..)")
 	printDoNotEdit(g)
-
-	g.P("import Protobuf.Decode as PD")
-	g.P("import Protobuf.Encode as PE")
-	if m.Imports.Bytes {
-		g.P("import Bytes exposing (Bytes)")
-		g.P("import Bytes.Encode as BE")
-	}
-	if m.Imports.Dict {
-		g.P("import Dict exposing (Dict)")
-	}
-	printImports(g, m)
+	printImports(g, m, true)
 
 	// Unions
 	for _, u := range m.Unions {

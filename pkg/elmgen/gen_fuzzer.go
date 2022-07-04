@@ -33,42 +33,28 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 
 	g.P("import Expect")
 	g.P("import Fuzz exposing (Fuzzer)")
-	g.P("import Protobuf.Decode as PD")
-	g.P("import Protobuf.Encode as PE")
 	g.P("import Test exposing (Test, fuzz, test)")
-	if m.Imports.Bytes {
-		g.P("import Bytes exposing (Bytes)")
-		g.P("import Bytes.Encode as BE")
-	}
-	if m.Imports.Dict {
-		g.P("import Dict")
-	}
-	// Import fuzzers from non-local Tests
-	for mod := range m.ns {
-		if mod != m.Name {
-			g.P("import ", mod)
-		}
-	}
+	printImports(g, m, false)
 
 	// Helpers
-	if m.Fuzzers.Int32 || m.Fuzzers.Float32 || len(m.Unions) > 0 {
+	if m.Helpers.FuzzInt32 || m.Helpers.FuzzFloat32 || len(m.Unions) > 0 {
 		g.P("fuzzInt32 : Fuzzer Int")
 		g.P("fuzzInt32 =")
 		g.P("    Fuzz.intRange -2147483648 2147483647")
 	}
-	if m.Fuzzers.Uint32 {
+	if m.Helpers.FuzzUint32 {
 		g.P("fuzzUint32 : Fuzzer Int")
 		g.P("fuzzUint32 =")
 		g.P("    Fuzz.intRange 0 4294967295")
 	}
-	if m.Fuzzers.Float32 {
+	if m.Helpers.FuzzFloat32 {
 		// Avoid trying to robusly map float64 (JS) -> float32
 		// Only tests exponent (float32 has 8 bits)
 		g.P("fuzzFloat32 : Fuzzer Float")
 		g.P("fuzzFloat32 =")
 		g.P("    Fuzz.map (\\i -> 2 ^ toFloat i) fuzzInt32")
 	}
-	if m.Imports.Bytes {
+	if m.Helpers.Bytes {
 		g.P("fuzzBytes : Fuzzer Bytes")
 		g.P("fuzzBytes =")
 		g.P("    Fuzz.intRange 0 255")

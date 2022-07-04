@@ -153,8 +153,8 @@ func TestSpecialProto(t *testing.T) {
 
 func TestLocality(t *testing.T) {
 	m := new(Module)
+	m.importsSeen = make(map[string]bool)
 	m.Name = "OurMod"
-	m.ns = make(map[string][]*ElmRef)
 	ref1 := m.newElmRef("NotOurs", "a")
 	ref2 := m.newElmRef("OurMod", "b")
 	assert.Equal(t, "NotOurs", ref1.Module)
@@ -250,31 +250,6 @@ func TestQualifiedWithComments(t *testing.T) {
 			assert.True(t, strings.Contains(content, check), check)
 		}
 	}
-}
-
-func TestImports(t *testing.T) {
-	elm := testModule(t, `
-		syntax = "proto3";
-		import "test1.proto";
-		message MyMessage {
-			AnotherPkg.Other out_of_this_world = 1;
-		}`, `
-		syntax = "proto3";
-		package AnotherPkg;
-		message Other {
-			int32 a = 1;
-			int32 b = 2;
-			int32 c = 3;
-		}`)
-	assert.Len(t, elm.Records, 1)
-	assert.Equal(t, "MyMessage", elm.Records[0].Type.ID)
-	f := elm.Records[0].Fields[0]
-	assert.Equal(t, "outOfThisWorld", f.Label)
-	assert.Equal(t, "AnotherPkg.Other", f.Type)
-	assert.Equal(t, "AnotherPkg.emptyOther", f.Zero)
-	assert.Equal(t, "AnotherPkg.otherDecoder", f.Decoder)
-	assert.Equal(t, "AnotherPkg.otherEncoder", f.Encoder)
-	assert.Equal(t, "AnotherPkgTests.otherFuzzer", f.Fuzzer)
 }
 
 func aTestWellKnown(t *testing.T) {

@@ -61,10 +61,10 @@ func protoToElm(p Packager, d FullNamer) (mod, asType, asValue string) {
 
 func (m *Module) newElmRef(mod, id string) *ElmRef {
 	ref := &ElmRef{mod, id}
-	if m.Name == mod { // Local?
+	if mod == m.Name { // Local?
 		ref.Module = ""
 	}
-	m.ns[mod] = append(m.ns[mod], ref)
+	m.addImport(ref.Module)
 	return ref
 }
 
