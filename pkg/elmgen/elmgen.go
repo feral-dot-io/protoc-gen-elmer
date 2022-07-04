@@ -4,7 +4,6 @@ import (
 	"sort"
 
 	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -93,26 +92,8 @@ type (
 	Field struct {
 		Label    string
 		Desc     protoreflect.FieldDescriptor
-		Oneof    protoreflect.OneofDescriptor
+		Oneof    *Oneof
 		Comments *CommentSet
-		// Wire handling
-		IsOneof     bool
-		IsMap       bool
-		WireNumber  protowire.Number
-		Cardinality protoreflect.Cardinality
-		// Elm handling
-		Type             string
-		Zero             string
-		Decoder, Encoder string
-		Fuzzer           string
-
-		Key *MapKey
-	}
-
-	MapKey struct {
-		Zero             string
-		Decoder, Encoder string
-		Fuzzer           string
 	}
 
 	Services []*Service

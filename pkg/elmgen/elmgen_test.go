@@ -171,11 +171,11 @@ func TestProto2(t *testing.T) {
 		}`)
 	r := elm.Records[0]
 	assert.Equal(t, "SearchRequest", r.Type.ID)
-	assert.Equal(t, protoreflect.Required, r.Fields[0].Cardinality)
-	assert.Equal(t, protoreflect.Optional, r.Fields[1].Cardinality)
-	assert.Equal(t, protoreflect.Optional, r.Fields[2].Cardinality)
-	assert.Equal(t, "True", r.Fields[1].Zero)
-	assert.Equal(t, "False", r.Fields[2].Zero)
+	assert.Equal(t, protoreflect.Required, r.Fields[0].Desc.Cardinality())
+	assert.Equal(t, protoreflect.Optional, r.Fields[1].Desc.Cardinality())
+	assert.Equal(t, protoreflect.Optional, r.Fields[2].Desc.Cardinality())
+	assert.Equal(t, "True", fieldZero(elm, r.Fields[1].Desc))
+	assert.Equal(t, "False", fieldZero(elm, r.Fields[2].Desc))
 }
 
 func TestQualifiedWithComments(t *testing.T) {
@@ -215,7 +215,7 @@ func TestQualifiedWithComments(t *testing.T) {
 
 					bool and = 4; // oneof comment 3
 				};
-				optional bool maybe = 5;
+				optional bool mayhem = 5;
 			}
 			Inner inner = 1;
 		}
@@ -238,8 +238,8 @@ func TestQualifiedWithComments(t *testing.T) {
 	assert.Equal(t, "Outer_Inner_Conundrum", o.Type.ID)
 	assert.Equal(t, "Outer_Inner_Or", o.Variants[0].ID.ID)
 	assert.Equal(t, "Outer_Inner_And", o.Variants[1].ID.ID)
-	assert.Equal(t, "Outer_Inner_Maybe", elm.Oneofs[1].Type.ID)
-	assert.Equal(t, "outer_Inner_MaybeDecoder", elm.Oneofs[1].Type.Decoder.ID)
+	assert.Equal(t, "Outer_Inner_Mayhem", elm.Oneofs[1].Type.ID)
+	assert.Equal(t, "outer_Inner_MayhemDecoder", elm.Oneofs[1].Type.Decoder.ID)
 	// Check comments
 	content := string(testFileContents["Comments.elm"])
 	for placement, max := range map[string]int{

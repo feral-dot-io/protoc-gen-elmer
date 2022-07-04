@@ -20,11 +20,11 @@ func (m *Module) findImports() {
 	for _, r := range m.Records {
 		for _, f := range r.Fields {
 			if f.Oneof != nil {
-				fields := f.Oneof.Fields()
-				for i := 0; i < fields.Len(); i++ {
-					m.fieldImports(fields.Get(i))
+				for _, v := range f.Oneof.Variants {
+					m.fieldImports(v.Field.Desc)
 				}
-			} else {
+			}
+			if f.Desc != nil { // Including oneof optional
 				m.fieldImports(f.Desc)
 			}
 		}
@@ -39,7 +39,21 @@ func (m *Module) fieldImports(fd protoreflect.FieldDescriptor) {
 	} else {
 		switch fd.Kind() {
 		case protoreflect.BytesKind: // Bytes
+			m.Helpers.Bytes = true
 			m.addImport(importBytes)
+
+		case protoreflect.FloatKind:
+			m.Helpers.FuzzFloat32 = true
+
+		case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
+			m.Helpers.FuzzInt32 = true
+
+		case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+			m.Helpers.FuzzUint32 = true
+
+		case protoreflect.MessageKind, protoreflect.GroupKind:
+			md := fd.Message()
+			m.NewElmType(md.ParentFile(), md)
 		}
 	}
 }

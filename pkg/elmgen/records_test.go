@@ -4,43 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
-
-var opt = protoreflect.Optional
-
-func assertFields(t *testing.T, fields []*Field, exp ...*Field) {
-	t.Helper()
-	assert.Len(t, fields, len(exp))
-	for i, exp := range exp {
-		act := fields[i]
-		assert.Equal(t, exp.Label, act.Label)
-		assert.Equal(t, exp.IsOneof, act.IsOneof)
-		assert.Equal(t, exp.IsMap, act.IsMap)
-		if !exp.IsOneof {
-			assert.Equal(t, exp.WireNumber, act.WireNumber)
-			assert.Equal(t, exp.Cardinality, act.Cardinality)
-		}
-		assert.Equal(t, exp.Type, act.Type)
-		if exp.Type != "Bytes" {
-			assert.Equal(t, exp.Zero, act.Zero)
-		} else {
-			assert.NotEmpty(t, act.Zero)
-		}
-		// We rely on Elm tests to check the contents
-		if exp.Decoder == "" {
-			assert.NotEmpty(t, act.Decoder)
-		} else {
-			assert.Equal(t, exp.Decoder, act.Decoder)
-		}
-		if exp.Encoder == "" {
-			assert.NotEmpty(t, act.Encoder)
-		} else {
-			assert.Equal(t, exp.Encoder, act.Encoder)
-		}
-		assert.Equal(t, exp.Key, act.Key)
-	}
-}
 
 func TestScalarRecord(t *testing.T) {
 	elm := testModule(t, `
@@ -77,18 +41,6 @@ func TestScalarRecord(t *testing.T) {
 	assert.Equal(t, "emptyScalar", scalar.Type.Zero.ID)
 	assert.Equal(t, "scalarDecoder", scalar.Type.Decoder.ID)
 	assert.Equal(t, "scalarEncoder", scalar.Type.Encoder.ID)
-	// Fields
-	assertFields(t, scalar.Fields,
-		&Field{"myDouble", nil, nil, nil, false, false, 1, opt, "Float", "0", "", "", "Fuzz.float", nil},
-		&Field{"myFloat", nil, nil, nil, false, false, 2, opt, "Float", "0", "", "", "Fuzz.float", nil},
-		&Field{"myInt32", nil, nil, nil, false, false, 3, opt, "Int", "0", "", "", "fuzzInt32", nil},
-		&Field{"myUint32", nil, nil, nil, false, false, 5, opt, "Int", "0", "", "", "fuzzUint32", nil},
-		&Field{"mySint32", nil, nil, nil, false, false, 7, opt, "Int", "0", "", "", "fuzzInt32", nil},
-		&Field{"myFixed32", nil, nil, nil, false, false, 9, opt, "Int", "0", "", "", "fuzzUint32", nil},
-		&Field{"mySfixed32", nil, nil, nil, false, false, 11, opt, "Int", "0", "", "", "fuzzUint32", nil},
-		&Field{"myBool", nil, nil, nil, false, false, 13, opt, "Bool", "False", "", "", "Fuzz.bool", nil},
-		&Field{"myString", nil, nil, nil, false, false, 14, opt, "String", `""`, "", "", "Fuzz.string", nil},
-		&Field{"myBytes", nil, nil, nil, false, false, 15, opt, "Bytes", "", "", "", "fuzzBytes", nil})
 }
 
 func TestRecordFieldEnum(t *testing.T) {
@@ -105,9 +57,6 @@ func TestRecordFieldEnum(t *testing.T) {
 		}`)
 	assert.Len(t, elm.Unions, 1)
 	assert.Len(t, elm.Records, 1)
-	assertFields(t, elm.Records[0].Fields,
-		&Field{"myQuestion", nil, nil, nil, false, false, 123, opt,
-			"Question", "emptyQuestion", "", "", "questionFuzzer", nil})
 }
 
 func TestRecordFieldMessage(t *testing.T) {
@@ -126,11 +75,6 @@ func TestRecordFieldMessage(t *testing.T) {
 		}`)
 	assert.Empty(t, elm.Unions)
 	assert.Len(t, elm.Records, 3)
-	assertFields(t, elm.Records[2].Fields,
-		&Field{"first", nil, nil, nil, false, false, 1, opt, "First",
-			"emptyFirst", "firstDecoder", "firstEncoder", "firstFuzzer", nil},
-		&Field{"second", nil, nil, nil, false, false, 2, opt, "Second",
-			"emptySecond", "secondDecoder", "secondEncoder", "secondFuzzer", nil})
 }
 
 func TestRecordNestedMessage(t *testing.T) {
@@ -153,14 +97,6 @@ func TestRecordNestedMessage(t *testing.T) {
 		}`)
 	assert.Empty(t, elm.Unions)
 	assert.Len(t, elm.Records, 4)
-	assertFields(t, elm.Records[0].Fields,
-		&Field{"first", nil, nil, nil, false, false, 1, opt, "Nested_First",
-			"emptyNested_First", "nested_FirstDecoder", "nested_FirstEncoder", "nested_FirstFuzzer", nil},
-		&Field{"second", nil, nil, nil, false, false, 2, opt, "Nested_Second",
-			"emptyNested_Second", "nested_SecondDecoder", "nested_SecondEncoder", "nested_SecondFuzzer", nil})
-	assertFields(t, elm.Records[3].Fields,
-		&Field{"farOut", nil, nil, nil, false, false, 123, opt, "Nested_First",
-			"emptyNested_First", "nested_FirstDecoder", "nested_FirstEncoder", "nested_FirstFuzzer", nil})
 }
 
 func TestRecordErrors(t *testing.T) {
@@ -175,7 +111,7 @@ func TestRecordErrors(t *testing.T) {
 	assert.Equal(t, "my_int64", string(field.Desc.Name()))
 	// Field type
 	assert.Panics(t, func() {
-		fieldType(nil, field.Desc)
+		fieldTypeDesc(nil, field.Desc)
 	})
 	// Field zero
 	assert.Panics(t, func() {
@@ -183,7 +119,7 @@ func TestRecordErrors(t *testing.T) {
 	})
 	// Field codec
 	assert.Panics(t, func() {
-		fieldKindCodec(nil, "PE.", "encode", field.Desc)
+		fieldCodecKind(nil, "PE.", "encode", field.Desc)
 	})
 	// Field fuzzer
 	assert.Panics(t, func() {
@@ -191,7 +127,9 @@ func TestRecordErrors(t *testing.T) {
 	})
 	// General error path (fails on fieldType)
 	assert.Panics(t, func() {
-		NewModule("", "", plugin.Files[0])
+		elm := NewModule("", "", plugin.Files[0])
+		g := plugin.NewGeneratedFile("file", "")
+		GenerateCodec(elm, g)
 	})
 }
 
@@ -203,9 +141,6 @@ func TestListField(t *testing.T) {
 			repeated bool on_repeat = 11;
 		}`)
 	assert.Len(t, elm.Records, 1)
-	assertFields(t, elm.Records[0].Fields,
-		&Field{"onRepeat", nil, nil, nil, false, false, 11, protoreflect.Repeated,
-			"(List Bool)", "[]", "", "", "", nil})
 }
 
 func TestMapField(t *testing.T) {
@@ -227,21 +162,7 @@ func TestMapField(t *testing.T) {
 			repeated MimicEntry mimic = 1;			  
 		}`)
 	assert.Len(t, elm.Records, 4)
-	// Basic
-	stringKey := &MapKey{`""`, "PD.string", "PE.string", "Fuzz.string"}
-	assertFields(t, elm.Records[0].Fields,
-		&Field{"firstField", nil, nil, nil, false, false, 1, opt, "Bool",
-			"False", "", "", "Fuzz.bool", nil},
-		&Field{"a", nil, nil, nil, false, true, 2, protoreflect.Repeated,
-			"(Dict String Int)", "0", "", "", "", stringKey})
-	// Value is a nested message
-	assertFields(t, elm.Records[1].Fields,
-		&Field{"b", nil, nil, nil, false, true, 1, protoreflect.Repeated,
-			"(Dict String A)", "emptyA", "", "", "", stringKey})
 	// Can we mimic a map entry? No. https://developers.google.com/protocol-buffers/docs/proto3#backwards_compatibility
-	assertFields(t, elm.Records[2].Fields,
-		&Field{"mimic", nil, nil, nil, false, false, 1, protoreflect.Repeated,
-			"(List C_MimicEntry)", "[]", "", "", "", nil})
 }
 
 func TestOneOf(t *testing.T) {
@@ -263,11 +184,6 @@ func TestOneOf(t *testing.T) {
 	r := elm.Records[0]
 	assert.Len(t, r.Oneofs, 2)
 	assert.Equal(t, "Multi", r.Type.ID)
-	assertFields(t, r.Fields,
-		&Field{"pickOne", nil, nil, nil, true, false, 0, 0, "(Maybe Multi_PickOne)", "Nothing",
-			"multi_PickOneDecoder", "multi_PickOneEncoder", "multi_PickOneFuzzer", nil},
-		&Field{"pickAnother", nil, nil, nil, true, false, 0, 0, "(Maybe Multi_PickAnother)", "Nothing",
-			"multi_PickAnotherDecoder", "multi_PickAnotherEncoder", "multi_PickAnotherFuzzer", nil})
 }
 
 func TestOptionalField(t *testing.T) {
@@ -281,9 +197,6 @@ func TestOptionalField(t *testing.T) {
 	assert.Len(t, elm.Oneofs, 1)
 	r := elm.Records[0]
 	assert.Equal(t, "Night", r.Type.ID)
-	assertFields(t, r.Fields,
-		&Field{"shadow", nil, nil, nil, true, false, 0, 0, "(Maybe Bool)", "Nothing",
-			"night_ShadowDecoder", "night_ShadowEncoder", "night_ShadowFuzzer", nil})
 	// Again but nested
 	elm = testModule(t, `
 		syntax = "proto3";
@@ -298,12 +211,6 @@ func TestOptionalField(t *testing.T) {
 	assert.Len(t, elm.Oneofs, 1)
 	r = elm.Records[0]
 	assert.Equal(t, "Day", r.Type.ID)
-	assertFields(t, r.Fields,
-		&Field{"sun", nil, nil, nil, false, false, 1, opt, "Day_Night", "emptyDay_Night",
-			"day_NightDecoder", "day_NightEncoder", "day_NightFuzzer", nil})
 	r = elm.Records[1]
 	assert.Equal(t, "Day_Night", r.Type.ID)
-	assertFields(t, r.Fields,
-		&Field{"shadow", nil, nil, nil, true, false, 0, 0, "(Maybe Bool)", "Nothing",
-			"day_Night_ShadowDecoder", "day_Night_ShadowEncoder", "day_Night_ShadowFuzzer", nil})
 }

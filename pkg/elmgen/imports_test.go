@@ -16,6 +16,10 @@ func TestFindImports(t *testing.T) {
 		}
 	`)
 	elm := NewModule("", "", plugin.Files[0])
+	assert.True(t, elm.Helpers.Bytes)
+	assert.True(t, elm.Helpers.FuzzInt32)
+	assert.False(t, elm.Helpers.FuzzUint32)
+	assert.False(t, elm.Helpers.FuzzFloat32)
 	assert.Equal(t, []string{"Bytes", "Dict", "FindTests"}, elm.Imports)
 }
 
@@ -28,8 +32,9 @@ func TestFindImportsNested(t *testing.T) {
 			other.Other my_other = 1;
 			oneof asdf {
 				int32 a = 2;
-				int32 b = 3;
+				uint32 b = 3;
 				bytes triggered = 4;
+				float f = 5;
 			};
 		}
 	`, `
@@ -40,6 +45,10 @@ func TestFindImportsNested(t *testing.T) {
 		}
 	`)
 	elm := NewModule("", "", plugin.Files[1])
+	assert.True(t, elm.Helpers.Bytes)
+	assert.True(t, elm.Helpers.FuzzInt32)
+	assert.True(t, elm.Helpers.FuzzUint32)
+	assert.True(t, elm.Helpers.FuzzFloat32)
 	assert.Equal(t, []string{"Bytes", "MyTests", "Other", "OtherTests"}, elm.Imports)
 }
 
@@ -60,11 +69,4 @@ func TestImports(t *testing.T) {
 	assert.Equal(t, []string{"AnotherPkg", "AnotherPkgTests", "XTests"}, elm.Imports)
 	assert.Len(t, elm.Records, 1)
 	assert.Equal(t, "MyMessage", elm.Records[0].Type.ID)
-	f := elm.Records[0].Fields[0]
-	assert.Equal(t, "outOfThisWorld", f.Label)
-	assert.Equal(t, "AnotherPkg.Other", f.Type)
-	assert.Equal(t, "AnotherPkg.emptyOther", f.Zero)
-	assert.Equal(t, "AnotherPkg.otherDecoder", f.Decoder)
-	assert.Equal(t, "AnotherPkg.otherEncoder", f.Encoder)
-	assert.Equal(t, "AnotherPkgTests.otherFuzzer", f.Fuzzer)
 }

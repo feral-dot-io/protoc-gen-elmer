@@ -22,6 +22,10 @@ type (
 	FullNamer interface {
 		FullName() protoreflect.FullName
 	}
+
+	Namer interface {
+		Name() protoreflect.Name
+	}
 )
 
 var reservedWords = []string{

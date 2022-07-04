@@ -2,6 +2,7 @@ package elmgen
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -92,10 +93,11 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 					} else {
 						prefix += ","
 					}
+					fuzzer := fieldFuzzer(m, v.Field.Desc)
 					if o.IsSynthetic { // Optional field
-						gFP("%s %s", prefix, v.Field.Fuzzer)
+						gFP("%s %s", prefix, fuzzer)
 					} else {
-						gFP("%s Fuzz.map %s %s", prefix, v.ID, v.Field.Fuzzer)
+						gFP("%s Fuzz.map %s %s", prefix, v.ID, fuzzer)
 					}
 				}
 				g.P("                ]")
@@ -114,16 +116,10 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 			if i != 0 {
 				prefix += "|> Fuzz.andMap "
 			}
-			if f.IsOneof {
-				gFP("%s(Fuzz.maybe %s)", prefix, f.Fuzzer)
-			} else if f.IsMap {
-				gFP("%s(Fuzz.map Dict.fromList", prefix)
-				gFP("%s    (Fuzz.list (Fuzz.tuple (%s, %s))))",
-					spacer, f.Key.Fuzzer, f.Fuzzer)
-			} else if f.Cardinality == protoreflect.Repeated {
-				gFP("%s(Fuzz.list %s)", prefix, f.Fuzzer)
-			} else { // No special treatment
-				gFP("%s%s", prefix, f.Fuzzer)
+			if f.Oneof != nil {
+				gFP("%s(Fuzz.maybe %s)", prefix, f.Oneof.Type.Fuzzer)
+			} else {
+				gFP("%s%s", prefix, fieldFuzzer(m, f.Desc))
 			}
 		}
 	}
@@ -151,4 +147,54 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 		gFP(`        , fuzz %s "fuzzer" run`, t.Fuzzer.ID)
 		gFP("        ]")
 	}
+}
+
+func fieldFuzzer(m *Module, fd protoreflect.FieldDescriptor) string {
+	if fd.IsMap() {
+		key := fieldFuzzer(m, fd.MapKey())
+		val := fieldFuzzer(m, fd.MapValue())
+		return "(Fuzz.map Dict.fromList (Fuzz.list (Fuzz.tuple (" + key + ", " + val + "))))"
+	} else if fd.IsList() {
+		return "(Fuzz.list " + fieldFuzzerKind(m, fd) + ")"
+	}
+	return fieldFuzzerKind(m, fd)
+}
+
+func fieldFuzzerKind(m *Module, fd protoreflect.FieldDescriptor) string {
+	switch fd.Kind() {
+	case protoreflect.BoolKind:
+		return "Fuzz.bool"
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
+		return "fuzzInt32"
+	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		return "fuzzUint32"
+
+	/* Unsupported by Elm / JS
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
+		return "int64", nil
+	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		return "uint64", nil
+	*/
+
+	case protoreflect.FloatKind:
+		return "fuzzFloat32"
+	case protoreflect.DoubleKind:
+		return "Fuzz.float"
+
+	case protoreflect.StringKind:
+		return "Fuzz.string"
+	case protoreflect.BytesKind:
+		return "fuzzBytes"
+
+	case protoreflect.EnumKind:
+		ed := fd.Enum()
+		return m.NewElmType(ed.ParentFile(), ed).Fuzzer.String()
+
+	case protoreflect.MessageKind, protoreflect.GroupKind:
+		md := fd.Message()
+		return m.NewElmType(md.ParentFile(), md).Fuzzer.String()
+	}
+
+	log.Panicf("kindFuzzer: unknown protoreflect.Kind: %s", fd.Kind())
+	return ""
 }

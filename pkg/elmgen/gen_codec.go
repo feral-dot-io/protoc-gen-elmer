@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -134,7 +135,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 				prefix = "{"
 			}
 			f.Comments.printDashDash(g)
-			gFP("    %s %s : %s", prefix, f.Label, f.Type)
+			gFP("    %s %s : %s", prefix, f.Label, fieldType(m, f))
 		}
 		if len(r.Fields) == 0 {
 			gFP("    {")
@@ -156,7 +157,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 				prefix = "="
 			}
 			v.Field.Comments.printDashDash(g)
-			gFP("    %s %s %s", prefix, v.ID, v.Field.Type)
+			gFP("    %s %s %s", prefix, v.ID, fieldType(m, v.Field))
 		}
 	}
 
@@ -166,9 +167,11 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		gFP("%s =", r.Type.Zero)
 		zeros := []interface{}{"    ", r.Type}
 		for _, f := range r.Fields {
-			zero := f.Zero
-			if f.IsMap {
-				zero = "Dict.empty"
+			var zero interface{}
+			if f.Oneof != nil {
+				zero = "Nothing"
+			} else {
+				zero = fieldZero(m, f.Desc)
 			}
 			zeros = append(zeros, " ", zero)
 		}
@@ -199,12 +202,14 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 					if j != 0 {
 						prefix += ","
 					}
+					wire := v.Field.Desc.Number()
+					decoder := fieldDecoder(m, v.Field.Desc)
 					if o.IsSynthetic { // Only field, skip map
 						gFP("%s( %d, %s )",
-							prefix, v.Field.WireNumber, v.Field.Decoder)
+							prefix, wire, decoder)
 					} else {
 						gFP("%s( %d, PD.map %s %s )",
-							prefix, v.Field.WireNumber, v.ID, v.Field.Decoder)
+							prefix, wire, v.ID, decoder)
 					}
 				}
 				g.P("                ]")
@@ -220,26 +225,34 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 			}
 			getter := "(\\v m -> { m | %s = v })"
 			// Pick a FieldDecoder
-			if f.IsOneof {
-				gFP("%s PD.oneOf %s "+getter, prefix, f.Decoder, f.Label)
-			} else if f.IsMap {
-				gFP("%s PD.mapped %d ( %s , %s ) %s %s .%s "+getter,
-					prefix, f.WireNumber,
-					f.Key.Zero, f.Zero, f.Key.Decoder, f.Decoder,
-					f.Label, f.Label)
+			if f.Oneof != nil {
+				gFP("%s PD.oneOf %s "+getter,
+					prefix, f.Oneof.Type.Decoder, f.Label)
 			} else {
-				switch f.Cardinality {
-				case protoreflect.Optional:
-					gFP("%s PD.optional %d %s "+getter,
-						prefix, f.WireNumber, f.Decoder, f.Label)
+				wire := f.Desc.Number()
+				decoder := fieldDecoder(m, f.Desc)
+				if f.Desc.IsMap() {
+					key := f.Desc.MapKey()
+					val := f.Desc.MapValue()
+					gFP("%s PD.mapped %d ( %s , %s ) %s %s .%s "+getter,
+						prefix, wire,
+						fieldZero(m, key), fieldZero(m, val),
+						fieldDecoder(m, key), fieldDecoder(m, val),
+						f.Label, f.Label)
+				} else {
+					switch f.Desc.Cardinality() {
+					case protoreflect.Optional:
+						gFP("%s PD.optional %d %s "+getter,
+							prefix, wire, decoder, f.Label)
 
-				case protoreflect.Required:
-					gFP("%s PD.required %d %s "+getter,
-						prefix, f.WireNumber, f.Decoder, f.Label)
+					case protoreflect.Required:
+						gFP("%s PD.required %d %s "+getter,
+							prefix, wire, decoder, f.Label)
 
-				case protoreflect.Repeated:
-					gFP("%s PD.repeated %d %s .%s "+getter,
-						prefix, f.WireNumber, f.Decoder, f.Label, f.Label)
+					case protoreflect.Repeated:
+						gFP("%s PD.repeated %d %s .%s "+getter,
+							prefix, wire, decoder, f.Label, f.Label)
+					}
 				}
 			}
 		}
@@ -286,7 +299,8 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 						id = ""
 					}
 					gFP("%sJust (%s data) ->", ws, id)
-					gFP("%s    [ ( %d, %s data ) ]", ws, f.WireNumber, f.Encoder)
+					gFP("%s    [ ( %d, %s data ) ]",
+						ws, f.Desc.Number(), fieldEncoder(m, f.Desc))
 				}
 				// Nil isn't encoded on the wire
 				gFP("%sNothing ->", ws)
@@ -299,23 +313,26 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		// Regular (non-oneof) fields
 		var written bool
 		for _, f := range r.Fields {
-			if f.IsOneof { // Skip
+			if f.Oneof != nil { // Skip
 				continue
 			}
 			prefix := "            "
 			if written { // Can't do i != 0 because of "continue"
 				prefix += ","
 			}
+			encoder := fieldEncoder(m, f.Desc)
 			// Special fields?
-			if f.IsMap {
+			if f.Desc.IsMap() {
+				keyEnc := fieldEncoder(m, f.Desc.MapKey())
+				valEnc := fieldEncoder(m, f.Desc.MapValue())
 				gFP("%s ( %d, PE.dict %s %s v.%s )",
-					prefix, f.WireNumber, f.Key.Encoder, f.Encoder, f.Label)
-			} else if f.Cardinality == protoreflect.Repeated {
+					prefix, f.Desc.Number(), keyEnc, valEnc, f.Label)
+			} else if f.Desc.Cardinality() == protoreflect.Repeated {
 				gFP("%s ( %d, PE.list %s v.%s )",
-					prefix, f.WireNumber, f.Encoder, f.Label)
+					prefix, f.Desc.Number(), encoder, f.Label)
 			} else {
 				gFP("%s ( %d, %s v.%s )",
-					prefix, f.WireNumber, f.Encoder, f.Label)
+					prefix, f.Desc.Number(), encoder, f.Label)
 			}
 			written = true
 		}
@@ -324,10 +341,10 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 			// Oneof field handling
 			written = false
 			for _, f := range r.Fields {
-				if !f.IsOneof { // Already handled
+				if f.Oneof == nil { // Skip fields
 					continue
 				}
-				gFP("        ++ %s v.%s", f.Encoder, f.Label)
+				gFP("        ++ %s v.%s", f.Oneof.Type.Encoder, f.Label)
 			}
 		}
 	}
@@ -349,4 +366,160 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		g.P("    in")
 		g.P("    PE.int32 conv")
 	}
+}
+
+func fieldType(m *Module, f *Field) string {
+	if f.Oneof != nil {
+		var inner string
+		if f.Desc != nil { // Optional
+			inner = fieldTypeDesc(m, f.Desc)
+		} else {
+			inner = f.Oneof.Type.String()
+		}
+		return "(Maybe " + inner + ")"
+	}
+	return fieldTypeDesc(m, f.Desc)
+}
+
+func fieldTypeDesc(m *Module, fd protoreflect.FieldDescriptor) string {
+	if fd.IsMap() {
+		key := fieldTypeKind(m, fd.MapKey())
+		val := fieldTypeDesc(m, fd.MapValue())
+		return "(Dict " + key + " " + val + ")"
+	} else if fd.IsList() {
+		val := fieldTypeKind(m, fd)
+		return "(List " + val + ")"
+	}
+	return fieldTypeKind(m, fd)
+}
+
+func fieldTypeKind(m *Module, fd protoreflect.FieldDescriptor) string {
+	switch fd.Kind() {
+	case protoreflect.BoolKind:
+		return "Bool"
+
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind,
+		protoreflect.Sfixed32Kind, protoreflect.Fixed32Kind:
+		return "Int"
+
+	// Unsupported by Elm / JS
+	//case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind,
+	//	protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind:
+
+	case protoreflect.FloatKind, protoreflect.DoubleKind:
+		return "Float"
+
+	case protoreflect.StringKind:
+		return "String"
+
+	case protoreflect.BytesKind:
+		m.Helpers.Bytes = true
+		return "Bytes"
+
+	case protoreflect.EnumKind:
+		ed := fd.Enum()
+		return m.NewElmType(ed.ParentFile(), ed).String()
+
+	case protoreflect.MessageKind, protoreflect.GroupKind:
+		md := fd.Message()
+		return m.NewElmType(md.ParentFile(), md).String()
+	}
+
+	log.Panicf("fieldType: unknown protoreflect.Kind: %s", fd.Kind())
+	return ""
+}
+
+func fieldZero(m *Module, fd protoreflect.FieldDescriptor) string {
+	if fd.IsMap() { // Dict
+		return "Dict.empty"
+	} else if fd.IsList() { // List
+		return "[]"
+	}
+
+	switch fd.Kind() {
+	// No formatting difference for these fields
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind,
+		protoreflect.Sfixed32Kind, protoreflect.Fixed32Kind,
+		protoreflect.FloatKind, protoreflect.DoubleKind:
+		return fd.Default().String()
+
+	// Unsupported by Elm / JS
+	//case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind,
+	//	protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind:
+
+	case protoreflect.BoolKind:
+		if fd.Default().Bool() {
+			return "True"
+		}
+		return "False"
+
+	case protoreflect.StringKind:
+		return `""`
+
+	case protoreflect.BytesKind:
+		return "(BE.encode (BE.sequence []))"
+
+	case protoreflect.EnumKind:
+		ed := fd.Enum()
+		return m.NewElmType(ed.ParentFile(), ed).Zero.String()
+
+	case protoreflect.MessageKind, protoreflect.GroupKind:
+		md := fd.Message()
+		return m.NewElmType(md.ParentFile(), md).Zero.String()
+	}
+
+	log.Panicf("fieldZero: unknown protoreflect.Kind: %s", fd.Kind())
+	return ""
+}
+
+func fieldDecoder(m *Module, fd protoreflect.FieldDescriptor) string {
+	return fieldCodecKind(m, "PD.", "Decoder", fd)
+}
+
+func fieldEncoder(m *Module, fd protoreflect.FieldDescriptor) string {
+	return fieldCodecKind(m, "PE.", "Encoder", fd)
+}
+
+// Just the Kind. Does not take into account special features like lists.
+func fieldCodecKind(m *Module, lib, dir string, fd protoreflect.FieldDescriptor) string {
+	switch fd.Kind() {
+	case protoreflect.BoolKind:
+		return lib + "bool"
+
+	case protoreflect.Int32Kind:
+		return lib + "int32"
+	case protoreflect.Sint32Kind:
+		return lib + "sint32"
+	case protoreflect.Uint32Kind:
+		return lib + "uint32"
+	case protoreflect.Sfixed32Kind:
+		return lib + "sfixed32"
+	case protoreflect.Fixed32Kind:
+		return lib + "fixed32"
+
+	// Unsupported by Elm / JS
+	//case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind, protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind:
+
+	case protoreflect.FloatKind:
+		return lib + "float"
+	case protoreflect.DoubleKind:
+		return lib + "double"
+
+	case protoreflect.StringKind:
+		return lib + "string"
+
+	case protoreflect.BytesKind:
+		return lib + "bytes"
+
+	case protoreflect.EnumKind:
+		ed := fd.Enum()
+		return m.NewElmValue(ed.ParentFile(), ed).String() + dir
+
+	case protoreflect.MessageKind, protoreflect.GroupKind:
+		md := fd.Message()
+		return m.NewElmValue(md.ParentFile(), md).String() + dir
+	}
+
+	log.Panicf("fieldCodec: unknown protoreflect.Kind: %s", fd.Kind())
+	return ""
 }
