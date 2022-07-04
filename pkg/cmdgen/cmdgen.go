@@ -33,9 +33,9 @@ func RunGenerator(suffix string, generator Generator) func(*protogen.Plugin) err
 				continue
 			}
 			// Map Proto to Elm types
-			elm := elmgen.NewModule(*modulePrefix, file)
+			elm := elmgen.NewModule(*modulePrefix, suffix, file)
 			// Write to file
-			path := *filePrefix + elm.Path + suffix
+			path := *filePrefix + elm.Path
 			genFile := plugin.NewGeneratedFile(path, "")
 			generator(elm, genFile)
 			// Format file?
