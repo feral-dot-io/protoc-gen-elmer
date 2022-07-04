@@ -49,9 +49,9 @@ func TestUnions(t *testing.T) {
 		union := elm.Unions[i]
 		// IDs
 		assert.Equal(t, exp.Local, union.Type.ID)
-		assert.Equal(t, exp.Zero, union.Type.Zero().ID)
-		assert.Equal(t, exp.Decode, union.Type.Decoder().ID)
-		assert.Equal(t, exp.Encode, union.Type.Encoder().ID)
+		assert.Equal(t, exp.Zero, union.Type.Zero.ID)
+		assert.Equal(t, exp.Decode, union.Type.Decoder.ID)
+		assert.Equal(t, exp.Encode, union.Type.Encoder.ID)
 		// Default
 		assert.Equal(t, exp.Default, union.DefaultVariant.ID.ID)
 		assert.Zero(t, union.DefaultVariant.Number)

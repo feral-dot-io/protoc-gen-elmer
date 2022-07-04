@@ -87,9 +87,9 @@ func (m *Module) newOneofField(protoOneof *protogen.Oneof) (*Oneof, *Field) {
 		true, false, 0, 0,
 		"(Maybe " + oneof.Type.String() + ")",
 		"Nothing",
-		oneof.Type.Decoder().String(),
-		oneof.Type.Encoder().String(),
-		oneof.Type.Fuzzer().String(),
+		oneof.Type.Decoder.String(),
+		oneof.Type.Encoder.String(),
+		oneof.Type.Fuzzer.String(),
 		nil}
 	// Optional field?
 	if oneof.IsSynthetic {
@@ -185,11 +185,11 @@ func fieldZero(m *Module, pd protoreflect.FieldDescriptor) string {
 
 	case protoreflect.EnumKind:
 		ed := pd.Enum()
-		return m.NewElmType(ed.ParentFile(), ed).Zero().String()
+		return m.NewElmType(ed.ParentFile(), ed).Zero.String()
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		md := pd.Message()
-		return m.NewElmType(md.ParentFile(), md).Zero().String()
+		return m.NewElmType(md.ParentFile(), md).Zero.String()
 	}
 
 	log.Panicf("fieldZero: unknown protoreflect.Kind: %s", pd.Kind())
@@ -286,11 +286,11 @@ func fieldFuzzer(m *Module, pd protoreflect.FieldDescriptor) string {
 
 	case protoreflect.EnumKind:
 		ed := pd.Enum()
-		return m.NewElmType(ed.ParentFile(), ed).Fuzzer().String()
+		return m.NewElmType(ed.ParentFile(), ed).Fuzzer.String()
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		md := pd.Message()
-		return m.NewElmType(md.ParentFile(), md).Fuzzer().String()
+		return m.NewElmType(md.ParentFile(), md).Fuzzer.String()
 	}
 
 	log.Panicf("kindFuzzer: unknown protoreflect.Kind: %s", pd.Kind())

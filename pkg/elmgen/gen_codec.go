@@ -81,14 +81,13 @@ func (set *CommentSet) printDashDash(g *protogen.GeneratedFile) {
 
 func printImports(g *protogen.GeneratedFile, m *Module) {
 	for mod := range m.ns {
-		if mod != m.override {
+		if mod != m.Name && !strings.HasSuffix(mod, "Tests") {
 			g.P("import ", mod)
 		}
 	}
 }
 
 func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
-	m.OverrideLocality(m.Name)
 	gFP := func(formatter string, args ...interface{}) {
 		g.P(fmt.Sprintf(formatter, args...))
 	}
@@ -161,8 +160,8 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 
 	// Zero records
 	for _, r := range m.Records {
-		gFP("%s : %s", r.Type.Zero(), r.Type)
-		gFP("%s =", r.Type.Zero())
+		gFP("%s : %s", r.Type.Zero, r.Type)
+		gFP("%s =", r.Type.Zero)
 		zeros := []interface{}{"    ", r.Type}
 		for _, f := range r.Fields {
 			zero := f.Zero
@@ -177,21 +176,21 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	// Zero unions
 	for _, u := range m.Unions {
 		t := u.Type
-		gFP("%s : %s", t.Zero(), t)
-		gFP("%s =", t.Zero())
+		gFP("%s : %s", t.Zero, t)
+		gFP("%s =", t.Zero)
 		gFP("    %s 0", u.DefaultVariant.ID)
 	}
 
 	// Record decoders
 	for _, r := range m.Records {
-		gFP("%s : PD.Decoder %s", r.Type.Decoder(), r.Type)
-		gFP("%s =", r.Type.Decoder())
+		gFP("%s : PD.Decoder %s", r.Type.Decoder, r.Type)
+		gFP("%s =", r.Type.Decoder)
 		// Build oneof decoders inline since they're unique to the message
 		// Ideally they'd be inline here (and in the decoder + fuzzer)
 		if len(r.Oneofs) > 0 {
 			g.P("    let")
 			for _, o := range r.Oneofs {
-				gFP("        %s =", o.Type.Decoder())
+				gFP("        %s =", o.Type.Decoder)
 				g.P("            [")
 				for j, v := range o.Variants {
 					prefix := "            "
@@ -210,7 +209,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 			}
 			g.P("    in")
 		}
-		g.P("    PD.message ", r.Type.Zero())
+		g.P("    PD.message ", r.Type.Zero)
 		g.P("        [")
 		for i, f := range r.Fields {
 			prefix := "            "
@@ -248,8 +247,8 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	// Union decoders
 	for _, u := range m.Unions {
 		t := u.Type
-		gFP("%s : PD.Decoder %s", t.Decoder(), t)
-		gFP("%s =", t.Decoder())
+		gFP("%s : PD.Decoder %s", t.Decoder, t)
+		gFP("%s =", t.Decoder)
 		g.P("    let")
 		g.P("        conv v =")
 		g.P("            case v of")
@@ -269,13 +268,13 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		if len(r.Fields) == 0 {
 			param = "_"
 		}
-		gFP("%s : %s -> PE.Encoder", r.Type.Encoder(), r.Type)
-		gFP("%s %s =", r.Type.Encoder(), param)
+		gFP("%s : %s -> PE.Encoder", r.Type.Encoder, r.Type)
+		gFP("%s %s =", r.Type.Encoder, param)
 		if len(r.Oneofs) > 0 {
 			g.P("    let")
 			for _, o := range r.Oneofs {
 				ws := "        "
-				gFP("%s%s o =", ws, o.Type.Encoder())
+				gFP("%s%s o =", ws, o.Type.Encoder)
 				gFP("%s    case o of", ws)
 				ws += "        "
 				for _, v := range o.Variants {
@@ -334,8 +333,8 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	// Union encoders
 	for _, u := range m.Unions {
 		t := u.Type
-		gFP("%s : %s -> PE.Encoder", t.Encoder(), t)
-		gFP("%s v =", t.Encoder())
+		gFP("%s : %s -> PE.Encoder", t.Encoder, t)
+		gFP("%s v =", t.Encoder)
 		g.P("    let")
 		g.P("        conv =")
 		g.P("            case v of")

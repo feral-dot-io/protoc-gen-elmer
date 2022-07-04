@@ -87,14 +87,17 @@ func testModule(t *testing.T, specs ...string) *Module {
 	err = os.MkdirAll(testProjectDir+"/src", 0755)
 	assert.NoError(t, err)
 
-	var elm *Module
+	var lastCodec *Module
 	for _, f := range plugin.Files {
 		if !f.Generate {
 			continue
 		}
 
+		var elm *Module
 		runGenerator := func(suffix string, gen func(m *Module, g *protogen.GeneratedFile)) {
-			file := elm.Path + suffix + ".elm"
+			elm = NewModule("", suffix, f)
+			// Generate file
+			file := elm.Path + ".elm"
 			genFile := plugin.NewGeneratedFile(file, "")
 			gen(elm, genFile)
 			// Always format (checks Elm syntax)
@@ -117,10 +120,10 @@ func testModule(t *testing.T, specs ...string) *Module {
 		}
 
 		// Run through all of our codegen
-		elm = NewModule("", f)
 		runGenerator("", GenerateCodec)
+		lastCodec = elm
 		runGenerator("Tests", GenerateFuzzTests)
-		if len(elm.Services) > 0 {
+		if len(lastCodec.Services) > 0 {
 			runGenerator("Twirp", GenerateTwirp)
 		}
 	}
@@ -132,9 +135,8 @@ func testModule(t *testing.T, specs ...string) *Module {
 	}
 	err = runElmTest(testProjectDir, "src/**/*Tests.elm", 10)
 	assert.NoError(t, err)
-	// Run tests as local
-	elm.OverrideLocality(elm.Name)
-	return elm // Last file
+	// Run tests as local codec
+	return lastCodec
 }
 
 func TestSpecialProto(t *testing.T) {
@@ -153,10 +155,6 @@ func TestLocality(t *testing.T) {
 	m.ns = make(map[string][]*ElmRef)
 	ref1 := m.newElmRef("NotOurs", "a")
 	ref2 := m.newElmRef("OurMod", "b")
-	assert.Equal(t, "NotOurs", ref1.Module)
-	assert.Equal(t, "OurMod", ref2.Module)
-	// Flip
-	m.OverrideLocality("OurMod")
 	assert.Equal(t, "NotOurs", ref1.Module)
 	assert.Equal(t, "", ref2.Module)
 }
@@ -239,7 +237,7 @@ func TestQualifiedWithComments(t *testing.T) {
 	assert.Equal(t, "Outer_Inner_Or", o.Variants[0].ID.ID)
 	assert.Equal(t, "Outer_Inner_And", o.Variants[1].ID.ID)
 	assert.Equal(t, "Outer_Inner_Maybe", elm.Oneofs[1].Type.ID)
-	assert.Equal(t, "outer_Inner_MaybeDecoder", elm.Oneofs[1].Type.Decoder().ID)
+	assert.Equal(t, "outer_Inner_MaybeDecoder", elm.Oneofs[1].Type.Decoder.ID)
 	// Check comments
 	content := string(testFileContents["Comments.elm"])
 	for placement, max := range map[string]int{
@@ -277,8 +275,7 @@ func TestImports(t *testing.T) {
 	assert.Equal(t, "AnotherPkgTests.otherFuzzer", f.Fuzzer)
 }
 
-/*
-func TestWellKnown(t *testing.T) {
+func aTestWellKnown(t *testing.T) {
 	testModule(t, `
 		syntax = "proto3";
 		import "google/protobuf/timestamp.proto";
@@ -287,4 +284,3 @@ func TestWellKnown(t *testing.T) {
 			//google.protobuf.Duration stitch_in_time = 2;
 		}`)
 }
-*/

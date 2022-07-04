@@ -8,8 +8,7 @@ import (
 
 type (
 	Module struct {
-		ns       map[string][]*ElmRef
-		override string
+		ns map[string][]*ElmRef
 
 		Name, Path string
 		Imports    struct {
@@ -33,7 +32,7 @@ type (
 	}
 	ElmType struct {
 		*ElmRef
-		asValue string
+		Zero, Decoder, Encoder, Fuzzer *ElmRef
 	}
 
 	CommentSet struct {
@@ -153,36 +152,18 @@ func (a RPCs) Len() int           { return len(a) }
 func (a RPCs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a RPCs) Less(i, j int) bool { return a[i].ID.String() < a[j].ID.String() }
 
-func NewModule(prefix string, file *protogen.File) *Module {
+func NewModule(prefix, suffix string, file *protogen.File) *Module {
 	m := new(Module)
 	m.ns = make(map[string][]*ElmRef)
 	// Paths
 	pkg := prefix + string(file.Desc.Package())
-	m.Name = protoFullIdentToElmCasing(pkg, ".", true)
-	m.Path = protoFullIdentToElmCasing(pkg, "/", true)
-	m.override = m.Name
+	m.Name = protoFullIdentToElmCasing(pkg, ".", true) + suffix
+	m.Path = protoFullIdentToElmCasing(pkg, "/", true) + suffix
 	// Parse file
 	m.addUnions(file.Enums)
 	m.addRecords(file.Messages)
 	m.addRPCs(file.Services)
 	return m
-}
-
-func (m *Module) OverrideLocality(override string) {
-	prevOverride := m.override
-	m.override = override
-	for _, refs := range m.ns {
-		for _, ref := range refs {
-			// Undo previous override
-			if ref.Module == "" {
-				ref.Module = prevOverride
-			}
-			// Set local?
-			if ref.Module == m.override {
-				ref.Module = ""
-			}
-		}
-	}
 }
 
 func NewCommentSet(set protogen.CommentSet) *CommentSet {

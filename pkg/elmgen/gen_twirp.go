@@ -7,7 +7,6 @@ import (
 )
 
 func GenerateTwirp(m *Module, g *protogen.GeneratedFile) {
-	m.OverrideLocality(m.Name + "Twirp")
 	gFP := func(formatter string, args ...interface{}) {
 		g.P(fmt.Sprintf(formatter, args...))
 	}
@@ -31,10 +30,10 @@ func GenerateTwirp(m *Module, g *protogen.GeneratedFile) {
 			gFP("    Http.post")
 			gFP(`        { url = api ++ "/%s/%s"`, rpc.Service, rpc.Method)
 			gFP("        , body =")
-			gFP("            %s data", rpc.In.Encoder())
+			gFP("            %s data", rpc.In.Encoder)
 			gFP("                |> PE.encode")
 			gFP(`                |> Http.bytesBody "application/protobuf"`)
-			gFP("        , expect = PD.expectBytes msg %s", rpc.Out.Decoder())
+			gFP("        , expect = PD.expectBytes msg %s", rpc.Out.Decoder)
 			gFP("        }")
 			rpc.Comments.printBlockTrailing(g)
 		}

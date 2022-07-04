@@ -74,9 +74,9 @@ func TestScalarRecord(t *testing.T) {
 	scalar := elm.Records[0]
 	// IDs
 	assert.Equal(t, "Scalar", scalar.Type.ID)
-	assert.Equal(t, "emptyScalar", scalar.Type.Zero().ID)
-	assert.Equal(t, "scalarDecoder", scalar.Type.Decoder().ID)
-	assert.Equal(t, "scalarEncoder", scalar.Type.Encoder().ID)
+	assert.Equal(t, "emptyScalar", scalar.Type.Zero.ID)
+	assert.Equal(t, "scalarDecoder", scalar.Type.Decoder.ID)
+	assert.Equal(t, "scalarEncoder", scalar.Type.Encoder.ID)
 	// Fields
 	assertFields(t, scalar.Fields,
 		&Field{"myDouble", nil, false, false, 1, opt, "Float", "0", "", "", "Fuzz.float", nil},
@@ -191,7 +191,7 @@ func TestRecordErrors(t *testing.T) {
 	})
 	// General error path (fails on fieldType)
 	assert.Panics(t, func() {
-		NewModule("", plugin.Files[0])
+		NewModule("", "", plugin.Files[0])
 	})
 }
 

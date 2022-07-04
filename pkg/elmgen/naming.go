@@ -61,7 +61,7 @@ func protoToElm(p Packager, d FullNamer) (mod, asType, asValue string) {
 
 func (m *Module) newElmRef(mod, id string) *ElmRef {
 	ref := &ElmRef{mod, id}
-	if m.override == mod {
+	if m.Name == mod { // Local?
 		ref.Module = ""
 	}
 	m.ns[mod] = append(m.ns[mod], ref)
@@ -75,8 +75,12 @@ func (m *Module) NewElmValue(p Packager, d FullNamer) *ElmRef {
 
 func (m *Module) NewElmType(p Packager, d FullNamer) *ElmType {
 	mod, asType, asValue := protoToElm(p, d)
-	ref := m.newElmRef(mod, asType)
-	return &ElmType{ref, asValue}
+	return &ElmType{
+		m.newElmRef(mod, asType),
+		m.newElmRef(mod, "empty"+asType),
+		m.newElmRef(mod, asValue+"Decoder"),
+		m.newElmRef(mod, asValue+"Encoder"),
+		m.newElmRef(mod+"Tests", asValue+"Fuzzer")}
 }
 
 func (r *ElmRef) String() string {
@@ -84,28 +88,6 @@ func (r *ElmRef) String() string {
 		return r.ID
 	}
 	return r.Module + "." + r.ID
-}
-
-func (r *ElmType) derivedFn(pre, post string) *ElmRef {
-	var ref string
-	if pre != "" {
-		ref = pre + r.ID
-	} else {
-		ref = r.asValue
-	}
-	ref += post
-	return &ElmRef{r.Module, ref}
-}
-
-func (r *ElmType) Zero() *ElmRef    { return r.derivedFn("empty", "") }
-func (r *ElmType) Decoder() *ElmRef { return r.derivedFn("", "Decoder") }
-func (r *ElmType) Encoder() *ElmRef { return r.derivedFn("", "Encoder") }
-func (r *ElmType) Fuzzer() *ElmRef {
-	ref := r.derivedFn("", "Fuzzer")
-	if ref.Module != "" { // Reference tests on non-local
-		ref.Module += "Tests"
-	}
-	return ref
 }
 
 /*

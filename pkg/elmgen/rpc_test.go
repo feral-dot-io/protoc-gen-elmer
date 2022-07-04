@@ -43,8 +43,8 @@ func TestRPCWithComments(t *testing.T) {
 		assert.Equal(t, fmt.Sprintf("helloWorld_Hello%d", i+1), rpc.ID.ID)
 		assert.Equal(t, "HelloReq", rpc.In.ID)
 		assert.Equal(t, "HelloResp", rpc.Out.ID)
-		assert.Equal(t, "helloReqEncoder", rpc.In.Encoder().String())
-		assert.Equal(t, "helloRespDecoder", rpc.Out.Decoder().String())
+		assert.Equal(t, "helloReqEncoder", rpc.In.Encoder.String())
+		assert.Equal(t, "helloRespDecoder", rpc.Out.Decoder.String())
 		assert.False(t, rpc.InStreaming)
 		assert.False(t, rpc.OutStreaming)
 	}
