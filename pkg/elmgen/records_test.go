@@ -28,11 +28,8 @@ func TestScalarRecord(t *testing.T) {
 			bytes my_bytes = 15;
 		}
 	`)
-	assert.Equal(t, []string{"Bytes", "Test.ScalarTests"}, elm.Imports)
-	assert.True(t, elm.Helpers.Bytes)
-	assert.True(t, elm.Helpers.FuzzInt32)
-	assert.True(t, elm.Helpers.FuzzUint32)
-	assert.True(t, elm.Helpers.FuzzFloat32)
+	assert.Equal(t, []string{"Bytes", "Protobuf.Elmer", "Protobuf.ElmerTest",
+		"Test.ScalarTests"}, elm.Imports)
 	assert.Empty(t, elm.Unions)
 	assert.Len(t, elm.Records, 1)
 	scalar := elm.Records[0]
@@ -119,7 +116,7 @@ func TestRecordErrors(t *testing.T) {
 	})
 	// Field codec
 	assert.Panics(t, func() {
-		fieldCodecKind(nil, "PE.", "encode", field.Desc)
+		fieldCodecKind(nil, "PE.", field.Desc)
 	})
 	// Field fuzzer
 	assert.Panics(t, func() {

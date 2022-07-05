@@ -5,8 +5,11 @@ import (
 )
 
 const (
-	importBytes = "Bytes"
-	importDict  = "Dict"
+	importBytes     = "Bytes"
+	importDict      = "Dict"
+	importGooglePB  = "Google.Protobuf"
+	importElmer     = "Protobuf.Elmer"
+	importElmerTest = "Protobuf.ElmerTest"
 )
 
 func (m *Module) addImport(mod string) {
@@ -16,6 +19,9 @@ func (m *Module) addImport(mod string) {
 }
 
 func (m *Module) findImports() {
+	if len(m.Unions) > 0 {
+		m.addImport(importElmerTest)
+	}
 	// Iterate over fields since they hold non-ref values which can trigger imports
 	for _, r := range m.Records {
 		for _, f := range r.Fields {
@@ -39,17 +45,13 @@ func (m *Module) fieldImports(fd protoreflect.FieldDescriptor) {
 	} else {
 		switch fd.Kind() {
 		case protoreflect.BytesKind: // Bytes
-			m.Helpers.Bytes = true
 			m.addImport(importBytes)
+			m.addImport(importElmer)
+			m.addImport(importElmerTest)
 
-		case protoreflect.FloatKind:
-			m.Helpers.FuzzFloat32 = true
-
-		case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
-			m.Helpers.FuzzInt32 = true
-
-		case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-			m.Helpers.FuzzUint32 = true
+		case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind,
+			protoreflect.Uint32Kind, protoreflect.Fixed32Kind, protoreflect.FloatKind:
+			m.addImport(importElmerTest)
 
 		case protoreflect.MessageKind, protoreflect.GroupKind:
 			md := fd.Message()

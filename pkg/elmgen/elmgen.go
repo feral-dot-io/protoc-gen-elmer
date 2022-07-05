@@ -13,13 +13,6 @@ type (
 
 		Name, Path string
 		Imports    []string
-		Helpers    struct {
-			Bytes bool
-
-			FuzzInt32   bool
-			FuzzUint32  bool
-			FuzzFloat32 bool
-		}
 
 		Unions   Unions
 		Oneofs   Oneofs

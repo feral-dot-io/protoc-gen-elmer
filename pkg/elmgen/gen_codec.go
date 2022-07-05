@@ -413,7 +413,6 @@ func fieldTypeKind(m *Module, fd protoreflect.FieldDescriptor) string {
 		return "String"
 
 	case protoreflect.BytesKind:
-		m.Helpers.Bytes = true
 		return "Bytes"
 
 	case protoreflect.EnumKind:
@@ -457,7 +456,7 @@ func fieldZero(m *Module, fd protoreflect.FieldDescriptor) string {
 		return `""`
 
 	case protoreflect.BytesKind:
-		return "(BE.encode (BE.sequence []))"
+		return "Protobuf.Elmer.emptyBytes"
 
 	case protoreflect.EnumKind:
 		ed := fd.Enum()
@@ -473,15 +472,15 @@ func fieldZero(m *Module, fd protoreflect.FieldDescriptor) string {
 }
 
 func fieldDecoder(m *Module, fd protoreflect.FieldDescriptor) string {
-	return fieldCodecKind(m, "PD.", "Decoder", fd)
+	return fieldCodecKind(m, "PD.", fd)
 }
 
 func fieldEncoder(m *Module, fd protoreflect.FieldDescriptor) string {
-	return fieldCodecKind(m, "PE.", "Encoder", fd)
+	return fieldCodecKind(m, "PE.", fd)
 }
 
 // Just the Kind. Does not take into account special features like lists.
-func fieldCodecKind(m *Module, lib, dir string, fd protoreflect.FieldDescriptor) string {
+func fieldCodecKind(m *Module, lib string, fd protoreflect.FieldDescriptor) string {
 	switch fd.Kind() {
 	case protoreflect.BoolKind:
 		return lib + "bool"
@@ -513,13 +512,22 @@ func fieldCodecKind(m *Module, lib, dir string, fd protoreflect.FieldDescriptor)
 
 	case protoreflect.EnumKind:
 		ed := fd.Enum()
-		return m.NewElmValue(ed.ParentFile(), ed).String() + dir
+		return m.fieldCodecElmType(lib, ed.ParentFile(), ed)
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		md := fd.Message()
-		return m.NewElmValue(md.ParentFile(), md).String() + dir
+		return m.fieldCodecElmType(lib, md.ParentFile(), md)
 	}
 
 	log.Panicf("fieldCodec: unknown protoreflect.Kind: %s", fd.Kind())
 	return ""
+}
+
+func (m *Module) fieldCodecElmType(lib string, p Packager, d FullNamer) string {
+	t := m.NewElmType(p, d)
+	if lib == "PD." {
+		return t.Decoder.String()
+	} else {
+		return t.Encoder.String()
+	}
 }

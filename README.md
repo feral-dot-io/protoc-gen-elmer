@@ -163,14 +163,14 @@ Finally we also have `cmdgen`. A small pkg that holds common options and helpers
 This is my dev scratchpad of ideas and in-progress notes.
 
 Major goals to complete:
-- Well-known types: Any, Timestamp, Duration, Wrappers, etc
-- 64-bit support
 - Existing options have caveats (e.g., partial feature support). Avoid this.
 - Twirp client options (URL prefix, auth, etc)
 - Update this README
 
 Smaller steps:
 - any TODO comments
+- test uniform prefix handling on imports
+- lazy handling on recursive structures?
 
 Explore options:
 - Nested messages could be nil (incl. oneof)

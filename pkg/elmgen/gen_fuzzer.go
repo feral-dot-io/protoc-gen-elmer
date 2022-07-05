@@ -37,40 +37,13 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 	g.P("import Test exposing (Test, fuzz, test)")
 	printImports(g, m, false)
 
-	// Helpers
-	if m.Helpers.FuzzInt32 || m.Helpers.FuzzFloat32 || len(m.Unions) > 0 {
-		g.P("fuzzInt32 : Fuzzer Int")
-		g.P("fuzzInt32 =")
-		g.P("    Fuzz.intRange -2147483648 2147483647")
-	}
-	if m.Helpers.FuzzUint32 {
-		g.P("fuzzUint32 : Fuzzer Int")
-		g.P("fuzzUint32 =")
-		g.P("    Fuzz.intRange 0 4294967295")
-	}
-	if m.Helpers.FuzzFloat32 {
-		// Avoid trying to robusly map float64 (JS) -> float32
-		// Only tests exponent (float32 has 8 bits)
-		g.P("fuzzFloat32 : Fuzzer Float")
-		g.P("fuzzFloat32 =")
-		g.P("    Fuzz.map (\\i -> 2 ^ toFloat i) fuzzInt32")
-	}
-	if m.Helpers.Bytes {
-		g.P("fuzzBytes : Fuzzer Bytes")
-		g.P("fuzzBytes =")
-		g.P("    Fuzz.intRange 0 255")
-		g.P("        |> Fuzz.map BE.unsignedInt8")
-		g.P("        |> Fuzz.list")
-		g.P("        |> Fuzz.map (BE.sequence >> BE.encode)")
-	}
-
 	// Union fuzzers
 	for _, u := range m.Unions {
 		t := u.Type
 		gFP("%s : Fuzzer %s", t.Fuzzer.ID, t)
 		gFP("%s =", t.Fuzzer.ID)
 		gFP("    Fuzz.oneOf")
-		gFP("        [ Fuzz.map %s fuzzInt32", u.DefaultVariant.ID)
+		gFP("        [ Fuzz.map %s Protobuf.ElmerTest.fuzzInt32", u.DefaultVariant.ID)
 		for _, v := range u.Variants {
 			gFP("        , Fuzz.constant %s", v.ID)
 		}
@@ -165,9 +138,9 @@ func fieldFuzzerKind(m *Module, fd protoreflect.FieldDescriptor) string {
 	case protoreflect.BoolKind:
 		return "Fuzz.bool"
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
-		return "fuzzInt32"
+		return "Protobuf.ElmerTest.fuzzInt32"
 	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-		return "fuzzUint32"
+		return "Protobuf.ElmerTest.fuzzUInt32"
 
 	/* Unsupported by Elm / JS
 	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
@@ -177,14 +150,14 @@ func fieldFuzzerKind(m *Module, fd protoreflect.FieldDescriptor) string {
 	*/
 
 	case protoreflect.FloatKind:
-		return "fuzzFloat32"
+		return "Protobuf.ElmerTest.fuzzFloat32"
 	case protoreflect.DoubleKind:
 		return "Fuzz.float"
 
 	case protoreflect.StringKind:
 		return "Fuzz.string"
 	case protoreflect.BytesKind:
-		return "fuzzBytes"
+		return "Protobuf.ElmerTest.fuzzBytes"
 
 	case protoreflect.EnumKind:
 		ed := fd.Enum()

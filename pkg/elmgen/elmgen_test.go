@@ -17,6 +17,8 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
+//go:generate testdata/gen-elm-test-proj
+
 func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 	// Due to https://github.com/protocolbuffers/protobuf/issues/4163
 	// We need to pass files to protoc instead of connecting stdin / stdout
@@ -67,11 +69,16 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 	plugin, err := (protogen.Options{}).New(req)
 	assert.NoError(t, err)
 	// Build Module from File
-	assert.Len(t, plugin.Files, len(specs))
+	//assert.Len(t, plugin.Files, len(specs))
+	var expFiles int
+	for _, f := range protoFiles.File {
+		if f.Package == nil || !strings.HasPrefix(*f.Package, importGooglePB) {
+			expFiles += 1
+		}
+	}
+	assert.Len(t, plugin.Files, expFiles)
 	return plugin
 }
-
-//go:generate testdata/gen-elm-test-proj
 
 var testFileContents map[string][]byte // For comment testing
 
@@ -251,12 +258,44 @@ func TestQualifiedWithComments(t *testing.T) {
 	}
 }
 
-func aTestWellKnown(t *testing.T) {
+func TestWellKnown(t *testing.T) {
 	testModule(t, `
 		syntax = "proto3";
+		import "google/protobuf/any.proto";
+		import "google/protobuf/duration.proto";
+		import "google/protobuf/empty.proto";
 		import "google/protobuf/timestamp.proto";
-		message MyMessage {
-			google.protobuf.Timestamp now_or_never = 1;
-			//google.protobuf.Duration stitch_in_time = 2;
+		import "google/protobuf/wrappers.proto";
+		message Famous {
+			//google.protobuf.Any any = 1;
+			//google.protobuf.Api api = 2;
+			google.protobuf.BoolValue bool_value = 3;
+			google.protobuf.BytesValue bytes_value = 4;
+			google.protobuf.DoubleValue double_value = 5;
+			//google.protobuf.Duration stitch_in_time = 6;
+			//google.protobuf.Empty empty = 7;
+			//google.protobuf.Enum enum = 8;
+			//google.protobuf.EnumValue enum_value = 9;
+			//google.protobuf.Field field = 10;
+			//google.protobuf.Field.Cardinality field_cardinality = 11;
+			//google.protobuf.Field.Kind field_kind = 12;
+			//google.protobuf.FieldMask field_mask = 13;
+			google.protobuf.FloatValue float_value = 14;
+			google.protobuf.Int32Value int32_value = 15;
+			google.protobuf.Int64Value int64_value = 16;
+			//google.protobuf.ListValue list_value = 17;
+			//google.protobuf.Method method = 18;
+			//google.protobuf.Mixin mixin = 19;
+			//google.protobuf.NullValue null_value = 20;
+			//google.protobuf.Option option = 21;
+			//google.protobuf.SourceContext source_context = 22;
+			google.protobuf.StringValue string_value = 23;
+			//google.protobuf.Struct struct = 24;
+			//google.protobuf.Syntax syntax = 25;
+			google.protobuf.Timestamp now_or_never = 26;
+			//google.protobuf.Type type = 27;
+			google.protobuf.UInt32Value uint32_value = 28;
+			google.protobuf.UInt64Value uint64_value = 29;
+			//google.protobuf.Value value = 30;
 		}`)
 }

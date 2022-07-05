@@ -16,11 +16,8 @@ func TestFindImports(t *testing.T) {
 		}
 	`)
 	elm := NewModule("", "", plugin.Files[0])
-	assert.True(t, elm.Helpers.Bytes)
-	assert.True(t, elm.Helpers.FuzzInt32)
-	assert.False(t, elm.Helpers.FuzzUint32)
-	assert.False(t, elm.Helpers.FuzzFloat32)
-	assert.Equal(t, []string{"Bytes", "Dict", "FindTests"}, elm.Imports)
+	assert.Equal(t, []string{"Bytes", "Dict", "FindTests", "Protobuf.Elmer",
+		"Protobuf.ElmerTest"}, elm.Imports)
 }
 
 func TestFindImportsNested(t *testing.T) {
@@ -45,11 +42,8 @@ func TestFindImportsNested(t *testing.T) {
 		}
 	`)
 	elm := NewModule("", "", plugin.Files[1])
-	assert.True(t, elm.Helpers.Bytes)
-	assert.True(t, elm.Helpers.FuzzInt32)
-	assert.True(t, elm.Helpers.FuzzUint32)
-	assert.True(t, elm.Helpers.FuzzFloat32)
-	assert.Equal(t, []string{"Bytes", "MyTests", "Other", "OtherTests"}, elm.Imports)
+	assert.Equal(t, []string{"Bytes", "MyTests", "Other", "OtherTests",
+		"Protobuf.Elmer", "Protobuf.ElmerTest"}, elm.Imports)
 }
 
 func TestImports(t *testing.T) {

@@ -79,12 +79,17 @@ func (m *Module) NewElmValue(p Packager, d FullNamer) *ElmRef {
 
 func (m *Module) NewElmType(p Packager, d FullNamer) *ElmType {
 	mod, asType, asValue := protoToElm(p, d)
+	testMod := mod + "Tests"
+	// Replace well known with our own library
+	if mod == importGooglePB {
+		mod, testMod = importElmer, importElmerTest
+	}
 	return &ElmType{
 		m.newElmRef(mod, asType),
 		m.newElmRef(mod, "empty"+asType),
 		m.newElmRef(mod, asValue+"Decoder"),
 		m.newElmRef(mod, asValue+"Encoder"),
-		m.newElmRef(mod+"Tests", asValue+"Fuzzer")}
+		m.newElmRef(testMod, asValue+"Fuzzer")}
 }
 
 func (r *ElmRef) String() string {
