@@ -28,38 +28,24 @@ type (
 	}
 )
 
-var reservedWords = []string{
-	// Source: https://github.com/elm/compiler/blob/770071accf791e8171440709effe71e78a9ab37c/compiler/src/Parse/Variable.hs
-	"if", "then", "else", "case", "of", "let", "in", "type", "module",
-	"where", "import", "exposing", "as", "port",
-	// Prelude https://package.elm-lang.org/packages/elm/core/latest/
-	"Basics", "List", "Maybe", "Result", "String", "Char", "Tuple", "Debug",
-	"Platform", "Cmd", "Sub",
-	// Basics(..)
-	"Int", "Float", "toFloat", "round", "floor", "ceiling", "truncate",
-	"max", "min", "compare", "LT", "EQ", "GT", "Bool", "True", "False",
-	"not", "xor", "modBy", "remainderBy", "negate", "abs", "clamp", "sqrt",
-	"logBase", "e", "degrees", "radians", "turns", "pi", "cos", "sin",
-	"tan", "acos", "asin", "atan", "atan2", "toPolar", "fromPolar", "isNaN",
-	"isInfinite", "identity", "always", "Never", "never",
-	// Other imports (note these overlap with prelude)
-	"Just", "Nothing", "Ok", "Err", "Program"}
-
 func protoToElm(p Packager, d FullNamer) (mod, asType, asValue string) {
 	pkg, fullIdent := string(p.Package()), string(d.FullName())
 	mod = protoFullIdentToElmCasing(pkg, pkgSeparator, true)
 	postPkg := strings.TrimPrefix(fullIdent, pkg+pkgSeparator)
 	// Naming collision with reserved word?
 	var post string
-	for _, word := range reservedWords {
-		if word == postPkg {
-			post = collisionSuffix
-			break
-		}
+	if reservedWord(postPkg) {
+		post = collisionSuffix
 	}
 	// Elm IDs
 	asType = protoFullIdentToElmCasing(postPkg, identSeparator, true) + post
 	asValue = protoFullIdentToElmCasing(postPkg, identSeparator, false) + post
+	/*
+		if reservedWord(asType ) || reservedWord( asValue) {
+			asType += collisionSuffix
+			asValue += collisionSuffix
+		}
+	*/
 	return
 }
 
@@ -79,17 +65,43 @@ func (m *Module) NewElmValue(p Packager, d FullNamer) *ElmRef {
 
 func (m *Module) NewElmType(p Packager, d FullNamer) *ElmType {
 	mod, asType, asValue := protoToElm(p, d)
-	testMod := mod + "Tests"
-	// Replace well known with our own library
+	// Well-known type handling
 	if mod == importGooglePB {
-		mod, testMod = importElmer, importElmerTest
+		// Use our own library?
+		if strings.HasSuffix(asType, "Value") &&
+			asType != "Value" && asType != "EnumValue" &&
+			asType != "NullValue" && asType != "ListValue" ||
+			asType == "Timestamp" {
+			return &ElmType{
+				m.newElmRef(importElmer, asType),
+				m.newElmRef(importElmer, "empty"+asType),
+				m.newElmRef(importElmer, asValue+"Decoder"),
+				m.newElmRef(importElmer, asValue+"Encoder"),
+				m.newElmRef(importElmerTest, asValue+"Fuzzer")}
+		} else {
+			// Passthru to Google.Protobuf
+			gpType, gpValue := asType, asValue
+			switch asType {
+			case "Field_Cardinality":
+				gpType, gpValue = "Cardinality", "cardinality"
+			case "Field_Kind":
+				gpType, gpValue = "Kind", "kind"
+			}
+
+			return &ElmType{
+				m.newElmRef(importGooglePB, gpType),
+				m.newElmRef(importElmer, "empty"+asType),
+				m.newElmRef(importGooglePB, gpValue+"Decoder"),
+				m.newElmRef(importGooglePB, "to"+gpType+"Encoder"),
+				m.newElmRef(importElmerTest, asValue+"Fuzzer")}
+		}
 	}
 	return &ElmType{
 		m.newElmRef(mod, asType),
 		m.newElmRef(mod, "empty"+asType),
 		m.newElmRef(mod, asValue+"Decoder"),
 		m.newElmRef(mod, asValue+"Encoder"),
-		m.newElmRef(testMod, asValue+"Fuzzer")}
+		m.newElmRef(mod+"Tests", asValue+"Fuzzer")}
 }
 
 func (r *ElmRef) String() string {
@@ -111,8 +123,10 @@ func (r *ElmRef) String() string {
 		3) First letter of each word is uppercased. Except on the first word if !isType (is a value).
 		4) Idents are recombined with an optional separator.
 */
+// TODO: sort this out. Our validity checks are mostly nonsense. If sep is valid Elm then we need to do the check on the result. If it's a component (.) then we need to do it per part.
 func protoFullIdentToElmCasing(fullIdent, sep string, isType bool) string {
 	var idents [][][]rune
+	innerChecks := sep == "."
 	// (1)
 	for _, ident := range strings.Split(fullIdent, ".") {
 		var words [][]rune
@@ -122,7 +136,7 @@ func protoFullIdentToElmCasing(fullIdent, sep string, isType bool) string {
 				add = []rune{'X'}
 			}
 			// (2b)
-			if len(idents)+len(words) == 0 && !validElmID(string(add)) {
+			if innerChecks && len(idents)+len(words) == 0 && !validElmID(string(add)) {
 				add = append([]rune{'X'}, add...)
 			}
 			words = append(words, add)
@@ -181,12 +195,21 @@ func protoFullIdentToElmCasing(fullIdent, sep string, isType bool) string {
 		idents2 = append(idents2, ident)
 	}
 	// (4)
-	return strings.Join(idents2, sep)
+	joined := strings.Join(idents2, sep)
+	if !innerChecks && !validElmID(joined) {
+		if isType {
+			return "X" + joined
+		} else {
+			return "x" + joined
+		}
+	}
+	return joined
 }
 
 func validElmID(id string) bool {
 	runes := []rune(id)
-	return utf8.ValidString(id) && id != "" && // Non-empty utf8
+	return !reservedWord(id) && // Not a reserved word
+		utf8.ValidString(id) && id != "" && // Non-empty utf8
 		unicode.IsLetter(runes[0]) && // First char is a letter
 		validPartialElmID(string(runes[1:])) // Remaining chars are valid
 }
@@ -199,4 +222,30 @@ func validPartialElmID(partial string) bool {
 	}
 	// Allow empty as well
 	return true
+}
+
+var reservedWords = []string{
+	// Source: https://github.com/elm/compiler/blob/770071accf791e8171440709effe71e78a9ab37c/compiler/src/Parse/Variable.hs
+	"if", "then", "else", "case", "of", "let", "in", "type", "module",
+	"where", "import", "exposing", "as", "port",
+	// Prelude https://package.elm-lang.org/packages/elm/core/latest/
+	"Basics", "List", "Maybe", "Result", "String", "Char", "Tuple", "Debug",
+	"Platform", "Cmd", "Sub",
+	// Basics(..)
+	"Int", "Float", "toFloat", "round", "floor", "ceiling", "truncate",
+	"max", "min", "compare", "LT", "EQ", "GT", "Bool", "True", "False",
+	"not", "xor", "modBy", "remainderBy", "negate", "abs", "clamp", "sqrt",
+	"logBase", "e", "degrees", "radians", "turns", "pi", "cos", "sin",
+	"tan", "acos", "asin", "atan", "atan2", "toPolar", "fromPolar", "isNaN",
+	"isInfinite", "identity", "always", "Never", "never",
+	// Other imports (note these overlap with prelude)
+	"Just", "Nothing", "Ok", "Err", "Program"}
+
+func reservedWord(check string) bool {
+	for _, word := range reservedWords {
+		if word == check {
+			return true
+		}
+	}
+	return false
 }

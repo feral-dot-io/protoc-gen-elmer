@@ -25,7 +25,8 @@ func TestScalarRecord(t *testing.T) {
 			//sfixed64 my_sfixed64 = 12;
 			bool my_bool = 13;
 			string my_string = 14;
-			bytes my_bytes = 15;
+			// Field label intentionally used as a reserved word
+			bytes type = 15;
 		}
 	`)
 	assert.Equal(t, []string{"Bytes", "Protobuf.Elmer", "Protobuf.ElmerTest",

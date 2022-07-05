@@ -16,17 +16,37 @@ module Protobuf.Elmer exposing
     , bytesValueEncoder
     , doubleValueDecoder
     , doubleValueEncoder
+    , emptyAny
+    , emptyApi
     , emptyBoolValue
     , emptyBytes
     , emptyBytesValue
     , emptyDoubleValue
+    , emptyDuration
+    , emptyEmpty
+    , emptyEnum
+    , emptyEnumValue
+    , emptyField
+    , emptyFieldMask
+    , emptyField_Cardinality
+    , emptyField_Kind
     , emptyFloatValue
     , emptyInt32Value
     , emptyInt64Value
+    , emptyListValue
+    , emptyMethod
+    , emptyMixin
+    , emptyNullValue
+    , emptyOption
+    , emptySourceContext
     , emptyStringValue
+    , emptyStruct
+    , emptySyntax
     , emptyTimestamp
+    , emptyType
     , emptyUInt32Value
     , emptyUInt64Value
+    , emptyValue
     , floatValueDecoder
     , floatValueEncoder
     , int32ValueDecoder
@@ -45,6 +65,7 @@ module Protobuf.Elmer exposing
 
 import Bytes exposing (Bytes)
 import Bytes.Encode as BE
+import Dict
 import Google.Protobuf as GP
 import Protobuf.Decode as PD
 import Protobuf.Encode as PE
@@ -284,3 +305,107 @@ uInt64ValueEncoder =
 valueEncoder : (v -> PE.Encoder) -> Maybe v -> PE.Encoder
 valueEncoder enc v =
     PE.message [ ( 1, v |> Maybe.map enc |> Maybe.withDefault PE.none ) ]
+
+
+
+-- Zero values for Google.Protobuf pass through
+
+
+emptyAny : GP.Any
+emptyAny =
+    GP.Any "" emptyBytes
+
+
+emptyApi : GP.Api
+emptyApi =
+    GP.Api "" [] [] "" Nothing [] emptySyntax
+
+
+emptyDuration : GP.Duration
+emptyDuration =
+    GP.Duration 0 0
+
+
+emptyEmpty : GP.Empty
+emptyEmpty =
+    GP.Empty
+
+
+emptyEnum : GP.Enum
+emptyEnum =
+    GP.Enum "" [] [] Nothing emptySyntax
+
+
+emptyEnumValue : GP.EnumValue
+emptyEnumValue =
+    GP.EnumValue "" 0 []
+
+
+emptyField : GP.Field
+emptyField =
+    GP.Field emptyField_Kind emptyField_Cardinality 0 "" "" 0 False [] "" ""
+
+
+emptyField_Cardinality : GP.Cardinality
+emptyField_Cardinality =
+    GP.CardinalityUnknown
+
+
+emptyField_Kind : GP.Kind
+emptyField_Kind =
+    GP.TypeUnknown
+
+
+emptyFieldMask : GP.FieldMask
+emptyFieldMask =
+    GP.FieldMask []
+
+
+emptyListValue : GP.ListValue
+emptyListValue =
+    GP.ListValue (GP.ListValueValues [])
+
+
+emptyMethod : GP.Method
+emptyMethod =
+    GP.Method "" "" False "" False [] emptySyntax
+
+
+emptyMixin : GP.Mixin
+emptyMixin =
+    GP.Mixin "" ""
+
+
+emptyNullValue : GP.NullValue
+emptyNullValue =
+    GP.NullValue
+
+
+emptyOption : GP.Option
+emptyOption =
+    GP.Option "" Nothing
+
+
+emptySourceContext : GP.SourceContext
+emptySourceContext =
+    GP.SourceContext ""
+
+
+emptyStruct : GP.Struct
+emptyStruct =
+    GP.Struct (GP.StructFields Dict.empty)
+
+
+emptySyntax : GP.Syntax
+emptySyntax =
+    GP.SyntaxProto2
+
+
+emptyType : GP.Type
+emptyType =
+    GP.Type "" [] [] [] Nothing emptySyntax
+
+
+emptyValue : GP.Value
+emptyValue =
+    GP.Value (GP.ValueKind Nothing)

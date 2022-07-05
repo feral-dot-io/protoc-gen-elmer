@@ -53,10 +53,13 @@ func TestNaming(t *testing.T) {
 		".":                             "X_X",
 		"...":                           "X_X_X_X",
 		"1andonly":                      "X1andonly",
+		"test.scalar":                   "Test_Scalar",
 	}
 	for check, exp := range cases {
 		assert.Equal(t, exp, protoFullIdentToElmCasing(check, "_", true), "check=%s", check)
 	}
+	assert.Equal(t, "Test.Scalar", protoFullIdentToElmCasing("test.scalar", ".", true))
+
 	// Again but with type / value treatment
 	cases = map[string]string{
 		"hello.world":                   "helloWorld",
@@ -74,6 +77,17 @@ func TestNaming(t *testing.T) {
 	for check, exp := range cases {
 		assert.Equal(t, exp, protoFullIdentToElmCasing(check, "", false), "check=%s", check)
 	}
+	// Reserved word
+	cases = map[string]string{
+		"type":       "Type",
+		"int":        "XInt",
+		"to.Float":   "ToFloat",
+		"my.pkg.for": "MyPkgFor",
+	}
+	for check, exp := range cases {
+		assert.Equal(t, exp, protoFullIdentToElmCasing(check, "", true), "check=%s", check)
+	}
+	assert.Equal(t, "xtoFloat", protoFullIdentToElmCasing("to.Float", "", false))
 }
 
 type protoTest struct {
@@ -107,6 +121,7 @@ func TestValidElmID(t *testing.T) {
 	assert.True(t, validElmID("HelloWorld"))
 	assert.False(t, validElmID("_Hello"))
 	assert.True(t, validElmID("Hello_World"))
+	assert.False(t, validElmID("type"))
 	// Partial
 	assert.True(t, validPartialElmID("Hello123_"))
 	assert.True(t, validPartialElmID("_Hello"))

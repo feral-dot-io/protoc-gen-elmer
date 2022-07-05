@@ -1,6 +1,7 @@
 package elmgen
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -63,4 +64,121 @@ func TestImports(t *testing.T) {
 	assert.Equal(t, []string{"AnotherPkg", "AnotherPkgTests", "XTests"}, elm.Imports)
 	assert.Len(t, elm.Records, 1)
 	assert.Equal(t, "MyMessage", elm.Records[0].Type.ID)
+}
+
+func TestWellKnown(t *testing.T) {
+	testModule(t, `
+		syntax = "proto3";
+		import "google/protobuf/any.proto";
+		import "google/protobuf/api.proto";
+		import "google/protobuf/duration.proto";
+		import "google/protobuf/empty.proto";
+		import "google/protobuf/timestamp.proto";
+		import "google/protobuf/type.proto";
+		import "google/protobuf/struct.proto";
+		import "google/protobuf/wrappers.proto";
+		message Famous {
+			google.protobuf.Any any = 1;
+			//google.protobuf.Api api = 2;
+			google.protobuf.BoolValue bool_value = 3;
+			google.protobuf.BytesValue bytes_value = 4;
+			google.protobuf.DoubleValue double_value = 5;
+			google.protobuf.Duration stitch_in_time = 6;
+			google.protobuf.Empty empty = 7;
+			google.protobuf.Enum enum = 8;
+			google.protobuf.EnumValue enum_value = 9;
+			//google.protobuf.Field field = 10;
+			google.protobuf.Field.Cardinality field_cardinality = 11;
+			//google.protobuf.Field.Kind field_kind = 12;
+			//google.protobuf.FieldMask field_mask = 13;
+			google.protobuf.FloatValue float_value = 14;
+			google.protobuf.Int32Value int32_value = 15;
+			google.protobuf.Int64Value int64_value = 16;
+			//google.protobuf.ListValue list_value = 17;
+			google.protobuf.Method method = 18;
+			google.protobuf.Mixin mixin = 19;
+			//google.protobuf.NullValue null_value = 20;
+			//google.protobuf.Option option = 21;
+			//google.protobuf.SourceContext source_context = 22;
+			google.protobuf.StringValue string_value = 23;
+			//google.protobuf.Struct struct = 24;
+			//google.protobuf.Syntax syntax = 25;
+			google.protobuf.Timestamp now_or_never = 26;
+			//google.protobuf.Type type = 27;
+			google.protobuf.UInt32Value uint32_value = 28;
+			google.protobuf.UInt64Value uint64_value = 29;
+			//google.protobuf.Value value = 30;
+		}`)
+}
+
+func TestWellKnownValue(t *testing.T) {
+	testCases := []string{
+		"google.protobuf.Any any = 1;",
+		"google.protobuf.Api api = 2;",
+		"google.protobuf.BoolValue bool_value = 3;",
+		"google.protobuf.BytesValue bytes_value = 4;",
+		"google.protobuf.DoubleValue double_value = 5;",
+		"google.protobuf.Duration stitch_in_time = 6;",
+		"google.protobuf.Empty empty = 7;",
+		"google.protobuf.Enum enum = 8;",
+		"google.protobuf.EnumValue enum_value = 9;",
+		"google.protobuf.Field field = 10;",
+		"google.protobuf.Field.Cardinality field_cardinality = 11;",
+		"google.protobuf.Field.Kind field_kind = 12;",
+		"google.protobuf.FieldMask field_mask = 13;",
+		"google.protobuf.FloatValue float_value = 14;",
+		"google.protobuf.Int32Value int32_value = 15;",
+		"google.protobuf.Int64Value int64_value = 16;",
+		"google.protobuf.ListValue list_value = 17;",
+		"google.protobuf.Method method = 18;",
+		"google.protobuf.Mixin mixin = 19;",
+		// Missing decoder / encoder
+		//"google.protobuf.NullValue null_value = 20;",
+		"google.protobuf.Option option = 21;",
+		"google.protobuf.SourceContext source_context = 22;",
+		"google.protobuf.StringValue string_value = 23;",
+		"google.protobuf.Struct struct = 24;",
+		"google.protobuf.Syntax syntax = 25;",
+		"google.protobuf.Timestamp now_or_never = 26;",
+		"google.protobuf.Type type = 27;",
+		"google.protobuf.UInt32Value uint32_value = 28;",
+		"google.protobuf.UInt64Value uint64_value = 29;",
+		"google.protobuf.Value value = 30;",
+	}
+	for i, testCase := range testCases {
+		t.Logf("test case %d: %s\n", i+1, testCase)
+		testModule(t, fmt.Sprintf(`
+			syntax = "proto3";
+			import "google/protobuf/any.proto";
+			import "google/protobuf/api.proto";
+			import "google/protobuf/duration.proto";
+			import "google/protobuf/empty.proto";
+			import "google/protobuf/field_mask.proto";
+			import "google/protobuf/timestamp.proto";
+			import "google/protobuf/type.proto";
+			import "google/protobuf/source_context.proto";
+			import "google/protobuf/struct.proto";
+			import "google/protobuf/wrappers.proto";
+			message Famous%d {
+				%s
+			}`, i+1, testCase))
+	}
+}
+
+func TestWellKnownRenaming(t *testing.T) {
+	testModule(t, `
+		syntax = "proto3";
+		import "google/protobuf/any.proto";
+		import "google/protobuf/api.proto";
+		import "google/protobuf/duration.proto";
+		import "google/protobuf/empty.proto";
+		import "google/protobuf/field_mask.proto";
+		import "google/protobuf/timestamp.proto";
+		import "google/protobuf/type.proto";
+		import "google/protobuf/source_context.proto";
+		import "google/protobuf/struct.proto";
+		import "google/protobuf/wrappers.proto";
+		message Famous {
+			google.protobuf.Type type = 27;
+		}`)
 }

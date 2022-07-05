@@ -71,7 +71,7 @@ func (m *Module) newOneofField(protoOneof *protogen.Oneof) (*Oneof, *Field) {
 	if oneof.IsSynthetic {
 		// Unwrap type
 		field.Desc = od.Fields().Get(0)
-		field.Label = string(field.Desc.Name())
+		field.Label = protoFullIdentToElmCasing(string(field.Desc.Name()), "", false)
 	}
 	return oneof, field
 }

@@ -53,6 +53,10 @@ func (m *Module) fieldImports(fd protoreflect.FieldDescriptor) {
 			protoreflect.Uint32Kind, protoreflect.Fixed32Kind, protoreflect.FloatKind:
 			m.addImport(importElmerTest)
 
+		case protoreflect.EnumKind:
+			ed := fd.Enum()
+			m.NewElmType(ed.ParentFile(), ed)
+
 		case protoreflect.MessageKind, protoreflect.GroupKind:
 			md := fd.Message()
 			m.NewElmType(md.ParentFile(), md)
