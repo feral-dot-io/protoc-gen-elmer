@@ -101,7 +101,7 @@ func testModule(t *testing.T, specs ...string) *Module {
 
 		var elm *Module
 		runGenerator := func(suffix string, gen func(m *Module, g *protogen.GeneratedFile)) {
-			elm = NewModule("", suffix, f)
+			elm = NewModule(suffix, f)
 			// Generate file
 			genFile := plugin.NewGeneratedFile(elm.Path, "")
 			gen(elm, genFile)

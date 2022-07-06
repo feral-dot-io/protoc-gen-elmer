@@ -15,7 +15,7 @@ func TestFindImports(t *testing.T) {
 			map<bool, int32> my_map = 2;
 		}
 	`)
-	elm := NewModule("", "", plugin.Files[0])
+	elm := NewModule("", plugin.Files[0])
 	assert.Equal(t, []string{"Bytes", "Dict", "FindTests", "Protobuf.Elmer",
 		"Protobuf.ElmerTest"}, elm.Imports)
 }
@@ -41,7 +41,7 @@ func TestFindImportsNested(t *testing.T) {
 			map<bool, int32> not_triggered = 1;
 		}
 	`)
-	elm := NewModule("", "", plugin.Files[1])
+	elm := NewModule("", plugin.Files[1])
 	assert.Equal(t, []string{"Bytes", "MyTests", "Other", "OtherTests",
 		"Protobuf.Elmer", "Protobuf.ElmerTest"}, elm.Imports)
 }

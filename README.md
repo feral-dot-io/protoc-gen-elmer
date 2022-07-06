@@ -167,8 +167,8 @@ Major goals to complete:
 
 Smaller steps:
 - any TODO comments
-- test uniform prefix handling on imports. If I set `Gen.` are a module's imports also prefixed?
 - lazy handling on recursive structures?
+- add Makefile to examples/e2e
 
 Explore options:
 - Nested messages could be nil (incl. oneof)

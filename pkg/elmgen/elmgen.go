@@ -130,7 +130,7 @@ func (a RPCs) Len() int           { return len(a) }
 func (a RPCs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a RPCs) Less(i, j int) bool { return a[i].ID.String() < a[j].ID.String() }
 
-func NewModule(prefix, suffix string, file *protogen.File) *Module {
+func NewModule(suffix string, file *protogen.File) *Module {
 	m := new(Module)
 	m.importsSeen = make(map[string]bool)
 	// Paths
@@ -140,7 +140,7 @@ func NewModule(prefix, suffix string, file *protogen.File) *Module {
 	if pkg == "" {
 		pkg = "X"
 	}
-	pkg = prefix + pkg + suffix
+	pkg = pkg + suffix
 	m.Name = protoPkgToElmModule(pkg)
 	m.Path = strings.ReplaceAll(m.Name, ".", "/") + ".elm"
 	// Parse file

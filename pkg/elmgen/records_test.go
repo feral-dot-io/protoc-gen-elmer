@@ -97,7 +97,7 @@ func TestRecordNestedMessage(t *testing.T) {
 	assert.Len(t, elm.Records, 4)
 }
 
-func TestRecordErrors(t *testing.T) {
+func TestFieldErrors(t *testing.T) {
 	// Can't create a kind so use an unsupported
 	plugin := testPlugin(t, `
 		syntax = "proto3";
@@ -125,7 +125,7 @@ func TestRecordErrors(t *testing.T) {
 	})
 	// General error path (fails on fieldType)
 	assert.Panics(t, func() {
-		elm := NewModule("", "", plugin.Files[0])
+		elm := NewModule("", plugin.Files[0])
 		g := plugin.NewGeneratedFile("file", "")
 		GenerateCodec(elm, g)
 	})
