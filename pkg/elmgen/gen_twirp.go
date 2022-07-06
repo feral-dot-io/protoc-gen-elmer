@@ -22,7 +22,7 @@ func GenerateTwirp(m *Module, g *protogen.GeneratedFile) {
 		for _, rpc := range s.Methods {
 			// TODO: api will need to be replaced with options
 			rpc.Comments.printBlock(g)
-			gFP("%s : (Result Http.Error %s -> msg) -> String -> %s -> Cmd msg",
+			gFP("%s : (Result Http.Error %s -> msg)\n -> String -> %s -> Cmd msg",
 				rpc.ID.ID, rpc.Out, rpc.In)
 			gFP("%s msg api data =", rpc.ID.ID)
 			gFP("    Http.post")

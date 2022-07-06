@@ -181,7 +181,6 @@ Smaller steps:
     - Go code needs more
 - structure:
     - default variant of enums has the wire number stored. This is protobuf semantics leaking and makes the variants non-uniform. Don't add an unrecognised option as this should default to the default variant
-    - Twirp methods are long. Move types to separate lines for readability
     - enums need a mapper to / from string
 
 Explore options:
