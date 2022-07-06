@@ -106,11 +106,10 @@ For now, see ##Development
 These commands output to `examples/`.
 
 The following generates code for our example.proto:
-
 ```
 protoc --elmer_out=examples --elmer_opt="" examples/example.proto
-protoc --elm-fuzzer_out=examples --elm-fuzzer_opt="" examples/example.proto
-protoc --elm-twirp_out=examples --elm-twirp_opt="" examples/example.proto
+protoc --elmer-fuzzer_out=examples --elmer-fuzzer_opt="" examples/example.proto
+protoc --elmer-twirp_out=examples --elmer-twirp_opt="" examples/example.proto
 ```
 
 TODO comment on how to organise .proto. Best practices, etc
@@ -145,8 +144,8 @@ Tests can then be run with: `go test ./...` Most test cases specify a Protobuf f
 Build the `protoc-gen-elmer` binaries:
 ```
 go build -o bin/protoc-gen-elmer cmd/protoc-gen-elmer/main.go
-go build -o bin/protoc-gen-elm-fuzzer cmd/protoc-gen-elm-fuzzer/main.go
-go build -o bin/protoc-gen-elm-twirp cmd/protoc-gen-elm-twirp/main.go
+go build -o bin/protoc-gen-elmer-fuzzer cmd/protoc-gen-elmer-fuzzer/main.go
+go build -o bin/protoc-gen-elmer-twirp cmd/protoc-gen-elmer-twirp/main.go
 ```
 
 An approximate, high-level view: `.proto` (stdin) -> `protogen` (PB library used by cmd/) -> `elmgen` (core pkg in this repo) -> `gen_*.go` -> `*.elm` (stdout).
@@ -165,11 +164,10 @@ This is my dev scratchpad of ideas and in-progress notes.
 Major goals to complete:
 - Existing options have caveats (e.g., partial feature support). Avoid this.
 - Twirp client options (URL prefix, auth, etc)
-- Update this README
 
 Smaller steps:
 - any TODO comments
-- test uniform prefix handling on imports
+- test uniform prefix handling on imports. If I set `Gen.` are a module's imports also prefixed?
 - lazy handling on recursive structures?
 
 Explore options:

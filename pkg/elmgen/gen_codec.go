@@ -424,7 +424,7 @@ func fieldTypeKind(m *Module, fd protoreflect.FieldDescriptor) string {
 		return m.NewElmType(md.ParentFile(), md).String()
 	}
 
-	log.Panicf("fieldType: unknown protoreflect.Kind: %s", fd.Kind())
+	log.Fatalf("fieldType: unknown protoreflect.Kind: %s", fd.Kind())
 	return ""
 }
 
@@ -467,7 +467,7 @@ func fieldZero(m *Module, fd protoreflect.FieldDescriptor) string {
 		return m.NewElmType(md.ParentFile(), md).Zero.String()
 	}
 
-	log.Panicf("fieldZero: unknown protoreflect.Kind: %s", fd.Kind())
+	log.Fatalf("fieldZero: unknown protoreflect.Kind: %s", fd.Kind())
 	return ""
 }
 
@@ -519,7 +519,7 @@ func fieldCodecKind(m *Module, lib string, fd protoreflect.FieldDescriptor) stri
 		return m.fieldCodecElmType(lib, md.ParentFile(), md)
 	}
 
-	log.Panicf("fieldCodec: unknown protoreflect.Kind: %s", fd.Kind())
+	log.Fatalf("fieldCodec: unknown protoreflect.Kind: %s", fd.Kind())
 	return ""
 }
 

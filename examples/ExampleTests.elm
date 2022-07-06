@@ -76,10 +76,8 @@ scalarFuzzer =
 testAllTogether : Test
 testAllTogether =
     let
-        run data =
-            PE.encode (Example.allTogetherEncoder data)
-                |> PD.decode Example.allTogetherDecoder
-                |> Expect.equal (Just data)
+        run =
+            Protobuf.ElmerTest.runTest Example.allTogetherDecoder Example.allTogetherEncoder
     in
     Test.describe "encode then decode AllTogether"
         [ test "empty" (\_ -> run Example.emptyAllTogether)
@@ -90,10 +88,8 @@ testAllTogether =
 testAllTogether_NestedAbc : Test
 testAllTogether_NestedAbc =
     let
-        run data =
-            PE.encode (Example.allTogether_NestedAbcEncoder data)
-                |> PD.decode Example.allTogether_NestedAbcDecoder
-                |> Expect.equal (Just data)
+        run =
+            Protobuf.ElmerTest.runTest Example.allTogether_NestedAbcDecoder Example.allTogether_NestedAbcEncoder
     in
     Test.describe "encode then decode AllTogether_NestedAbc"
         [ test "empty" (\_ -> run Example.emptyAllTogether_NestedAbc)
@@ -104,10 +100,8 @@ testAllTogether_NestedAbc =
 testScalar : Test
 testScalar =
     let
-        run data =
-            PE.encode (Example.scalarEncoder data)
-                |> PD.decode Example.scalarDecoder
-                |> Expect.equal (Just data)
+        run =
+            Protobuf.ElmerTest.runTest Example.scalarDecoder Example.scalarEncoder
     in
     Test.describe "encode then decode Scalar"
         [ test "empty" (\_ -> run Example.emptyScalar)
@@ -118,10 +112,8 @@ testScalar =
 testAllTogether_Answer : Test
 testAllTogether_Answer =
     let
-        run data =
-            PE.encode (Example.allTogether_AnswerEncoder data)
-                |> PD.decode Example.allTogether_AnswerDecoder
-                |> Expect.equal (Just data)
+        run =
+            Protobuf.ElmerTest.runTest Example.allTogether_AnswerDecoder Example.allTogether_AnswerEncoder
     in
     Test.describe "encode then decode AllTogether_Answer"
         [ test "empty" (\_ -> run Example.emptyAllTogether_Answer)
