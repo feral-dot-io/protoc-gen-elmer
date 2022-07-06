@@ -172,6 +172,7 @@ Smaller steps:
 - lazy handling on recursive structures?
 - elm_package= in comments?
 - add Makefile to examples/e2e
+- move runElmTest into *_test.go
 - review name collisions
 - codegen gives warnings on some code:
     - gen_codec: messages with one field while the rest are optional generates a warning "consider using cons instead"
@@ -179,8 +180,8 @@ Smaller steps:
 - comments:
     - Large codegen files are harder to generate. Perhaps create a comment documenting all structures?
     - Go code needs more
+    - trailing comments on enum aliases
 - structure:
-    - default variant of enums has the wire number stored. This is protobuf semantics leaking and makes the variants non-uniform. Don't add an unrecognised option as this should default to the default variant
     - enums need a mapper to / from string
 
 Explore options:

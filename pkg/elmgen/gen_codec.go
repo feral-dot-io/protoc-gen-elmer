@@ -110,12 +110,13 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	for _, u := range m.Unions {
 		u.Comments.printBlock(g)
 		g.P("type ", u.Type)
-		def := u.DefaultVariant
-		def.Comments.printDashDash(g)
-		gFP("    = %s Int %s", def.ID, def.Comments.Trailing)
-		for _, v := range u.Variants {
+		for i, v := range u.Variants {
+			prefix := "|"
+			if i == 0 {
+				prefix = "="
+			}
 			v.Comments.printDashDash(g)
-			gFP("    | %s %s", v.ID, v.Comments.Trailing)
+			gFP("    %s %s %s", prefix, v.ID, v.Comments.Trailing)
 		}
 		for _, a := range u.Aliases {
 			gFP("%s : %s", a.Alias, u.Type)
@@ -184,7 +185,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		t := u.Type
 		gFP("%s : %s", t.Zero, t)
 		gFP("%s =", t.Zero)
-		gFP("    %s 0", u.DefaultVariant.ID)
+		gFP("    %s", u.Default().ID)
 	}
 
 	// Record decoders
@@ -272,8 +273,8 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 			g.P("                ", v.Number, " ->")
 			g.P("                    ", v.ID)
 		}
-		g.P("                wire ->")
-		g.P("                    ", u.DefaultVariant.ID, " wire")
+		g.P("                _ ->")
+		g.P("                    ", u.Default().ID)
 		g.P("    in")
 		g.P("    PD.map conv PD.int32")
 	}
@@ -358,8 +359,6 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		g.P("    let")
 		g.P("        conv =")
 		g.P("            case v of")
-		g.P("                ", u.DefaultVariant.ID, " wire ->")
-		g.P("                    wire")
 		for _, v := range u.Variants {
 			g.P("                ", v.ID, " ->")
 			g.P("                    ", v.Number)

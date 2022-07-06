@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 func TestUnions(t *testing.T) {
@@ -26,25 +25,18 @@ func TestUnions(t *testing.T) {
 		}`)
 	assert.Len(t, elm.Unions, 3)
 	assert.Empty(t, elm.Records)
-	type expVariant struct {
-		Local  string
-		Number protoreflect.EnumNumber
-	}
 	for i, exp := range []struct {
 		Local, Zero, Decode, Encode, Fuzzer string
 
 		Default  string
-		Variants []expVariant
+		Variants []string
 	}{
 		{"Abc", "emptyAbc", "abcDecoder", "abcEncoder", "abcFuzzer",
-			"A", []expVariant{{"B", 1}, {"C", 2}}},
+			"A", []string{"A", "B", "C"}},
 		{"Choose", "emptyChoose", "chooseDecoder", "chooseEncoder", "chooseFuzzer",
-			"Hands", []expVariant{
-				{"Foil", 1},
-				{"Epee", 2},
-				{"Sabre", 3}}},
+			"Hands", []string{"Hands", "Foil", "Epee", "Sabre"}},
 		{"Minimal", "emptyMinimal", "minimalDecoder", "minimalEncoder", "minimalFuzzer",
-			"Lower", []expVariant{}},
+			"Lower", []string{"Lower"}},
 	} {
 		union := elm.Unions[i]
 		// IDs
@@ -53,14 +45,13 @@ func TestUnions(t *testing.T) {
 		assert.Equal(t, exp.Decode, union.Type.Decoder.ID)
 		assert.Equal(t, exp.Encode, union.Type.Encoder.ID)
 		// Default
-		assert.Equal(t, exp.Default, union.DefaultVariant.ID.ID)
-		assert.Zero(t, union.DefaultVariant.Number)
+		assert.Equal(t, exp.Default, union.Default().ID.ID)
+		assert.Zero(t, union.Default().Number)
 		// Variants
 		assert.Len(t, union.Variants, len(exp.Variants))
 		for j, v := range union.Variants {
-			expVar := exp.Variants[j]
-			assert.Equal(t, expVar.Local, v.ID.ID)
-			assert.Equal(t, expVar.Number, v.Number)
+			exp := exp.Variants[j]
+			assert.Equal(t, exp, v.ID.ID)
 		}
 	}
 }
@@ -71,14 +62,16 @@ func TestUnionAllowAlias(t *testing.T) {
 		enum Alias {
 			option allow_alias = true;
 			UNKNOWN = 0;
-			STARTED = 1;
-			RUNNING = 1;
+			STARTED = 1; // The original
+			RUNNING = 1; // This is the alias 
+			STOPPED = 2;
 		}`)
 	assert.Len(t, elm.Unions, 1)
 	alias := elm.Unions[0]
-	assert.Len(t, alias.Variants, 1)
+	assert.Len(t, alias.Variants, 3)
 	assert.Len(t, alias.Aliases, 1)
-	assert.Equal(t, "Started", alias.Variants[0].ID.ID)
+	assert.Equal(t, "Unknown", alias.Variants[0].ID.ID)
+	assert.Equal(t, "Started", alias.Variants[1].ID.ID)
 	assert.Equal(t, "running", alias.Aliases[0].Alias.ID)
 	assert.Equal(t, "Started", alias.Aliases[0].ID.String())
 }

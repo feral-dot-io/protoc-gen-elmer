@@ -232,10 +232,11 @@ func TestQualifiedWithComments(t *testing.T) {
 	// Union
 	u := elm.Unions[0]
 	assert.Equal(t, "Outer_Option", u.Type.ID)
-	assert.Len(t, u.Variants, 2)
-	assert.Equal(t, "Outer_Hero", u.DefaultVariant.ID.ID)
-	assert.Equal(t, "Outer_Worst", u.Variants[0].ID.ID)
-	assert.Equal(t, "Outer_Best", u.Variants[1].ID.ID)
+	assert.Len(t, u.Variants, 3)
+	assert.Equal(t, "Outer_Hero", u.Default().ID.ID)
+	assert.Equal(t, "Outer_Hero", u.Variants[0].ID.ID)
+	assert.Equal(t, "Outer_Worst", u.Variants[1].ID.ID)
+	assert.Equal(t, "Outer_Best", u.Variants[2].ID.ID)
 	// Records
 	assert.Equal(t, "Outer", elm.Records[0].Type.ID)
 	assert.Equal(t, "Outer_Inner", elm.Records[1].Type.ID)

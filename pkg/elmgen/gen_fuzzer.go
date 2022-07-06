@@ -43,9 +43,12 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 		gFP("%s : Fuzzer %s", t.Fuzzer.ID, t)
 		gFP("%s =", t.Fuzzer.ID)
 		gFP("    Fuzz.oneOf")
-		gFP("        [ Fuzz.map %s %s.fuzzInt32", u.DefaultVariant.ID, importElmerTests)
-		for _, v := range u.Variants {
-			gFP("        , Fuzz.constant %s", v.ID)
+		for i, v := range u.Variants {
+			prefix := ","
+			if i == 0 {
+				prefix = "["
+			}
+			gFP("        %s Fuzz.constant %s", prefix, v.ID)
 		}
 		gFP("        ]")
 	}

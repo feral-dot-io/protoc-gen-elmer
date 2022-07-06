@@ -40,11 +40,10 @@ type (
 	Unions []*Union
 	// Union is a sum type of simple tags (i.e., no other data). Has a default tag holding an unknown value.
 	Union struct {
-		Type           *ElmType
-		DefaultVariant *Variant
-		Variants       []*Variant
-		Aliases        []*VariantAlias
-		Comments       *CommentSet
+		Type     *ElmType
+		Variants []*Variant
+		Aliases  []*VariantAlias
+		Comments *CommentSet
 	}
 	// Variant represents an enum option.
 	Variant struct {

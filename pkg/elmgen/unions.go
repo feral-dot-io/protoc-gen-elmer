@@ -22,7 +22,7 @@ func (m *Module) newUnion(enum *protogen.Enum) *Union {
 	union.Comments = NewCommentSet(enum.Comments)
 	// Add variants
 	aliases := make(map[protoreflect.EnumNumber]*Variant)
-	for i, value := range enum.Values {
+	for _, value := range enum.Values {
 		vd := value.Desc
 		num := vd.Number()
 		// Variant (type) or alias (value)?
@@ -35,15 +35,17 @@ func (m *Module) newUnion(enum *protogen.Enum) *Union {
 			id := m.NewElmType(vd.ParentFile(), vd).ElmRef
 			v := &Variant{id, num, NewCommentSet(value.Comments)}
 			// Add
-			if i == 0 { // First is the default
-				union.DefaultVariant = v
-			} else {
-				union.Variants = append(union.Variants, v)
-			}
+			union.Variants = append(union.Variants, v)
 			aliases[v.Number] = v
 		}
 	}
 	return union
+}
+
+// Returns a union's default variant. Never returns nil.
+// All unions have at least one variant. The first is our default (zero)
+func (u *Union) Default() *Variant {
+	return u.Variants[0]
 }
 
 func (m *Module) newOneof(protoOneof *protogen.Oneof) *Oneof {
