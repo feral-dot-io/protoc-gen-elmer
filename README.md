@@ -172,8 +172,8 @@ Smaller steps:
 - lazy handling on recursive structures?
 - elm_package= in comments?
 - add Makefile to examples/e2e
-- move runElmTest into *_test.go
-- review name collisions
+- 
+- review name collisions. Move all of our fns to a prefix?
 - codegen gives warnings on some code:
     - gen_codec: messages with one field while the rest are optional generates a warning "consider using cons instead"
     - gen_twirp: has unused imports

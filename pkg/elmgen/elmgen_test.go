@@ -80,6 +80,19 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 	return plugin
 }
 
+func runElmTest(projDir, globs string, fuzz int) error {
+	cmd := exec.Command("elm-test")
+	if fuzz > 0 {
+		cmd.Args = append(cmd.Args, "--fuzz", strconv.Itoa(fuzz))
+	}
+	if globs != "" {
+		cmd.Args = append(cmd.Args, globs)
+	}
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	return cmd.Run()
+}
+
 var testFileContents map[string][]byte // For comment testing
 
 func testModule(t *testing.T, specs ...string) *Module {

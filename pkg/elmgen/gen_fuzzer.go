@@ -3,26 +3,10 @@ package elmgen
 import (
 	"fmt"
 	"log"
-	"os"
-	"os/exec"
-	"strconv"
 
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
-
-func runElmTest(projDir, globs string, fuzz int) error {
-	cmd := exec.Command("elm-test")
-	if fuzz > 0 {
-		cmd.Args = append(cmd.Args, "--fuzz", strconv.Itoa(fuzz))
-	}
-	if globs != "" {
-		cmd.Args = append(cmd.Args, globs)
-	}
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	return cmd.Run()
-}
 
 func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 	gFP := func(formatter string, args ...interface{}) {
