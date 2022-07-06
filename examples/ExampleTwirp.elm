@@ -11,12 +11,11 @@ import Example
 import Http
 import Protobuf.Decode as PD
 import Protobuf.Elmer
-import Protobuf.ElmerTest
 import Protobuf.Encode as PE
 
 
 
---  We can define RPC methods and generate a Twirp client
+-- We can define RPC methods and generate a Twirp client
 
 
 ourService_AnotherMethod : (Result Http.Error Example.Scalar -> msg) -> String -> Example.AllTogether -> Cmd msg

@@ -146,6 +146,8 @@ Build the `protoc-gen-elmer` binaries:
 go build -o bin/protoc-gen-elmer cmd/protoc-gen-elmer/main.go
 go build -o bin/protoc-gen-elmer-fuzzer cmd/protoc-gen-elmer-fuzzer/main.go
 go build -o bin/protoc-gen-elmer-twirp cmd/protoc-gen-elmer-twirp/main.go
+# Optionally
+cp bin/protoc-gen-elmer* ~/bin
 ```
 
 An approximate, high-level view: `.proto` (stdin) -> `protogen` (PB library used by cmd/) -> `elmgen` (core pkg in this repo) -> `gen_*.go` -> `*.elm` (stdout).
@@ -175,8 +177,6 @@ Smaller steps:
     - gen_codec: messages with one field while the rest are optional generates a warning "consider using cons instead"
     - gen_twirp: has unused imports
 - comments:
-    - trailing comment (and only comment) prefixes with a blank "-- "
-    - comments with a leading space translates to a double spaced comment "--  asdf"
     - Large codegen files are harder to generate. Perhaps create a comment documenting all structures?
     - Go code needs more
 - structure:

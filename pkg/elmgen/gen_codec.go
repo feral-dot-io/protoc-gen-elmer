@@ -71,13 +71,11 @@ func (set *CommentSet) printDashDash(g *protogen.GeneratedFile) {
 		for _, c := range set.LeadingDetached {
 			g.P(c)
 		}
-		g.P("-- ")
+		if set.Leading != "" {
+			g.P("-- ")
+		}
 	}
 	g.P(set.Leading)
-	if set.Trailing != "" {
-		g.P("-- ")
-		g.P(set.Trailing)
-	}
 }
 
 func printImports(g *protogen.GeneratedFile, m *Module, skipTests bool) {
@@ -112,15 +110,16 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	for _, u := range m.Unions {
 		u.Comments.printBlock(g)
 		g.P("type ", u.Type)
-		u.DefaultVariant.Comments.printDashDash(g)
-		g.P("    = ", u.DefaultVariant.ID, " Int")
+		def := u.DefaultVariant
+		def.Comments.printDashDash(g)
+		gFP("    = %s Int %s", def.ID, def.Comments.Trailing)
 		for _, v := range u.Variants {
 			v.Comments.printDashDash(g)
-			g.P("    | ", v.ID)
+			gFP("    | %s %s", v.ID, v.Comments.Trailing)
 		}
 		for _, a := range u.Aliases {
 			gFP("%s : %s", a.Alias, u.Type)
-			gFP("%s = %s", a.Alias, a.ID)
+			gFP("%s = %s %s", a.Alias, a.ID, a.Comments.Trailing)
 		}
 		u.Comments.printBlockTrailing(g)
 	}
@@ -135,7 +134,8 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 				prefix = "{"
 			}
 			f.Comments.printDashDash(g)
-			gFP("    %s %s : %s", prefix, f.Label, fieldType(m, f))
+			gFP("    %s %s : %s %s",
+				prefix, f.Label, fieldType(m, f), f.Comments.Trailing)
 		}
 		if len(r.Fields) == 0 {
 			gFP("    {")
@@ -157,7 +157,8 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 				prefix = "="
 			}
 			v.Field.Comments.printDashDash(g)
-			gFP("    %s %s %s", prefix, v.ID, fieldType(m, v.Field))
+			gFP("    %s %s %s %s",
+				prefix, v.ID, fieldType(m, v.Field), v.Field.Comments.Trailing)
 		}
 	}
 

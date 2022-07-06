@@ -9,7 +9,6 @@ import Bytes.Encode as BE
 import Dict exposing (Dict)
 import Protobuf.Decode as PD
 import Protobuf.Elmer
-import Protobuf.ElmerTest
 import Protobuf.Encode as PE
 
 
@@ -24,13 +23,13 @@ type AllTogether_Answer
 {-| A complex record with lots of features
 -}
 type alias AllTogether =
-    --  Lists
+    -- Lists
     { myList : List String
 
-    --  Maps
+    -- Maps
     , myMap : Dict String Bool
 
-    --  A nilable sum type
+    -- A nilable sum type
     , favourite : Maybe AllTogether_Favourite
     , myName : Maybe String
     , abc : AllTogether_NestedAbc
@@ -58,7 +57,7 @@ type alias Scalar =
     , myFixed32 : Int
     , mySfixed32 : Int
 
-    --  Underling eriktim/elm-protocol-buffers library does not support 64-bit
+    -- Underling eriktim/elm-protocol-buffers library does not support 64-bit
     -- int64 my_int64 = 4;
     -- uint64 my_uint64 = 6;
     -- sint64 my_sint64 = 8;

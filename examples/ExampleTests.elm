@@ -12,7 +12,7 @@ import Expect
 import Fuzz exposing (Fuzzer)
 import Protobuf.Decode as PD
 import Protobuf.Elmer
-import Protobuf.ElmerTest
+import Protobuf.ElmerTests
 import Protobuf.Encode as PE
 import Test exposing (Test, fuzz, test)
 
@@ -20,7 +20,7 @@ import Test exposing (Test, fuzz, test)
 allTogether_AnswerFuzzer : Fuzzer Example.AllTogether_Answer
 allTogether_AnswerFuzzer =
     Fuzz.oneOf
-        [ Fuzz.map Example.AllTogether_Maybe Protobuf.ElmerTest.fuzzInt32
+        [ Fuzz.map Example.AllTogether_Maybe Protobuf.ElmerTests.fuzzInt32
         , Fuzz.constant Example.AllTogether_Yes
         , Fuzz.constant Example.AllTogether_No
         ]
@@ -32,7 +32,7 @@ allTogetherFuzzer =
         allTogether_FavouriteFuzzer =
             Fuzz.oneOf
                 [ Fuzz.map Example.AllTogether_MyStr Fuzz.string
-                , Fuzz.map Example.AllTogether_MyNum Protobuf.ElmerTest.fuzzInt32
+                , Fuzz.map Example.AllTogether_MyNum Protobuf.ElmerTests.fuzzInt32
                 , Fuzz.map Example.AllTogether_Selection scalarFuzzer
                 ]
 
@@ -53,31 +53,31 @@ allTogetherFuzzer =
 allTogether_NestedAbcFuzzer : Fuzzer Example.AllTogether_NestedAbc
 allTogether_NestedAbcFuzzer =
     Fuzz.map Example.AllTogether_NestedAbc
-        Protobuf.ElmerTest.fuzzInt32
-        |> Fuzz.andMap Protobuf.ElmerTest.fuzzInt32
-        |> Fuzz.andMap Protobuf.ElmerTest.fuzzInt32
+        Protobuf.ElmerTests.fuzzInt32
+        |> Fuzz.andMap Protobuf.ElmerTests.fuzzInt32
+        |> Fuzz.andMap Protobuf.ElmerTests.fuzzInt32
 
 
 scalarFuzzer : Fuzzer Example.Scalar
 scalarFuzzer =
     Fuzz.map Example.Scalar
         Fuzz.float
-        |> Fuzz.andMap Protobuf.ElmerTest.fuzzFloat32
-        |> Fuzz.andMap Protobuf.ElmerTest.fuzzInt32
-        |> Fuzz.andMap Protobuf.ElmerTest.fuzzUInt32
-        |> Fuzz.andMap Protobuf.ElmerTest.fuzzInt32
-        |> Fuzz.andMap Protobuf.ElmerTest.fuzzUInt32
-        |> Fuzz.andMap Protobuf.ElmerTest.fuzzInt32
+        |> Fuzz.andMap Protobuf.ElmerTests.fuzzFloat32
+        |> Fuzz.andMap Protobuf.ElmerTests.fuzzInt32
+        |> Fuzz.andMap Protobuf.ElmerTests.fuzzUInt32
+        |> Fuzz.andMap Protobuf.ElmerTests.fuzzInt32
+        |> Fuzz.andMap Protobuf.ElmerTests.fuzzUInt32
+        |> Fuzz.andMap Protobuf.ElmerTests.fuzzInt32
         |> Fuzz.andMap Fuzz.bool
         |> Fuzz.andMap Fuzz.string
-        |> Fuzz.andMap Protobuf.ElmerTest.fuzzBytes
+        |> Fuzz.andMap Protobuf.ElmerTests.fuzzBytes
 
 
 testAllTogether : Test
 testAllTogether =
     let
         run =
-            Protobuf.ElmerTest.runTest Example.allTogetherDecoder Example.allTogetherEncoder
+            Protobuf.ElmerTests.runTest Example.allTogetherDecoder Example.allTogetherEncoder
     in
     Test.describe "encode then decode AllTogether"
         [ test "empty" (\_ -> run Example.emptyAllTogether)
@@ -89,7 +89,7 @@ testAllTogether_NestedAbc : Test
 testAllTogether_NestedAbc =
     let
         run =
-            Protobuf.ElmerTest.runTest Example.allTogether_NestedAbcDecoder Example.allTogether_NestedAbcEncoder
+            Protobuf.ElmerTests.runTest Example.allTogether_NestedAbcDecoder Example.allTogether_NestedAbcEncoder
     in
     Test.describe "encode then decode AllTogether_NestedAbc"
         [ test "empty" (\_ -> run Example.emptyAllTogether_NestedAbc)
@@ -101,7 +101,7 @@ testScalar : Test
 testScalar =
     let
         run =
-            Protobuf.ElmerTest.runTest Example.scalarDecoder Example.scalarEncoder
+            Protobuf.ElmerTests.runTest Example.scalarDecoder Example.scalarEncoder
     in
     Test.describe "encode then decode Scalar"
         [ test "empty" (\_ -> run Example.emptyScalar)
@@ -113,7 +113,7 @@ testAllTogether_Answer : Test
 testAllTogether_Answer =
     let
         run =
-            Protobuf.ElmerTest.runTest Example.allTogether_AnswerDecoder Example.allTogether_AnswerEncoder
+            Protobuf.ElmerTests.runTest Example.allTogether_AnswerDecoder Example.allTogether_AnswerEncoder
     in
     Test.describe "encode then decode AllTogether_Answer"
         [ test "empty" (\_ -> run Example.emptyAllTogether_Answer)

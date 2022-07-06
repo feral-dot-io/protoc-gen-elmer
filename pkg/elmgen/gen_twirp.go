@@ -35,5 +35,6 @@ func GenerateTwirp(m *Module, g *protogen.GeneratedFile) {
 			gFP("        }")
 			rpc.Comments.printBlockTrailing(g)
 		}
+		g.P(s.Comments.Trailing)
 	}
 }
