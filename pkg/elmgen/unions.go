@@ -27,9 +27,11 @@ func (m *Module) newUnion(enum *protogen.Enum) *Union {
 		num := vd.Number()
 		// Variant (type) or alias (value)?
 		if original := aliases[num]; original != nil {
-			alias := m.NewElmValue(vd.ParentFile(), vd)
-			union.Aliases = append(union.Aliases,
-				&VariantAlias{original, alias})
+			alias := &VariantAlias{
+				m.NewElmValue(vd.ParentFile(), vd),
+				original,
+				NewCommentSet(value.Comments)}
+			union.Aliases = append(union.Aliases, alias)
 		} else {
 			// Create
 			id := m.NewElmType(vd.ParentFile(), vd).ElmRef

@@ -119,8 +119,11 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 			gFP("    %s %s %s", prefix, v.ID, v.Comments.Trailing)
 		}
 		for _, a := range u.Aliases {
+			a.Comments.printDashDash(g)
 			gFP("%s : %s", a.Alias, u.Type)
-			gFP("%s = %s %s", a.Alias, a.ID, a.Comments.Trailing)
+			gFP("%s =", a.Alias)
+			gFP("    %s", a.Comments.Trailing)
+			gFP("    %s", a.Variant.ID)
 		}
 		u.Comments.printBlockTrailing(g)
 	}

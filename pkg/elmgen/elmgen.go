@@ -53,8 +53,9 @@ type (
 	}
 	// VariantAlias is a Variant with an alternative name. Identified by having the same wire number. First Variant seen is the real one, subsequent are alternate names.
 	VariantAlias struct {
-		*Variant
-		Alias *ElmRef
+		Alias    *ElmRef
+		Variant  *Variant
+		Comments *CommentSet
 	}
 
 	// Oneofs are sortable by their Elm ID.

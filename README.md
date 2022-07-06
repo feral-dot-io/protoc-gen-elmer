@@ -180,7 +180,6 @@ Smaller steps:
 - comments:
     - Large codegen files are harder to generate. Perhaps create a comment documenting all structures?
     - Go code needs more
-    - trailing comments on enum aliases
 - structure:
     - enums need a mapper to / from string
 
