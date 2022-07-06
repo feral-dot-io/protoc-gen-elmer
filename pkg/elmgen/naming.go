@@ -4,10 +4,11 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
-
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// Takes an proto full ident (dot (.) separated idents) and returns a list of Elm IDs.
+// Each ID is a valid Elm ID, non-empty and won't include an underscore. It is formatted to loosely follow Elm naming conventions: a capital on start of words after an underscore or run of caps with the rest being lowercase.
+// Examples: `my.pkg` -> `My, Pkg` and `My.URLIs_Here` -> `My, UrlIsHere`
 func protoIdentToElmCasing(fullIdent string) []string {
 	var idents [][][]rune
 	for _, ident := range strings.Split(fullIdent, ".") {
@@ -72,6 +73,7 @@ func protoIdentToElmCasing(fullIdent string) []string {
 	return idents2
 }
 
+// Converts a proto package to an Elm module
 func protoPkgToElmModule(pkg string) string {
 	var parts []string
 	for _, part := range protoIdentToElmCasing(pkg) {
@@ -83,6 +85,7 @@ func protoPkgToElmModule(pkg string) string {
 	return strings.Join(parts, ".")
 }
 
+// Converts a proto ident to an Elm type and value
 func protoIdentToElmID(ident string) (asType, asValue string) {
 	parts := protoIdentToElmCasing(ident)
 	asType = strings.Join(parts, "_")
@@ -98,37 +101,13 @@ func protoIdentToElmID(ident string) (asType, asValue string) {
 	return
 }
 
+// Converts a proto ident to just an Elm value (convenience fn)
 func protoIdentToElmValue(ident string) string {
 	_, id := protoIdentToElmID(ident)
 	return id
 }
 
-/* Takes an ident from protoreflect and converts to an Elm ID */
-
-type (
-	Packager interface {
-		Package() protoreflect.FullName
-	}
-
-	FullNamer interface {
-		FullName() protoreflect.FullName
-	}
-
-	Namer interface {
-		Name() protoreflect.Name
-	}
-)
-
-func protoReflectToElm(p Packager, d FullNamer) (mod, asType, asValue string) {
-	pkg, fullIdent := string(p.Package()), string(d.FullName())
-	mod = protoPkgToElmModule(pkg)
-	postPkg := strings.TrimPrefix(fullIdent, pkg+".")
-	asType, asValue = protoIdentToElmID(postPkg)
-	return
-}
-
-/* Helper naming functions */
-
+// Checks an Elm ID is valid. Does not check for reserved words
 func validElmID(id string) bool {
 	runes := []rune(id)
 	return utf8.ValidString(id) && id != "" && // Non-empty utf8
@@ -136,6 +115,7 @@ func validElmID(id string) bool {
 		validPartialElmID(string(runes[1:])) // Remaining chars are valid
 }
 
+// Checks whether the ID is valid if it wasn't the first character
 func validPartialElmID(partial string) bool {
 	for _, r := range partial {
 		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_') {
@@ -146,6 +126,7 @@ func validPartialElmID(partial string) bool {
 	return true
 }
 
+// List of reserved words. Should be reviewed with major Elm versions
 var reservedWords = []string{
 	// Source: https://github.com/elm/compiler/blob/770071accf791e8171440709effe71e78a9ab37c/compiler/src/Parse/Variable.hs
 	"if", "then", "else", "case", "of", "let", "in", "type", "module",
@@ -163,9 +144,10 @@ var reservedWords = []string{
 	// Other imports (note these overlap with prelude)
 	"Just", "Nothing", "Ok", "Err", "Program"}
 
-func reservedWord(check string) bool {
+// Checks whether an ID is a reserved word in Elm
+func reservedWord(id string) bool {
 	for _, word := range reservedWords {
-		if word == check {
+		if word == id {
 			return true
 		}
 	}

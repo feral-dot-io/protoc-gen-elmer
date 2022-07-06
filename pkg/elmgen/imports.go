@@ -14,12 +14,14 @@ const (
 	importElmerTests = "Protobuf.ElmerTests"
 )
 
+// Adds a new Module import. Must be an Elm Module reference e.g. "Protobuf.Decode"
 func (m *Module) addImport(mod string) {
 	if mod != "" {
 		m.importsSeen[mod] = true
 	}
 }
 
+// Finds extra imports once module has been filled with known data strucutres
 func (m *Module) findImports() {
 	m.addImport(importElmerTests) // Needed by all tests, removed by non-test modules
 	// Iterate over fields since they hold non-ref values which can trigger imports
@@ -37,6 +39,7 @@ func (m *Module) findImports() {
 	}
 }
 
+// Finds imports on a record field
 func (m *Module) fieldImports(fd protoreflect.FieldDescriptor) {
 	if fd.IsMap() { // Dict
 		m.addImport(importDict)
@@ -70,12 +73,32 @@ func (m *Module) newElmRef(mod, id string) *ElmRef {
 	return ref
 }
 
-func (m *Module) NewElmValue(p Packager, d FullNamer) *ElmRef {
+type (
+	packager interface {
+		Package() protoreflect.FullName
+	}
+	fullNamer interface {
+		FullName() protoreflect.FullName
+	}
+)
+
+// Converts a protoreflect package and ident to an Elm module plus type or value
+func protoReflectToElm(p packager, d fullNamer) (mod, asType, asValue string) {
+	pkg, fullIdent := string(p.Package()), string(d.FullName())
+	mod = protoPkgToElmModule(pkg)
+	postPkg := strings.TrimPrefix(fullIdent, pkg+".")
+	asType, asValue = protoIdentToElmID(postPkg)
+	return
+}
+
+// Creates a new Elm value (lowercase first char) from a proto ident
+func (m *Module) NewElmValue(p packager, d fullNamer) *ElmRef {
 	mod, _, asValue := protoReflectToElm(p, d)
 	return m.newElmRef(mod, asValue)
 }
 
-func (m *Module) NewElmType(p Packager, d FullNamer) *ElmType {
+// Creates a new Elm type reference (uppercase first char) from a proto ident
+func (m *Module) NewElmType(p packager, d fullNamer) *ElmType {
 	mod, asType, asValue := protoReflectToElm(p, d)
 	// Well-known type handling
 	if mod == importGooglePB {
@@ -118,6 +141,7 @@ func (m *Module) NewElmType(p Packager, d FullNamer) *ElmType {
 		m.newElmRef(mod+"Tests", asValue+"Fuzzer")}
 }
 
+// Converts an Elm reference to Elm code. If local, drops the module.
 func (r *ElmRef) String() string {
 	if r.Module == "" { // Local ref
 		return r.ID

@@ -32,6 +32,7 @@ func TestProtoIdentToElmCasing(t *testing.T) {
 		"URL1Tag":                       {"Url1Tag"},
 		"A_B_C":                         {"ABC"}, // Looks odd
 		"MyURLIsHere":                   {"MyUrlIsHere"},
+		"My.URLIs_Here":                 {"My", "UrlIsHere"},
 		"My_URL_Is_Here":                {"MyUrlIsHere"},
 		"UpUpUp":                        {"UpUpUp"},
 		".":                             {"X", "X"},

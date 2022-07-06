@@ -526,7 +526,7 @@ func fieldCodecKind(m *Module, lib string, fd protoreflect.FieldDescriptor) stri
 	return ""
 }
 
-func (m *Module) fieldCodecElmType(lib string, p Packager, d FullNamer) string {
+func (m *Module) fieldCodecElmType(lib string, p packager, d fullNamer) string {
 	t := m.NewElmType(p, d)
 	if lib == "PD." {
 		return t.Decoder.String()

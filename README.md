@@ -168,17 +168,17 @@ Major goals to complete:
 - Twirp client options (URL prefix, auth, etc)
 
 Smaller steps:
-- any TODO comments
 - lazy handling on recursive structures?
-- elm_package= in comments?
+- Trailing comments to specify underlying Elm type? // [elmType=double]
+    - Should work for uint64 -> float
+    - and if we want to bypass our well known types to use erk/proto's
 - add Makefile to examples/e2e
-- 
 - review name collisions. Move all of our fns to a prefix?
 - codegen gives warnings on some code:
     - gen_codec: messages with one field while the rest are optional generates a warning "consider using cons instead"
     - gen_twirp: has unused imports
 - comments:
-    - Large codegen files are harder to generate. Perhaps create a comment documenting all structures?
+    - Large codegen files are hard to navigate. Perhaps create a module level comment documenting all structures?
     - Go code needs more
 - structure:
     - enums need a mapper to / from string
@@ -192,6 +192,7 @@ Explore options:
 release checklist
 - Review README
 - examples folder
+- TODO comments
 
 ## Bugs, other
 
