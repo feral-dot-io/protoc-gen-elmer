@@ -5,6 +5,7 @@ module Gen.Haberdasher exposing (..)
 -}
 
 import Protobuf.Decode as PD
+import Protobuf.ElmerTest
 import Protobuf.Encode as PE
 
 

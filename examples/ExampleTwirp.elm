@@ -10,6 +10,8 @@ import Dict exposing (Dict)
 import Example
 import Http
 import Protobuf.Decode as PD
+import Protobuf.Elmer
+import Protobuf.ElmerTest
 import Protobuf.Encode as PE
 
 

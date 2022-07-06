@@ -8,6 +8,8 @@ import Bytes exposing (Bytes)
 import Bytes.Encode as BE
 import Dict exposing (Dict)
 import Protobuf.Decode as PD
+import Protobuf.Elmer
+import Protobuf.ElmerTest
 import Protobuf.Encode as PE
 
 
@@ -30,7 +32,7 @@ type alias AllTogether =
 
     --  A nilable sum type
     , favourite : Maybe AllTogether_Favourite
-    , my_name : Maybe String
+    , myName : Maybe String
     , abc : AllTogether_NestedAbc
     , answer : AllTogether_Answer
     }
@@ -86,7 +88,7 @@ emptyAllTogether_NestedAbc =
 
 emptyScalar : Scalar
 emptyScalar =
-    Scalar 0 0 0 0 0 0 0 False "" (BE.encode (BE.sequence []))
+    Scalar 0 0 0 0 0 0 0 False "" Protobuf.Elmer.emptyBytes
 
 
 emptyAllTogether_Answer : AllTogether_Answer
@@ -111,7 +113,7 @@ allTogetherDecoder =
         [ PD.repeated 1 PD.string .myList (\v m -> { m | myList = v })
         , PD.mapped 2 ( "", False ) PD.string PD.bool .myMap (\v m -> { m | myMap = v })
         , PD.oneOf allTogether_FavouriteDecoder (\v m -> { m | favourite = v })
-        , PD.oneOf allTogether_MyNameDecoder (\v m -> { m | my_name = v })
+        , PD.oneOf allTogether_MyNameDecoder (\v m -> { m | myName = v })
         , PD.optional 7 allTogether_NestedAbcDecoder (\v m -> { m | abc = v })
         , PD.optional 8 allTogether_AnswerDecoder (\v m -> { m | answer = v })
         ]
@@ -191,7 +193,7 @@ allTogetherEncoder v =
         , ( 8, allTogether_AnswerEncoder v.answer )
         ]
             ++ allTogether_FavouriteEncoder v.favourite
-            ++ allTogether_MyNameEncoder v.my_name
+            ++ allTogether_MyNameEncoder v.myName
 
 
 allTogether_NestedAbcEncoder : AllTogether_NestedAbc -> PE.Encoder

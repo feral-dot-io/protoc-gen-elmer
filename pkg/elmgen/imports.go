@@ -1,6 +1,8 @@
 package elmgen
 
 import (
+	"strings"
+
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -62,4 +64,70 @@ func (m *Module) fieldImports(fd protoreflect.FieldDescriptor) {
 			m.NewElmType(md.ParentFile(), md)
 		}
 	}
+}
+
+/* Elm type constructors */
+
+func (m *Module) newElmRef(mod, id string) *ElmRef {
+	ref := &ElmRef{mod, id}
+	if mod == m.Name { // Local?
+		ref.Module = ""
+	}
+	m.addImport(ref.Module)
+	return ref
+}
+
+func (m *Module) NewElmValue(p Packager, d FullNamer) *ElmRef {
+	mod, _, asValue := protoReflectToElm(p, d)
+	return m.newElmRef(mod, asValue)
+}
+
+func (m *Module) NewElmType(p Packager, d FullNamer) *ElmType {
+	mod, asType, asValue := protoReflectToElm(p, d)
+	// Well-known type handling
+	if mod == importGooglePB {
+		// Use our own library?
+		if strings.HasSuffix(asType, "Value") &&
+			asType != "Value" && asType != "EnumValue" &&
+			asType != "NullValue" && asType != "ListValue" ||
+			asType == "Timestamp" {
+			return &ElmType{
+				m.newElmRef(importElmer, asType),
+				m.newElmRef(importElmer, "empty"+asType),
+				m.newElmRef(importElmer, asValue+"Decoder"),
+				m.newElmRef(importElmer, asValue+"Encoder"),
+				m.newElmRef(importElmerTest, asValue+"Fuzzer")}
+		} else {
+			// Passthru to Google.Protobuf
+			gpType, gpValue := asType, asValue
+			switch asType {
+			case "Field_Cardinality":
+				gpType, gpValue = "Cardinality", "cardinality"
+			case "Field_Kind":
+				gpType, gpValue = "Kind", "kind"
+			case "XType":
+				gpType, gpValue = "Type", "type"
+			}
+
+			return &ElmType{
+				m.newElmRef(importGooglePB, gpType),
+				m.newElmRef(importElmer, "empty"+asType),
+				m.newElmRef(importGooglePB, gpValue+"Decoder"),
+				m.newElmRef(importGooglePB, "to"+gpType+"Encoder"),
+				m.newElmRef(importElmerTest, asValue+"Fuzzer")}
+		}
+	}
+	return &ElmType{
+		m.newElmRef(mod, asType),
+		m.newElmRef(mod, "empty"+asType),
+		m.newElmRef(mod, asValue+"Decoder"),
+		m.newElmRef(mod, asValue+"Encoder"),
+		m.newElmRef(mod+"Tests", asValue+"Fuzzer")}
+}
+
+func (r *ElmRef) String() string {
+	if r.Module == "" { // Local ref
+		return r.ID
+	}
+	return r.Module + "." + r.ID
 }

@@ -11,37 +11,16 @@ import Example
 import Expect
 import Fuzz exposing (Fuzzer)
 import Protobuf.Decode as PD
+import Protobuf.Elmer
+import Protobuf.ElmerTest
 import Protobuf.Encode as PE
 import Test exposing (Test, fuzz, test)
-
-
-fuzzInt32 : Fuzzer Int
-fuzzInt32 =
-    Fuzz.intRange -2147483648 2147483647
-
-
-fuzzUint32 : Fuzzer Int
-fuzzUint32 =
-    Fuzz.intRange 0 4294967295
-
-
-fuzzFloat32 : Fuzzer Float
-fuzzFloat32 =
-    Fuzz.map (\i -> 2 ^ toFloat i) fuzzInt32
-
-
-fuzzBytes : Fuzzer Bytes
-fuzzBytes =
-    Fuzz.intRange 0 255
-        |> Fuzz.map BE.unsignedInt8
-        |> Fuzz.list
-        |> Fuzz.map (BE.sequence >> BE.encode)
 
 
 allTogether_AnswerFuzzer : Fuzzer Example.AllTogether_Answer
 allTogether_AnswerFuzzer =
     Fuzz.oneOf
-        [ Fuzz.map Example.AllTogether_Maybe fuzzInt32
+        [ Fuzz.map Example.AllTogether_Maybe Protobuf.ElmerTest.fuzzInt32
         , Fuzz.constant Example.AllTogether_Yes
         , Fuzz.constant Example.AllTogether_No
         ]
@@ -53,7 +32,7 @@ allTogetherFuzzer =
         allTogether_FavouriteFuzzer =
             Fuzz.oneOf
                 [ Fuzz.map Example.AllTogether_MyStr Fuzz.string
-                , Fuzz.map Example.AllTogether_MyNum fuzzInt32
+                , Fuzz.map Example.AllTogether_MyNum Protobuf.ElmerTest.fuzzInt32
                 , Fuzz.map Example.AllTogether_Selection scalarFuzzer
                 ]
 
@@ -74,24 +53,24 @@ allTogetherFuzzer =
 allTogether_NestedAbcFuzzer : Fuzzer Example.AllTogether_NestedAbc
 allTogether_NestedAbcFuzzer =
     Fuzz.map Example.AllTogether_NestedAbc
-        fuzzInt32
-        |> Fuzz.andMap fuzzInt32
-        |> Fuzz.andMap fuzzInt32
+        Protobuf.ElmerTest.fuzzInt32
+        |> Fuzz.andMap Protobuf.ElmerTest.fuzzInt32
+        |> Fuzz.andMap Protobuf.ElmerTest.fuzzInt32
 
 
 scalarFuzzer : Fuzzer Example.Scalar
 scalarFuzzer =
     Fuzz.map Example.Scalar
         Fuzz.float
-        |> Fuzz.andMap fuzzFloat32
-        |> Fuzz.andMap fuzzInt32
-        |> Fuzz.andMap fuzzUint32
-        |> Fuzz.andMap fuzzInt32
-        |> Fuzz.andMap fuzzUint32
-        |> Fuzz.andMap fuzzInt32
+        |> Fuzz.andMap Protobuf.ElmerTest.fuzzFloat32
+        |> Fuzz.andMap Protobuf.ElmerTest.fuzzInt32
+        |> Fuzz.andMap Protobuf.ElmerTest.fuzzUInt32
+        |> Fuzz.andMap Protobuf.ElmerTest.fuzzInt32
+        |> Fuzz.andMap Protobuf.ElmerTest.fuzzUInt32
+        |> Fuzz.andMap Protobuf.ElmerTest.fuzzInt32
         |> Fuzz.andMap Fuzz.bool
         |> Fuzz.andMap Fuzz.string
-        |> Fuzz.andMap fuzzBytes
+        |> Fuzz.andMap Protobuf.ElmerTest.fuzzBytes
 
 
 testAllTogether : Test

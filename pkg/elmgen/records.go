@@ -55,7 +55,7 @@ func (m *Module) newRecord(msg *protogen.Message) *Record {
 func (m *Module) newField(field *protogen.Field) *Field {
 	fd := field.Desc
 	return &Field{
-		protoFullIdentToElmCasing(string(fd.Name()), "", false),
+		protoIdentToElmValue(string(fd.Name())),
 		fd, nil,
 		NewCommentSet(field.Comments)}
 }
@@ -64,14 +64,14 @@ func (m *Module) newOneofField(protoOneof *protogen.Oneof) (*Oneof, *Field) {
 	od := protoOneof.Desc
 	oneof := m.newOneof(protoOneof)
 	field := &Field{
-		protoFullIdentToElmCasing(string(od.Name()), "", false),
+		protoIdentToElmValue(string(od.Name())),
 		nil, oneof,
 		NewCommentSet(protoOneof.Comments)}
 	// Optional field?
 	if oneof.IsSynthetic {
 		// Unwrap type
 		field.Desc = od.Fields().Get(0)
-		field.Label = protoFullIdentToElmCasing(string(field.Desc.Name()), "", false)
+		field.Label = protoIdentToElmValue(string(field.Desc.Name()))
 	}
 	return oneof, field
 }

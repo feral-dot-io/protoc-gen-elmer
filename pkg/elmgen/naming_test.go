@@ -7,87 +7,77 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func TestNaming(t *testing.T) {
-	cases := map[string]string{
-		"hello":                         "Hello",
-		"hello_world":                   "HelloWorld",
-		"hello.world":                   "HelloWorld",
-		"pkg.name.MyMessage.field_name": "PkgNameMyMessageFieldName",
-		"ALL_CAPS":                      "AllCaps",
-		"ALL__CAPS":                     "AllCaps",
-		"ALL.CAPS":                      "AllCaps",
-		"ALL..CAPS":                     "AllXCaps",
-		"TT":                            "Tt",
-		"TTaaa":                         "TTaaa",
-		"_hello.1hello":                 "XHello1hello",
-		"_Hello":                        "XHello",
-		"__Hello":                       "XHello",
-		"Hello_":                        "HelloX",
-		"Hello__":                       "HelloX",
-		"__Hello__":                     "XHelloX",
-		"_":                             "XX",
-		"___":                           "XX",
-		"URL":                           "Url",
-		"URLTag":                        "UrlTag",
-		"URL1Tag":                       "Url1Tag",
-		"A_B_C":                         "ABC", // Looks odd
-		"MyURLIsHere":                   "MyUrlIsHere",
-		"My_URL_Is_Here":                "MyUrlIsHere",
-		"UpUpUp":                        "UpUpUp",
-		".":                             "XX",
-		"":                              "X",
-		"...":                           "XXXX",
-		"oops.oops":                     "OopsOops",
-		"my._pkg":                       "MyXPkg",
-		"1andonly":                      "X1andonly",
+func TestProtoIdentToElmCasing(t *testing.T) {
+	cases := map[string][]string{
+		"hello":                         {"Hello"},
+		"hello_world":                   {"HelloWorld"},
+		"hello.world":                   {"Hello", "World"},
+		"pkg.name.MyMessage.field_name": {"Pkg", "Name", "MyMessage", "FieldName"},
+		"ALL_CAPS":                      {"AllCaps"},
+		"ALL__CAPS":                     {"AllCaps"},
+		"ALL.CAPS":                      {"All", "Caps"},
+		"ALL..CAPS":                     {"All", "X", "Caps"},
+		"TT":                            {"Tt"},
+		"TTaaa":                         {"TTaaa"},
+		"_hello.1hello":                 {"XHello", "1hello"},
+		"_Hello":                        {"XHello"},
+		"__Hello":                       {"XHello"},
+		"Hello_":                        {"HelloX"},
+		"Hello__":                       {"HelloX"},
+		"__Hello__":                     {"XHelloX"},
+		"_":                             {"XX"},
+		"___":                           {"XX"},
+		"URL":                           {"Url"},
+		"URLTag":                        {"UrlTag"},
+		"URL1Tag":                       {"Url1Tag"},
+		"A_B_C":                         {"ABC"}, // Looks odd
+		"MyURLIsHere":                   {"MyUrlIsHere"},
+		"My_URL_Is_Here":                {"MyUrlIsHere"},
+		"UpUpUp":                        {"UpUpUp"},
+		".":                             {"X", "X"},
+		"":                              {"X"},
+		"...":                           {"X", "X", "X", "X"},
+		"oops.oops":                     {"Oops", "Oops"},
+		"my._pkg":                       {"My", "XPkg"},
+		"1andonly":                      {"1andonly"},
 	}
 	for check, exp := range cases {
-		assert.Equal(t, exp, protoFullIdentToElmCasing(check, "", true), "check=%s", check)
+		act := protoIdentToElmCasing(check)
+		assert.Equal(t, exp, act, "check=%s", check)
 	}
-	// Again but with a NS separator
-	cases = map[string]string{
-		"hello.world":                   "Hello_World",
-		"pkg.name.MyMessage.field_name": "Pkg_Name_MyMessage_FieldName",
-		"shadow":                        "Shadow",
-		"_":                             "XX",
-		".":                             "X_X",
-		"...":                           "X_X_X_X",
-		"1andonly":                      "X1andonly",
-		"test.scalar":                   "Test_Scalar",
-	}
-	for check, exp := range cases {
-		assert.Equal(t, exp, protoFullIdentToElmCasing(check, "_", true), "check=%s", check)
-	}
-	assert.Equal(t, "Test.Scalar", protoFullIdentToElmCasing("test.scalar", ".", true))
+}
 
-	// Again but with type / value treatment
-	cases = map[string]string{
-		"hello.world":                   "helloWorld",
-		"pkg.name.MyMessage.field_name": "pkgNameMyMessageFieldName",
-		"":                              "x",
-		"_":                             "xX",
-		".":                             "xX",
-		"...":                           "xXXX",
-		"shadow":                        "shadow",
-		"Outer":                         "outer",
-		"_Outer":                        "xOuter",
-		"Outer.Inner":                   "outerInner",
-		"1andonly":                      "x1andonly",
+func TestProtoPkgToElmModule(t *testing.T) {
+	cases := map[string]string{
+		"hello":       "Hello",
+		"helloWorld":  "HelloWorld",
+		"hello.world": "Hello.World",
+		"hello.1":     "Hello.X1",
+		"..":          "X.X.X",
+		"type.Int":    "Type.Int",
 	}
 	for check, exp := range cases {
-		assert.Equal(t, exp, protoFullIdentToElmCasing(check, "", false), "check=%s", check)
+		act := protoPkgToElmModule(check)
+		assert.Equal(t, exp, act, "check=%s", check)
 	}
-	// Reserved word
-	cases = map[string]string{
-		"type":       "Type",
-		"int":        "XInt",
-		"to.Float":   "ToFloat",
-		"my.pkg.for": "MyPkgFor",
+}
+
+func TestProtoIdentToElmID(t *testing.T) {
+	cases := map[string][]string{
+		"hello":       {"Hello", "hello"},
+		"helloWorld":  {"HelloWorld", "helloWorld"},
+		"hello.world": {"Hello_World", "hello_World"},
+		"hello.1":     {"Hello_1", "hello_1"},
+		"..":          {"X_X_X", "x_X_X"},
+		"type.Int":    {"Type_Int", "type_Int"},
+		"type":        {"XType", "xtype"},
+		"to.Float":    {"To_Float", "to_Float"},
 	}
 	for check, exp := range cases {
-		assert.Equal(t, exp, protoFullIdentToElmCasing(check, "", true), "check=%s", check)
+		actType, actVal := protoIdentToElmID(check)
+		assert.Equal(t, exp[0], actType, "check=%s", check)
+		assert.Equal(t, exp[1], actVal, "check=%s", check)
 	}
-	assert.Equal(t, "xtoFloat", protoFullIdentToElmCasing("to.Float", "", false))
 }
 
 type protoTest struct {
@@ -104,16 +94,16 @@ func (t *protoTest) FullName() protoreflect.FullName {
 
 func TestProtoToElm(t *testing.T) {
 	ex := &protoTest{"package.name", "full.name"}
-	mod, asType, asVal := protoToElm(ex, ex)
+	mod, asType, asVal := protoReflectToElm(ex, ex)
 	assert.Equal(t, "Package.Name", mod)
 	assert.Equal(t, "Full_Name", asType)
 	assert.Equal(t, "full_Name", asVal)
 	// Reserved word collision
 	ex.name = "case"
-	mod, asType, asVal = protoToElm(ex, ex)
+	mod, asType, asVal = protoReflectToElm(ex, ex)
 	assert.Equal(t, "Package.Name", mod)
-	assert.Equal(t, "Case_", asType)
-	assert.Equal(t, "case_", asVal)
+	assert.Equal(t, "XCase", asType)
+	assert.Equal(t, "xcase", asVal)
 }
 
 func TestValidElmID(t *testing.T) {
@@ -121,7 +111,7 @@ func TestValidElmID(t *testing.T) {
 	assert.True(t, validElmID("HelloWorld"))
 	assert.False(t, validElmID("_Hello"))
 	assert.True(t, validElmID("Hello_World"))
-	assert.False(t, validElmID("type"))
+	assert.True(t, validElmID("type"))
 	// Partial
 	assert.True(t, validPartialElmID("Hello123_"))
 	assert.True(t, validPartialElmID("_Hello"))

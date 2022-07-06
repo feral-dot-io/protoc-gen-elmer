@@ -2,6 +2,7 @@ package elmgen
 
 import (
 	"sort"
+	"strings"
 
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -134,12 +135,14 @@ func NewModule(prefix, suffix string, file *protogen.File) *Module {
 	m.importsSeen = make(map[string]bool)
 	// Paths
 	pkg := string(file.Desc.Package())
+	// Adding a prefix / suffix can prevent an empty can lead to X.elm and Tests.elm
+	// We want a consistent form i.e. X.elm and XTests.elm
 	if pkg == "" {
 		pkg = "X"
 	}
 	pkg = prefix + pkg + suffix
-	m.Name = protoFullIdentToElmCasing(pkg, ".", true)
-	m.Path = protoFullIdentToElmCasing(pkg, "/", true) + ".elm"
+	m.Name = protoPkgToElmModule(pkg)
+	m.Path = strings.ReplaceAll(m.Name, ".", "/") + ".elm"
 	// Parse file
 	m.addUnions(file.Enums)
 	m.addRecords(file.Messages)

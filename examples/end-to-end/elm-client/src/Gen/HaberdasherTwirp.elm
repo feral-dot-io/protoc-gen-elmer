@@ -7,6 +7,7 @@ module Gen.HaberdasherTwirp exposing (..)
 import Gen.Haberdasher
 import Http
 import Protobuf.Decode as PD
+import Protobuf.ElmerTest
 import Protobuf.Encode as PE
 
 

@@ -29,10 +29,10 @@ module Protobuf.ElmerTest exposing
     , structFuzzer
     , syntaxFuzzer
     , timestampFuzzer
-    , typeFuzzer
     , uInt32ValueFuzzer
     , uInt64ValueFuzzer
     , valueFuzzer
+    , xtypeFuzzer
     )
 
 import Bytes exposing (Bytes)
@@ -292,8 +292,8 @@ syntaxFuzzer =
         ]
 
 
-typeFuzzer : Fuzzer GP.Type
-typeFuzzer =
+xtypeFuzzer : Fuzzer GP.Type
+xtypeFuzzer =
     Fuzz.map GP.Type Fuzz.string
         |> Fuzz.andMap (Fuzz.constant [])
         |> Fuzz.andMap (Fuzz.constant [])

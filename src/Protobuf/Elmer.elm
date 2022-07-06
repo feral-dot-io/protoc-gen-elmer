@@ -43,10 +43,10 @@ module Protobuf.Elmer exposing
     , emptyStruct
     , emptySyntax
     , emptyTimestamp
-    , emptyType
     , emptyUInt32Value
     , emptyUInt64Value
     , emptyValue
+    , emptyXType
     , floatValueDecoder
     , floatValueEncoder
     , int32ValueDecoder
@@ -401,8 +401,8 @@ emptySyntax =
     GP.SyntaxProto2
 
 
-emptyType : GP.Type
-emptyType =
+emptyXType : GP.Type
+emptyXType =
     GP.Type "" [] [] [] Nothing emptySyntax
 
 

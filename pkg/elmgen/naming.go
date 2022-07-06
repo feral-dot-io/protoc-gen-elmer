@@ -8,142 +8,20 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-const (
-	pkgSeparator    = "."
-	identSeparator  = "_"
-	collisionSuffix = "_"
-)
-
-type (
-	Packager interface {
-		Package() protoreflect.FullName
-	}
-
-	FullNamer interface {
-		FullName() protoreflect.FullName
-	}
-
-	Namer interface {
-		Name() protoreflect.Name
-	}
-)
-
-func protoToElm(p Packager, d FullNamer) (mod, asType, asValue string) {
-	pkg, fullIdent := string(p.Package()), string(d.FullName())
-	mod = protoFullIdentToElmCasing(pkg, pkgSeparator, true)
-	postPkg := strings.TrimPrefix(fullIdent, pkg+pkgSeparator)
-	// Naming collision with reserved word?
-	var post string
-	if reservedWord(postPkg) {
-		post = collisionSuffix
-	}
-	// Elm IDs
-	asType = protoFullIdentToElmCasing(postPkg, identSeparator, true) + post
-	asValue = protoFullIdentToElmCasing(postPkg, identSeparator, false) + post
-	/*
-		if reservedWord(asType ) || reservedWord( asValue) {
-			asType += collisionSuffix
-			asValue += collisionSuffix
-		}
-	*/
-	return
-}
-
-func (m *Module) newElmRef(mod, id string) *ElmRef {
-	ref := &ElmRef{mod, id}
-	if mod == m.Name { // Local?
-		ref.Module = ""
-	}
-	m.addImport(ref.Module)
-	return ref
-}
-
-func (m *Module) NewElmValue(p Packager, d FullNamer) *ElmRef {
-	mod, _, asValue := protoToElm(p, d)
-	return m.newElmRef(mod, asValue)
-}
-
-func (m *Module) NewElmType(p Packager, d FullNamer) *ElmType {
-	mod, asType, asValue := protoToElm(p, d)
-	// Well-known type handling
-	if mod == importGooglePB {
-		// Use our own library?
-		if strings.HasSuffix(asType, "Value") &&
-			asType != "Value" && asType != "EnumValue" &&
-			asType != "NullValue" && asType != "ListValue" ||
-			asType == "Timestamp" {
-			return &ElmType{
-				m.newElmRef(importElmer, asType),
-				m.newElmRef(importElmer, "empty"+asType),
-				m.newElmRef(importElmer, asValue+"Decoder"),
-				m.newElmRef(importElmer, asValue+"Encoder"),
-				m.newElmRef(importElmerTest, asValue+"Fuzzer")}
-		} else {
-			// Passthru to Google.Protobuf
-			gpType, gpValue := asType, asValue
-			switch asType {
-			case "Field_Cardinality":
-				gpType, gpValue = "Cardinality", "cardinality"
-			case "Field_Kind":
-				gpType, gpValue = "Kind", "kind"
-			}
-
-			return &ElmType{
-				m.newElmRef(importGooglePB, gpType),
-				m.newElmRef(importElmer, "empty"+asType),
-				m.newElmRef(importGooglePB, gpValue+"Decoder"),
-				m.newElmRef(importGooglePB, "to"+gpType+"Encoder"),
-				m.newElmRef(importElmerTest, asValue+"Fuzzer")}
-		}
-	}
-	return &ElmType{
-		m.newElmRef(mod, asType),
-		m.newElmRef(mod, "empty"+asType),
-		m.newElmRef(mod, asValue+"Decoder"),
-		m.newElmRef(mod, asValue+"Encoder"),
-		m.newElmRef(mod+"Tests", asValue+"Fuzzer")}
-}
-
-func (r *ElmRef) String() string {
-	if r.Module == "" { // Local ref
-		return r.ID
-	}
-	return r.Module + "." + r.ID
-}
-
-/*
-	Transforms a Protobuf fullIdent into an Elm ID. Aside from an optional namespace separator, attempts to follow Elm's naming conventions.
-	Protobuf idents can be made up of alphanum and underscores (this includes the first character).
-	Return an Elm type or value with isType. Can be used to convert an Elm type to value as well.
-	Rules:
-		1) Split fullIdent into []ident on "."
-		2) Break each ident into []words on underscores (__ counts as one) and runs of caps (URLTag is Url, Tag).
-			a) Empty words are prefixed wtih an "X".
-			b) Prefix first character of the first word with "X" if invalid Elm.
-		3) First letter of each word is uppercased. Except on the first word if !isType (is a value).
-		4) Idents are recombined with an optional separator.
-*/
-// TODO: sort this out. Our validity checks are mostly nonsense. If sep is valid Elm then we need to do the check on the result. If it's a component (.) then we need to do it per part.
-func protoFullIdentToElmCasing(fullIdent, sep string, isType bool) string {
+func protoIdentToElmCasing(fullIdent string) []string {
 	var idents [][][]rune
-	innerChecks := sep == "."
-	// (1)
 	for _, ident := range strings.Split(fullIdent, ".") {
 		var words [][]rune
 		appendWord := func(add []rune) {
-			// (2a)
+			// Prefix empty segments with "X"
 			if len(add) == 0 {
 				add = []rune{'X'}
-			}
-			// (2b)
-			if innerChecks && len(idents)+len(words) == 0 && !validElmID(string(add)) {
-				add = append([]rune{'X'}, add...)
 			}
 			words = append(words, add)
 		}
 		var buf []rune
 		var caps, underscore bool
-		// (2)
+		// Break ident into []words on underscores (__ counts as one) and runs of caps (URLTag is Url, Tag).
 		for _, r := range ident {
 			if r == '_' { // Start of underscores
 				if !underscore {
@@ -174,42 +52,86 @@ func protoFullIdentToElmCasing(fullIdent, sep string, isType bool) string {
 		}
 		// Add leftover buffer
 		appendWord(buf)
-		// Add to idents
+		// Add result to idents
 		idents = append(idents, words)
 	}
-	// (3)
+	// Build Elm ID from our words
 	var idents2 []string
-	for i, words := range idents {
+	for _, words := range idents {
 		var words2 []string
-		for j, word := range words {
-			var first rune
-			if i == 0 && j == 0 && !isType { // Building an Elm value on first char
-				first = unicode.ToLower(word[0])
-			} else {
-				first = unicode.ToUpper(word[0])
-			}
+		// Uppercase first letter of each word
+		for _, word := range words {
+			first := unicode.ToUpper(word[0])
 			cased := string(first) + strings.ToLower(string(word[1:]))
 			words2 = append(words2, cased)
 		}
+		// Stitch together
 		ident := strings.Join(words2, "")
 		idents2 = append(idents2, ident)
 	}
-	// (4)
-	joined := strings.Join(idents2, sep)
-	if !innerChecks && !validElmID(joined) {
-		if isType {
-			return "X" + joined
-		} else {
-			return "x" + joined
-		}
-	}
-	return joined
+	return idents2
 }
+
+func protoPkgToElmModule(pkg string) string {
+	var parts []string
+	for _, part := range protoIdentToElmCasing(pkg) {
+		if !validElmID(part) {
+			part = "X" + part
+		}
+		parts = append(parts, part)
+	}
+	return strings.Join(parts, ".")
+}
+
+func protoIdentToElmID(ident string) (asType, asValue string) {
+	parts := protoIdentToElmCasing(ident)
+	asType = strings.Join(parts, "_")
+	// Lowercase first rune
+	runes := []rune(asType)
+	asValue = strings.ToLower(string(runes[:1])) + string(runes[1:])
+	// Valid Elm?
+	if !validElmID(asType) || !validElmID(asValue) ||
+		reservedWord(asType) || reservedWord(asValue) {
+		asType = "X" + asType
+		asValue = "x" + asValue
+	}
+	return
+}
+
+func protoIdentToElmValue(ident string) string {
+	_, id := protoIdentToElmID(ident)
+	return id
+}
+
+/* Takes an ident from protoreflect and converts to an Elm ID */
+
+type (
+	Packager interface {
+		Package() protoreflect.FullName
+	}
+
+	FullNamer interface {
+		FullName() protoreflect.FullName
+	}
+
+	Namer interface {
+		Name() protoreflect.Name
+	}
+)
+
+func protoReflectToElm(p Packager, d FullNamer) (mod, asType, asValue string) {
+	pkg, fullIdent := string(p.Package()), string(d.FullName())
+	mod = protoPkgToElmModule(pkg)
+	postPkg := strings.TrimPrefix(fullIdent, pkg+".")
+	asType, asValue = protoIdentToElmID(postPkg)
+	return
+}
+
+/* Helper naming functions */
 
 func validElmID(id string) bool {
 	runes := []rune(id)
-	return !reservedWord(id) && // Not a reserved word
-		utf8.ValidString(id) && id != "" && // Non-empty utf8
+	return utf8.ValidString(id) && id != "" && // Non-empty utf8
 		unicode.IsLetter(runes[0]) && // First char is a letter
 		validPartialElmID(string(runes[1:])) // Remaining chars are valid
 }

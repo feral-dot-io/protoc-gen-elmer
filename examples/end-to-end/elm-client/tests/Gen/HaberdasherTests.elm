@@ -8,19 +8,15 @@ import Expect
 import Fuzz exposing (Fuzzer)
 import Gen.Haberdasher
 import Protobuf.Decode as PD
+import Protobuf.ElmerTest
 import Protobuf.Encode as PE
 import Test exposing (Test, fuzz, test)
-
-
-fuzzInt32 : Fuzzer Int
-fuzzInt32 =
-    Fuzz.intRange -2147483648 2147483647
 
 
 hatFuzzer : Fuzzer Gen.Haberdasher.Hat
 hatFuzzer =
     Fuzz.map Gen.Haberdasher.Hat
-        fuzzInt32
+        Protobuf.ElmerTest.fuzzInt32
         |> Fuzz.andMap Fuzz.string
         |> Fuzz.andMap Fuzz.string
 
@@ -28,7 +24,7 @@ hatFuzzer =
 sizeFuzzer : Fuzzer Gen.Haberdasher.Size
 sizeFuzzer =
     Fuzz.map Gen.Haberdasher.Size
-        fuzzInt32
+        Protobuf.ElmerTest.fuzzInt32
 
 
 testHat : Test
