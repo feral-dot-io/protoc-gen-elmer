@@ -109,11 +109,7 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 		gFP("test%s : Test", t.ID)
 		gFP("test%s =", t.ID)
 		gFP("    let")
-		// TODO move `run` to top-level
-		gFP("        run data =")
-		gFP("            PE.encode (%s data)", t.Encoder)
-		gFP("                |> PD.decode %s", t.Decoder)
-		gFP("                |> Expect.equal (Just data)")
+		gFP("        run = Protobuf.ElmerTest.runTest %s %s", t.Decoder, t.Encoder)
 		gFP("    in")
 		gFP(`    Test.describe "encode then decode %s"`, t.ID)
 		gFP(`        [ test "empty" (\_ -> run %s)`, t.Zero)

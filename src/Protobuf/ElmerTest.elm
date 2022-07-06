@@ -24,6 +24,7 @@ module Protobuf.ElmerTest exposing
     , mixinFuzzer
     , nullValueFuzzer
     , optionFuzzer
+    , runTest
     , sourceContextFuzzer
     , stringValueFuzzer
     , structFuzzer
@@ -38,10 +39,20 @@ module Protobuf.ElmerTest exposing
 import Bytes exposing (Bytes)
 import Bytes.Encode as BE
 import Dict
+import Expect
 import Fuzz exposing (Fuzzer)
 import Google.Protobuf as GP
+import Protobuf.Decode as PD
 import Protobuf.Elmer as Elmer
+import Protobuf.Encode as PE
 import Time
+
+
+runTest : PD.Decoder data -> (data -> PE.Encoder) -> data -> Expect.Expectation
+runTest dec enc data =
+    PE.encode (enc data)
+        |> PD.decode dec
+        |> Expect.equal (Just data)
 
 
 

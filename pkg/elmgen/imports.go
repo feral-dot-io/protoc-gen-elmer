@@ -21,9 +21,7 @@ func (m *Module) addImport(mod string) {
 }
 
 func (m *Module) findImports() {
-	if len(m.Unions) > 0 {
-		m.addImport(importElmerTest)
-	}
+	m.addImport(importElmerTest) // Needed by all tests, removed by non-test modules
 	// Iterate over fields since they hold non-ref values which can trigger imports
 	for _, r := range m.Records {
 		for _, f := range r.Fields {
@@ -49,11 +47,6 @@ func (m *Module) fieldImports(fd protoreflect.FieldDescriptor) {
 		case protoreflect.BytesKind: // Bytes
 			m.addImport(importBytes)
 			m.addImport(importElmer)
-			m.addImport(importElmerTest)
-
-		case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind,
-			protoreflect.Uint32Kind, protoreflect.Fixed32Kind, protoreflect.FloatKind:
-			m.addImport(importElmerTest)
 
 		case protoreflect.EnumKind:
 			ed := fd.Enum()

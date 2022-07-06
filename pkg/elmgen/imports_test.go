@@ -60,7 +60,8 @@ func TestImports(t *testing.T) {
 			int32 b = 2;
 			int32 c = 3;
 		}`)
-	assert.Equal(t, []string{"AnotherPkg", "AnotherPkgTests", "XTests"}, elm.Imports)
+	assert.Equal(t, []string{"AnotherPkg", "AnotherPkgTests", "Protobuf.ElmerTest",
+		"XTests"}, elm.Imports)
 	assert.Len(t, elm.Records, 1)
 	assert.Equal(t, "MyMessage", elm.Records[0].Type.ID)
 }

@@ -178,9 +178,6 @@ Explore options:
 - Enums have a zero field that acts as an embedded option. We might want to remove this for closed enums and rejecting the whole payload (losing compatibility).
 - Revert well-known types to erk/proto's "raw" interpretation
 
-code quality:
-- elmgen/Field is overloaded, needs to be an interface
-
 release checklist
 - Review README
 - examples folder

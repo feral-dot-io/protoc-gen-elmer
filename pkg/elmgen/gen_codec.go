@@ -84,7 +84,7 @@ func printImports(g *protogen.GeneratedFile, m *Module, skipTests bool) {
 	g.P("import Protobuf.Decode as PD")
 	g.P("import Protobuf.Encode as PE")
 	for _, i := range m.Imports {
-		// Skip tests? TODO remove once Fuzzer pushed to gen_*
+		// Skip tests? Since our Elm types always generate a reference to Tests, we need to be able to skip them
 		if skipTests && strings.HasSuffix(i, "Tests") {
 			continue
 		}
