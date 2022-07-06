@@ -29,7 +29,7 @@ func TestScalarRecord(t *testing.T) {
 			bytes type = 15;
 		}
 	`)
-	assert.Equal(t, []string{"Bytes", "Protobuf.Elmer", "Protobuf.ElmerTest",
+	assert.Equal(t, []string{"Bytes", importElmer, importElmerTests,
 		"Test.ScalarTests"}, elm.Imports)
 	assert.Empty(t, elm.Unions)
 	assert.Len(t, elm.Records, 1)

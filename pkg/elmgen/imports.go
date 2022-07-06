@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	importBytes     = "Bytes"
-	importDict      = "Dict"
-	importGooglePB  = "Google.Protobuf"
-	importElmer     = "Protobuf.Elmer"
-	importElmerTest = "Protobuf.ElmerTest"
+	importBytes      = "Bytes"
+	importDict       = "Dict"
+	importGooglePB   = "Google.Protobuf"
+	importElmer      = "Protobuf.Elmer"
+	importElmerTests = "Protobuf.ElmerTests"
 )
 
 func (m *Module) addImport(mod string) {
@@ -21,7 +21,7 @@ func (m *Module) addImport(mod string) {
 }
 
 func (m *Module) findImports() {
-	m.addImport(importElmerTest) // Needed by all tests, removed by non-test modules
+	m.addImport(importElmerTests) // Needed by all tests, removed by non-test modules
 	// Iterate over fields since they hold non-ref values which can trigger imports
 	for _, r := range m.Records {
 		for _, f := range r.Fields {
@@ -89,7 +89,7 @@ func (m *Module) NewElmType(p Packager, d FullNamer) *ElmType {
 				m.newElmRef(importElmer, "empty"+asType),
 				m.newElmRef(importElmer, asValue+"Decoder"),
 				m.newElmRef(importElmer, asValue+"Encoder"),
-				m.newElmRef(importElmerTest, asValue+"Fuzzer")}
+				m.newElmRef(importElmerTests, asValue+"Fuzzer")}
 		} else {
 			// Passthru to Google.Protobuf
 			gpType, gpValue := asType, asValue
@@ -107,7 +107,7 @@ func (m *Module) NewElmType(p Packager, d FullNamer) *ElmType {
 				m.newElmRef(importElmer, "empty"+asType),
 				m.newElmRef(importGooglePB, gpValue+"Decoder"),
 				m.newElmRef(importGooglePB, "to"+gpType+"Encoder"),
-				m.newElmRef(importElmerTest, asValue+"Fuzzer")}
+				m.newElmRef(importElmerTests, asValue+"Fuzzer")}
 		}
 	}
 	return &ElmType{

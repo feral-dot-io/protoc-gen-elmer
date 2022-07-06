@@ -16,8 +16,8 @@ func TestFindImports(t *testing.T) {
 		}
 	`)
 	elm := NewModule("", plugin.Files[0])
-	assert.Equal(t, []string{"Bytes", "Dict", "FindTests", "Protobuf.Elmer",
-		"Protobuf.ElmerTest"}, elm.Imports)
+	assert.Equal(t, []string{"Bytes", "Dict", "FindTests", importElmer,
+		importElmerTests}, elm.Imports)
 }
 
 func TestFindImportsNested(t *testing.T) {
@@ -43,7 +43,7 @@ func TestFindImportsNested(t *testing.T) {
 	`)
 	elm := NewModule("", plugin.Files[1])
 	assert.Equal(t, []string{"Bytes", "MyTests", "Other", "OtherTests",
-		"Protobuf.Elmer", "Protobuf.ElmerTest"}, elm.Imports)
+		importElmer, importElmerTests}, elm.Imports)
 }
 
 func TestImports(t *testing.T) {
@@ -60,7 +60,7 @@ func TestImports(t *testing.T) {
 			int32 b = 2;
 			int32 c = 3;
 		}`)
-	assert.Equal(t, []string{"AnotherPkg", "AnotherPkgTests", "Protobuf.ElmerTest",
+	assert.Equal(t, []string{"AnotherPkg", "AnotherPkgTests", importElmerTests,
 		"XTests"}, elm.Imports)
 	assert.Len(t, elm.Records, 1)
 	assert.Equal(t, "MyMessage", elm.Records[0].Type.ID)

@@ -1,4 +1,4 @@
-module Protobuf.ElmerTest exposing
+module Protobuf.ElmerTests exposing
     ( anyFuzzer
     , apiFuzzer
     , boolValueFuzzer

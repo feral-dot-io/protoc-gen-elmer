@@ -43,7 +43,7 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 		gFP("%s : Fuzzer %s", t.Fuzzer.ID, t)
 		gFP("%s =", t.Fuzzer.ID)
 		gFP("    Fuzz.oneOf")
-		gFP("        [ Fuzz.map %s Protobuf.ElmerTest.fuzzInt32", u.DefaultVariant.ID)
+		gFP("        [ Fuzz.map %s %s.fuzzInt32", u.DefaultVariant.ID, importElmerTests)
 		for _, v := range u.Variants {
 			gFP("        , Fuzz.constant %s", v.ID)
 		}
@@ -109,7 +109,7 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 		gFP("test%s : Test", t.ID)
 		gFP("test%s =", t.ID)
 		gFP("    let")
-		gFP("        run = Protobuf.ElmerTest.runTest %s %s", t.Decoder, t.Encoder)
+		gFP("        run = %s.runTest %s %s", importElmerTests, t.Decoder, t.Encoder)
 		gFP("    in")
 		gFP(`    Test.describe "encode then decode %s"`, t.ID)
 		gFP(`        [ test "empty" (\_ -> run %s)`, t.Zero)
@@ -134,9 +134,9 @@ func fieldFuzzerKind(m *Module, fd protoreflect.FieldDescriptor) string {
 	case protoreflect.BoolKind:
 		return "Fuzz.bool"
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
-		return "Protobuf.ElmerTest.fuzzInt32"
+		return importElmerTests + ".fuzzInt32"
 	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-		return "Protobuf.ElmerTest.fuzzUInt32"
+		return importElmerTests + ".fuzzUInt32"
 
 	/* Unsupported by Elm / JS
 	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
@@ -146,14 +146,14 @@ func fieldFuzzerKind(m *Module, fd protoreflect.FieldDescriptor) string {
 	*/
 
 	case protoreflect.FloatKind:
-		return "Protobuf.ElmerTest.fuzzFloat32"
+		return importElmerTests + ".fuzzFloat32"
 	case protoreflect.DoubleKind:
 		return "Fuzz.float"
 
 	case protoreflect.StringKind:
 		return "Fuzz.string"
 	case protoreflect.BytesKind:
-		return "Protobuf.ElmerTest.fuzzBytes"
+		return importElmerTests + ".fuzzBytes"
 
 	case protoreflect.EnumKind:
 		ed := fd.Enum()

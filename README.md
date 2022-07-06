@@ -168,7 +168,9 @@ Major goals to complete:
 Smaller steps:
 - any TODO comments
 - lazy handling on recursive structures?
+- elm_package= in comments?
 - add Makefile to examples/e2e
+- review name collisions
 
 Explore options:
 - Nested messages could be nil (incl. oneof)
