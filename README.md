@@ -171,6 +171,18 @@ Smaller steps:
 - elm_package= in comments?
 - add Makefile to examples/e2e
 - review name collisions
+- codegen gives warnings on some code:
+    - gen_codec: messages with one field while the rest are optional generates a warning "consider using cons instead"
+    - gen_twirp: has unused imports
+- comments:
+    - trailing comment (and only comment) prefixes with a blank "-- "
+    - comments with a leading space translates to a double spaced comment "--  asdf"
+    - Large codegen files are harder to generate. Perhaps create a comment documenting all structures?
+    - Go code needs more
+- structure:
+    - default variant of enums has the wire number stored. This is protobuf semantics leaking and makes the variants non-uniform. Don't add an unrecognised option as this should default to the default variant
+    - Twirp methods are long. Move types to separate lines for readability
+    - enums need a mapper to / from string
 
 Explore options:
 - Nested messages could be nil (incl. oneof)

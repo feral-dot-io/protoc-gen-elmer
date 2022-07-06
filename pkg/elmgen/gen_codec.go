@@ -47,7 +47,7 @@ func (c Comments) String() (block string) {
 	}
 	dropTrailingNl := strings.TrimSuffix(string(c), "\n")
 	for _, line := range strings.Split(dropTrailingNl, "\n") {
-		block += "-- " + line + "\n"
+		block += "-- " + strings.TrimSpace(line) + "\n"
 	}
 	return
 }
