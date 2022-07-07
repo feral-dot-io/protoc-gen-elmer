@@ -108,19 +108,38 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		g.P(fmt.Sprintf(formatter, args...))
 	}
 	g.P("module ", m.Name, " exposing (..)")
+
 	g.P("{-| Protobuf library for decoding and encoding structures found in " + m.Proto + " along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.")
 	g.P("")
-	// Build list of relevant top-level types
+
+	// List relevant top-level types
 	var allTypes []*ElmType
-	var docsEnums, docsRecords []string
-	for _, u := range m.Unions {
-		allTypes = append(allTypes, u.Type)
-		docsEnums = append(docsEnums, u.Type.ID)
+	if len(m.Records) > 0 {
+		g.P("Records:")
+		for _, r := range m.Records {
+			g.P("- ", r.Type.ID)
+			allTypes = append(allTypes, r.Type)
+		}
+	} else {
+		g.P("Records: (none)")
 	}
-	for _, r := range m.Records {
-		allTypes = append(allTypes, r.Type)
-		docsRecords = append(docsRecords, r.Type.ID)
+	g.P("")
+	if len(m.Unions) > 0 {
+		g.P("Unions:")
+		for _, u := range m.Unions {
+			g.P("- ", u.Type.ID)
+			allTypes = append(allTypes, u.Type)
+		}
+	} else {
+		g.P("Unions: (none)")
 	}
+	g.P("")
+
+	g.P("Each type defined has a: decoder, encoder and an empty (zero value) function. In addition to this enums have to and from functions for string conversion. All functions are prefixed with their purpose.")
+	g.P("")
+	g.P("Elm identifiers are derived directly from the Protobuf ID (a full ident). The package maps to a module and the rest of the ID is the type. Since Protobuf names are hierachical (separated by a dot `.`), each namespace is mapped to an underscore `_` in an Elm ID. A Protobuf namespaced ident (parts between a dot `.`) are then cased to follow Elm naming conventions and do not include any undescores `_`. For example the enum `my.pkg.MyMessage.URLOptions` maps to the Elm module `My.Pkg` with ID `MyMessage_UrlOptions`.")
+	g.P("")
+
 	// Build lists of IDs for @docs
 	var docsTypes, docsEmpty, docsDecs, docsEncs []string
 	for _, t := range allTypes {
@@ -129,13 +148,6 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		docsDecs = append(docsDecs, "decode"+t.ID)
 		docsEncs = append(docsEncs, "encode"+t.ID)
 	}
-	g.P("Derived messages: ", strings.Join(docsRecords, ", "))
-	g.P("Derived enums: ", strings.Join(docsEnums, ", "))
-	g.P("")
-	g.P("Each type defined has a: decoder, encoder and an empty (zero value) function. In addition to this enums have to and from functions for string conversion. All functions are prefixed with their purpose.")
-	g.P("")
-	g.P("Elm identifiers are derived directly from the Protobuf ID (a full ident). The package maps to a module and the rest of the ID is the type. Since Protobuf names are hierachical (separated by a dot `.`), each namespace is mapped to an underscore `_` in an Elm ID. A Protobuf namespaced ident (parts between a dot `.`) are then cased to follow Elm naming conventions and do not include any undescores `_`. For example the enum `my.pkg.MyMessage.URLOptions` maps to the Elm module `My.Pkg` with ID `MyMessage_UrlOptions`.")
-	g.P("")
 	g.P("# Types")
 	g.P("@docs ", strings.Join(docsTypes, ", "))
 	g.P("")
