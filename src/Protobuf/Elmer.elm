@@ -9,13 +9,17 @@ module Protobuf.Elmer exposing
     , Timestamp
     , UInt32Value
     , UInt64Value
-    , anyEncoder
-    , boolValueDecoder
-    , boolValueEncoder
-    , bytesValueDecoder
-    , bytesValueEncoder
-    , doubleValueDecoder
-    , doubleValueEncoder
+    , decodeBoolValue
+    , decodeBytesValue
+    , decodeDoubleValue
+    , decodeFloatValue
+    , decodeInt32Value
+    , decodeInt64Value
+    , decodeStringValue
+    , decodeTimestamp
+    , decodeUInt32Value
+    , decodeUInt64Value
+    , decodeValue
     , emptyAny
     , emptyApi
     , emptyBoolValue
@@ -47,20 +51,18 @@ module Protobuf.Elmer exposing
     , emptyUInt64Value
     , emptyValue
     , emptyXType
-    , floatValueDecoder
-    , floatValueEncoder
-    , int32ValueDecoder
-    , int32ValueEncoder
-    , int64ValueDecoder
-    , int64ValueEncoder
-    , stringValueDecoder
-    , stringValueEncoder
-    , timestampDecoder
-    , timestampEncoder
-    , uInt32ValueDecoder
-    , uInt32ValueEncoder
-    , uInt64ValueDecoder
-    , uInt64ValueEncoder
+    , encodeAny
+    , encodeBoolValue
+    , encodeBytesValue
+    , encodeDoubleValue
+    , encodeFloatValue
+    , encodeInt32Value
+    , encodeInt64Value
+    , encodeStringValue
+    , encodeTimestamp
+    , encodeUInt32Value
+    , encodeUInt64Value
+    , encodeValue
     )
 
 import Bytes exposing (Bytes)
@@ -179,60 +181,60 @@ emptyUInt64Value =
 -- Decoders
 
 
-boolValueDecoder : PD.Decoder BoolValue
-boolValueDecoder =
-    valueDecoder PD.bool
+decodeBoolValue : PD.Decoder BoolValue
+decodeBoolValue =
+    decodeValue PD.bool
 
 
-bytesValueDecoder : PD.Decoder BytesValue
-bytesValueDecoder =
-    valueDecoder PD.bytes
+decodeBytesValue : PD.Decoder BytesValue
+decodeBytesValue =
+    decodeValue PD.bytes
 
 
-doubleValueDecoder : PD.Decoder FloatValue
-doubleValueDecoder =
-    valueDecoder PD.double
+decodeDoubleValue : PD.Decoder FloatValue
+decodeDoubleValue =
+    decodeValue PD.double
 
 
-floatValueDecoder : PD.Decoder FloatValue
-floatValueDecoder =
-    valueDecoder PD.float
+decodeFloatValue : PD.Decoder FloatValue
+decodeFloatValue =
+    decodeValue PD.float
 
 
-int32ValueDecoder : PD.Decoder Int32Value
-int32ValueDecoder =
-    valueDecoder PD.int32
+decodeInt32Value : PD.Decoder Int32Value
+decodeInt32Value =
+    decodeValue PD.int32
 
 
-int64ValueDecoder : PD.Decoder Int64Value
-int64ValueDecoder =
-    valueDecoder PD.int32
+decodeInt64Value : PD.Decoder Int64Value
+decodeInt64Value =
+    decodeValue PD.int32
 
 
-stringValueDecoder : PD.Decoder StringValue
-stringValueDecoder =
-    valueDecoder PD.string
+decodeStringValue : PD.Decoder StringValue
+decodeStringValue =
+    decodeValue PD.string
 
 
-timestampDecoder : PD.Decoder Timestamp
-timestampDecoder =
+decodeTimestamp : PD.Decoder Timestamp
+decodeTimestamp =
     GP.timestampDecoder
         |> PD.map (\t -> t.seconds * 1000 + t.nanos // 1000000)
         |> PD.map Time.millisToPosix
 
 
-uInt32ValueDecoder : PD.Decoder UInt32Value
-uInt32ValueDecoder =
-    valueDecoder PD.uint32
+decodeUInt32Value : PD.Decoder UInt32Value
+decodeUInt32Value =
+    decodeValue PD.uint32
 
 
-uInt64ValueDecoder : PD.Decoder UInt64Value
-uInt64ValueDecoder =
-    valueDecoder PD.uint32
+decodeUInt64Value : PD.Decoder UInt64Value
+decodeUInt64Value =
+    decodeValue PD.uint32
 
 
-valueDecoder : PD.Decoder w -> PD.Decoder (Maybe w)
-valueDecoder dec =
+decodeValue : PD.Decoder w -> PD.Decoder (Maybe w)
+decodeValue dec =
     PD.message Nothing [ PD.optional 1 dec (\v _ -> Just v) ]
 
 
@@ -240,48 +242,48 @@ valueDecoder dec =
 -- Encoders
 
 
-anyEncoder : GP.Any -> PE.Encoder
-anyEncoder =
+encodeAny : GP.Any -> PE.Encoder
+encodeAny =
     GP.toAnyEncoder
 
 
-boolValueEncoder : BoolValue -> PE.Encoder
-boolValueEncoder =
-    valueEncoder PE.bool
+encodeBoolValue : BoolValue -> PE.Encoder
+encodeBoolValue =
+    encodeValue PE.bool
 
 
-bytesValueEncoder : BytesValue -> PE.Encoder
-bytesValueEncoder =
-    valueEncoder PE.bytes
+encodeBytesValue : BytesValue -> PE.Encoder
+encodeBytesValue =
+    encodeValue PE.bytes
 
 
-doubleValueEncoder : FloatValue -> PE.Encoder
-doubleValueEncoder =
-    valueEncoder PE.double
+encodeDoubleValue : FloatValue -> PE.Encoder
+encodeDoubleValue =
+    encodeValue PE.double
 
 
-floatValueEncoder : FloatValue -> PE.Encoder
-floatValueEncoder =
-    valueEncoder PE.float
+encodeFloatValue : FloatValue -> PE.Encoder
+encodeFloatValue =
+    encodeValue PE.float
 
 
-int32ValueEncoder : Int32Value -> PE.Encoder
-int32ValueEncoder =
-    valueEncoder PE.int32
+encodeInt32Value : Int32Value -> PE.Encoder
+encodeInt32Value =
+    encodeValue PE.int32
 
 
-int64ValueEncoder : Int64Value -> PE.Encoder
-int64ValueEncoder =
-    valueEncoder PE.int32
+encodeInt64Value : Int64Value -> PE.Encoder
+encodeInt64Value =
+    encodeValue PE.int32
 
 
-stringValueEncoder : StringValue -> PE.Encoder
-stringValueEncoder =
-    valueEncoder PE.string
+encodeStringValue : StringValue -> PE.Encoder
+encodeStringValue =
+    encodeValue PE.string
 
 
-timestampEncoder : Time.Posix -> PE.Encoder
-timestampEncoder p =
+encodeTimestamp : Time.Posix -> PE.Encoder
+encodeTimestamp p =
     let
         ms =
             Time.posixToMillis p
@@ -292,18 +294,18 @@ timestampEncoder p =
         }
 
 
-uInt32ValueEncoder : UInt32Value -> PE.Encoder
-uInt32ValueEncoder =
-    valueEncoder PE.uint32
+encodeUInt32Value : UInt32Value -> PE.Encoder
+encodeUInt32Value =
+    encodeValue PE.uint32
 
 
-uInt64ValueEncoder : UInt64Value -> PE.Encoder
-uInt64ValueEncoder =
-    valueEncoder PE.uint32
+encodeUInt64Value : UInt64Value -> PE.Encoder
+encodeUInt64Value =
+    encodeValue PE.uint32
 
 
-valueEncoder : (v -> PE.Encoder) -> Maybe v -> PE.Encoder
-valueEncoder enc v =
+encodeValue : (v -> PE.Encoder) -> Maybe v -> PE.Encoder
+encodeValue enc v =
     PE.message [ ( 1, v |> Maybe.map enc |> Maybe.withDefault PE.none ) ]
 
 

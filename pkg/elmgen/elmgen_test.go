@@ -259,7 +259,7 @@ func TestQualifiedWithComments(t *testing.T) {
 	assert.Equal(t, "Outer_Inner_Or", o.Variants[0].ID.ID)
 	assert.Equal(t, "Outer_Inner_And", o.Variants[1].ID.ID)
 	assert.Equal(t, "Outer_Inner_Mayhem", elm.Oneofs[1].Type.ID)
-	assert.Equal(t, "outer_Inner_MayhemDecoder", elm.Oneofs[1].Type.Decoder.ID)
+	assert.Equal(t, "decodeOuter_Inner_Mayhem", elm.Oneofs[1].Type.Decoder.ID)
 	// Check comments
 	content := string(testFileContents["Comments.elm"])
 	for placement, max := range map[string]int{

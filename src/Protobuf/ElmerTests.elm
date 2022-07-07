@@ -1,39 +1,41 @@
 module Protobuf.ElmerTests exposing
-    ( anyFuzzer
-    , apiFuzzer
-    , boolValueFuzzer
-    , bytesValueFuzzer
-    , doubleValueFuzzer
-    , durationFuzzer
-    , emptyFuzzer
-    , enumFuzzer
-    , enumValueFuzzer
-    , fieldFuzzer
-    , fieldMaskFuzzer
-    , field_CardinalityFuzzer
-    , field_KindFuzzer
-    , floatValueFuzzer
+    ( fuzzAny
+    , fuzzApi
+    , fuzzBoolValue
     , fuzzBytes
+    , fuzzBytesValue
+    , fuzzDoubleValue
+    , fuzzDuration
+    , fuzzEmpty
+    , fuzzEnum
+    , fuzzEnumValue
+    , fuzzField
+    , fuzzFieldMask
+    , fuzzField_Cardinality
+    , fuzzField_Kind
     , fuzzFloat32
+    , fuzzFloatValue
     , fuzzInt32
+    , fuzzInt32Value
+    , fuzzInt64Value
+    , fuzzListValue
+    , fuzzMethod
+    , fuzzMinInt32
+    , fuzzMixin
+    , fuzzNullValue
+    , fuzzOption
+    , fuzzPosInt32
+    , fuzzSourceContext
+    , fuzzStringValue
+    , fuzzStruct
+    , fuzzSyntax
+    , fuzzTimestamp
     , fuzzUInt32
-    , int32ValueFuzzer
-    , int64ValueFuzzer
-    , listValueFuzzer
-    , methodFuzzer
-    , mixinFuzzer
-    , nullValueFuzzer
-    , optionFuzzer
+    , fuzzUInt32Value
+    , fuzzUInt64Value
+    , fuzzValue
+    , fuzzXType
     , runTest
-    , sourceContextFuzzer
-    , stringValueFuzzer
-    , structFuzzer
-    , syntaxFuzzer
-    , timestampFuzzer
-    , uInt32ValueFuzzer
-    , uInt64ValueFuzzer
-    , valueFuzzer
-    , xtypeFuzzer
     )
 
 import Bytes exposing (Bytes)
@@ -89,63 +91,63 @@ fuzzBytes =
 -- Fuzzers for well-known types
 
 
-boolValueFuzzer : Fuzzer Elmer.BoolValue
-boolValueFuzzer =
+fuzzBoolValue : Fuzzer Elmer.BoolValue
+fuzzBoolValue =
     Fuzz.maybe Fuzz.bool
 
 
-bytesValueFuzzer : Fuzzer Elmer.BytesValue
-bytesValueFuzzer =
+fuzzBytesValue : Fuzzer Elmer.BytesValue
+fuzzBytesValue =
     Fuzz.maybe fuzzBytes
 
 
-doubleValueFuzzer : Fuzzer Elmer.FloatValue
-doubleValueFuzzer =
+fuzzDoubleValue : Fuzzer Elmer.FloatValue
+fuzzDoubleValue =
     Fuzz.maybe Fuzz.float
 
 
-floatValueFuzzer : Fuzzer Elmer.FloatValue
-floatValueFuzzer =
+fuzzFloatValue : Fuzzer Elmer.FloatValue
+fuzzFloatValue =
     Fuzz.maybe fuzzFloat32
 
 
-int32ValueFuzzer : Fuzzer Elmer.Int32Value
-int32ValueFuzzer =
+fuzzInt32Value : Fuzzer Elmer.Int32Value
+fuzzInt32Value =
     Fuzz.maybe fuzzInt32
 
 
-int64ValueFuzzer : Fuzzer Elmer.Int64Value
-int64ValueFuzzer =
+fuzzInt64Value : Fuzzer Elmer.Int64Value
+fuzzInt64Value =
     Fuzz.maybe fuzzInt32
 
 
-stringValueFuzzer : Fuzzer Elmer.StringValue
-stringValueFuzzer =
+fuzzStringValue : Fuzzer Elmer.StringValue
+fuzzStringValue =
     Fuzz.maybe Fuzz.string
 
 
-timestampFuzzer : Fuzzer Elmer.Timestamp
-timestampFuzzer =
+fuzzTimestamp : Fuzzer Elmer.Timestamp
+fuzzTimestamp =
     fuzzUInt32 |> Fuzz.map Time.millisToPosix
 
 
-uInt32ValueFuzzer : Fuzzer Elmer.UInt32Value
-uInt32ValueFuzzer =
+fuzzUInt32Value : Fuzzer Elmer.UInt32Value
+fuzzUInt32Value =
     Fuzz.maybe fuzzUInt32
 
 
-uInt64ValueFuzzer : Fuzzer Elmer.UInt64Value
-uInt64ValueFuzzer =
+fuzzUInt64Value : Fuzzer Elmer.UInt64Value
+fuzzUInt64Value =
     Fuzz.maybe fuzzUInt32
 
 
-posInt32Fuzzer : Fuzzer Int
-posInt32Fuzzer =
-    minInt32Fuzzer 0
+fuzzPosInt32 : Fuzzer Int
+fuzzPosInt32 =
+    fuzzMinInt32 0
 
 
-minInt32Fuzzer : Int -> Fuzzer Int
-minInt32Fuzzer min =
+fuzzMinInt32 : Int -> Fuzzer Int
+fuzzMinInt32 min =
     Fuzz.intRange min 2147483647
 
 
@@ -153,74 +155,74 @@ minInt32Fuzzer min =
 -- Fuzzers for Google.Protobuf pass through. Avoids deepd nesting
 
 
-anyFuzzer : Fuzzer GP.Any
-anyFuzzer =
+fuzzAny : Fuzzer GP.Any
+fuzzAny =
     Fuzz.map2 GP.Any Fuzz.string fuzzBytes
 
 
-apiFuzzer : Fuzzer GP.Api
-apiFuzzer =
+fuzzApi : Fuzzer GP.Api
+fuzzApi =
     Fuzz.map GP.Api Fuzz.string
         |> Fuzz.andMap (Fuzz.constant [])
         |> Fuzz.andMap (Fuzz.constant [])
         |> Fuzz.andMap Fuzz.string
-        |> Fuzz.andMap (Fuzz.maybe sourceContextFuzzer)
+        |> Fuzz.andMap (Fuzz.maybe fuzzSourceContext)
         |> Fuzz.andMap (Fuzz.constant [])
-        |> Fuzz.andMap syntaxFuzzer
+        |> Fuzz.andMap fuzzSyntax
 
 
-durationFuzzer : Fuzzer GP.Duration
-durationFuzzer =
-    Fuzz.map2 GP.Duration posInt32Fuzzer (Fuzz.intRange 0 1000)
+fuzzDuration : Fuzzer GP.Duration
+fuzzDuration =
+    Fuzz.map2 GP.Duration fuzzPosInt32 (Fuzz.intRange 0 1000)
 
 
-emptyFuzzer : Fuzzer GP.Empty
-emptyFuzzer =
+fuzzEmpty : Fuzzer GP.Empty
+fuzzEmpty =
     Fuzz.constant GP.Empty
 
 
-enumFuzzer : Fuzzer GP.Enum
-enumFuzzer =
+fuzzEnum : Fuzzer GP.Enum
+fuzzEnum =
     Fuzz.map5 GP.Enum
         Fuzz.string
         (Fuzz.constant [])
         (Fuzz.constant [])
-        (Fuzz.maybe sourceContextFuzzer)
-        syntaxFuzzer
+        (Fuzz.maybe fuzzSourceContext)
+        fuzzSyntax
 
 
-enumValueFuzzer : Fuzzer GP.EnumValue
-enumValueFuzzer =
-    Fuzz.map3 GP.EnumValue Fuzz.string posInt32Fuzzer (Fuzz.list optionFuzzer)
+fuzzEnumValue : Fuzzer GP.EnumValue
+fuzzEnumValue =
+    Fuzz.map3 GP.EnumValue Fuzz.string fuzzPosInt32 (Fuzz.list fuzzOption)
 
 
-fieldFuzzer : Fuzzer GP.Field
-fieldFuzzer =
-    Fuzz.map GP.Field field_KindFuzzer
-        |> Fuzz.andMap field_CardinalityFuzzer
-        |> Fuzz.andMap posInt32Fuzzer
+fuzzField : Fuzzer GP.Field
+fuzzField =
+    Fuzz.map GP.Field fuzzField_Kind
+        |> Fuzz.andMap fuzzField_Cardinality
+        |> Fuzz.andMap fuzzPosInt32
         |> Fuzz.andMap Fuzz.string
         |> Fuzz.andMap Fuzz.string
-        |> Fuzz.andMap posInt32Fuzzer
+        |> Fuzz.andMap fuzzPosInt32
         |> Fuzz.andMap Fuzz.bool
         |> Fuzz.andMap (Fuzz.constant [])
         |> Fuzz.andMap Fuzz.string
         |> Fuzz.andMap Fuzz.string
 
 
-field_CardinalityFuzzer : Fuzzer GP.Cardinality
-field_CardinalityFuzzer =
+fuzzField_Cardinality : Fuzzer GP.Cardinality
+fuzzField_Cardinality =
     Fuzz.oneOf
         [ Fuzz.constant GP.CardinalityUnknown
         , Fuzz.constant GP.CardinalityOptional
         , Fuzz.constant GP.CardinalityRequired
         , Fuzz.constant GP.CardinalityRepeated
-        , Fuzz.map GP.CardinalityUnrecognized_ (minInt32Fuzzer 4)
+        , Fuzz.map GP.CardinalityUnrecognized_ (fuzzMinInt32 4)
         ]
 
 
-field_KindFuzzer : Fuzzer GP.Kind
-field_KindFuzzer =
+fuzzField_Kind : Fuzzer GP.Kind
+fuzzField_Kind =
     Fuzz.oneOf
         [ Fuzz.constant GP.TypeUnknown
         , Fuzz.constant GP.TypeDouble
@@ -241,89 +243,89 @@ field_KindFuzzer =
         , Fuzz.constant GP.TypeSfixed64
         , Fuzz.constant GP.TypeSint32
         , Fuzz.constant GP.TypeSint64
-        , Fuzz.map GP.KindUnrecognized_ (minInt32Fuzzer 19)
+        , Fuzz.map GP.KindUnrecognized_ (fuzzMinInt32 19)
         ]
 
 
-fieldMaskFuzzer : Fuzzer GP.FieldMask
-fieldMaskFuzzer =
+fuzzFieldMask : Fuzzer GP.FieldMask
+fuzzFieldMask =
     Fuzz.map GP.FieldMask (Fuzz.constant [])
 
 
-listValueFuzzer : Fuzzer GP.ListValue
-listValueFuzzer =
+fuzzListValue : Fuzzer GP.ListValue
+fuzzListValue =
     Fuzz.map GP.ListValue (Fuzz.map GP.ListValueValues (Fuzz.constant []))
 
 
-methodFuzzer : Fuzzer GP.Method
-methodFuzzer =
+fuzzMethod : Fuzzer GP.Method
+fuzzMethod =
     Fuzz.map GP.Method Fuzz.string
         |> Fuzz.andMap Fuzz.string
         |> Fuzz.andMap Fuzz.bool
         |> Fuzz.andMap Fuzz.string
         |> Fuzz.andMap Fuzz.bool
         |> Fuzz.andMap (Fuzz.constant [])
-        |> Fuzz.andMap syntaxFuzzer
+        |> Fuzz.andMap fuzzSyntax
 
 
-mixinFuzzer : Fuzzer GP.Mixin
-mixinFuzzer =
+fuzzMixin : Fuzzer GP.Mixin
+fuzzMixin =
     Fuzz.map2 GP.Mixin Fuzz.string Fuzz.string
 
 
-nullValueFuzzer : Fuzzer GP.NullValue
-nullValueFuzzer =
+fuzzNullValue : Fuzzer GP.NullValue
+fuzzNullValue =
     Fuzz.oneOf
         [ Fuzz.constant GP.NullValue
-        , Fuzz.map GP.NullValueUnrecognized_ (minInt32Fuzzer 1)
+        , Fuzz.map GP.NullValueUnrecognized_ (fuzzMinInt32 1)
         ]
 
 
-optionFuzzer : Fuzzer GP.Option
-optionFuzzer =
-    Fuzz.map2 GP.Option Fuzz.string (Fuzz.maybe anyFuzzer)
+fuzzOption : Fuzzer GP.Option
+fuzzOption =
+    Fuzz.map2 GP.Option Fuzz.string (Fuzz.maybe fuzzAny)
 
 
-sourceContextFuzzer : Fuzzer GP.SourceContext
-sourceContextFuzzer =
+fuzzSourceContext : Fuzzer GP.SourceContext
+fuzzSourceContext =
     Fuzz.map GP.SourceContext Fuzz.string
 
 
-structFuzzer : Fuzzer GP.Struct
-structFuzzer =
+fuzzStruct : Fuzzer GP.Struct
+fuzzStruct =
     Fuzz.map GP.Struct (Fuzz.map GP.StructFields (Fuzz.constant Dict.empty))
 
 
-syntaxFuzzer : Fuzzer GP.Syntax
-syntaxFuzzer =
+fuzzSyntax : Fuzzer GP.Syntax
+fuzzSyntax =
     Fuzz.oneOf
         [ Fuzz.constant GP.SyntaxProto2
         , Fuzz.constant GP.SyntaxProto3
-        , Fuzz.map GP.SyntaxUnrecognized_ (minInt32Fuzzer 2)
+        , Fuzz.map GP.SyntaxUnrecognized_ (fuzzMinInt32 2)
         ]
 
 
-xtypeFuzzer : Fuzzer GP.Type
-xtypeFuzzer =
+fuzzXType : Fuzzer GP.Type
+fuzzXType =
     Fuzz.map GP.Type Fuzz.string
         |> Fuzz.andMap (Fuzz.constant [])
         |> Fuzz.andMap (Fuzz.constant [])
         |> Fuzz.andMap (Fuzz.constant [])
-        |> Fuzz.andMap (Fuzz.maybe sourceContextFuzzer)
-        |> Fuzz.andMap syntaxFuzzer
+        |> Fuzz.andMap (Fuzz.maybe fuzzSourceContext)
+        |> Fuzz.andMap fuzzSyntax
 
 
-valueFuzzer : Fuzzer GP.Value
-valueFuzzer =
+fuzzValue : Fuzzer GP.Value
+fuzzValue =
     let
         kindTypeFuzzer =
             Fuzz.oneOf
-                [ Fuzz.map GP.KindNullValue nullValueFuzzer
+                [ Fuzz.map GP.KindNullValue fuzzNullValue
                 , Fuzz.map GP.KindNumberValue Fuzz.float
                 , Fuzz.map GP.KindStringValue Fuzz.string
                 , Fuzz.map GP.KindBoolValue Fuzz.bool
-                , Fuzz.map GP.KindStructValue structFuzzer
-                , Fuzz.map GP.KindListValue listValueFuzzer
+                , Fuzz.map GP.KindStructValue fuzzStruct
+                , Fuzz.map GP.KindListValue fuzzListValue
                 ]
     in
     Fuzz.map GP.Value (Fuzz.map GP.ValueKind (Fuzz.maybe kindTypeFuzzer))

@@ -110,9 +110,9 @@ func (m *Module) NewElmType(p packager, d fullNamer) *ElmType {
 			return &ElmType{
 				m.newElmRef(importElmer, asType),
 				m.newElmRef(importElmer, "empty"+asType),
-				m.newElmRef(importElmer, asValue+"Decoder"),
-				m.newElmRef(importElmer, asValue+"Encoder"),
-				m.newElmRef(importElmerTests, asValue+"Fuzzer")}
+				m.newElmRef(importElmer, "decode"+asType),
+				m.newElmRef(importElmer, "encode"+asType),
+				m.newElmRef(importElmerTests, "fuzz"+asType)}
 		} else {
 			// Passthru to Google.Protobuf
 			gpType, gpValue := asType, asValue
@@ -130,15 +130,15 @@ func (m *Module) NewElmType(p packager, d fullNamer) *ElmType {
 				m.newElmRef(importElmer, "empty"+asType),
 				m.newElmRef(importGooglePB, gpValue+"Decoder"),
 				m.newElmRef(importGooglePB, "to"+gpType+"Encoder"),
-				m.newElmRef(importElmerTests, asValue+"Fuzzer")}
+				m.newElmRef(importElmerTests, "fuzz"+asType)}
 		}
 	}
 	return &ElmType{
 		m.newElmRef(mod, asType),
 		m.newElmRef(mod, "empty"+asType),
-		m.newElmRef(mod, asValue+"Decoder"),
-		m.newElmRef(mod, asValue+"Encoder"),
-		m.newElmRef(mod+"Tests", asValue+"Fuzzer")}
+		m.newElmRef(mod, "decode"+asType),
+		m.newElmRef(mod, "encode"+asType),
+		m.newElmRef(mod+"Tests", "fuzz"+asType)}
 }
 
 // Converts an Elm reference to Elm code. If local, drops the module.

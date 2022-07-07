@@ -31,11 +31,11 @@ func TestUnions(t *testing.T) {
 		Default  string
 		Variants []string
 	}{
-		{"Abc", "emptyAbc", "abcDecoder", "abcEncoder", "abcFuzzer",
+		{"Abc", "emptyAbc", "decodeAbc", "encodeAbc", "fuzzAbc",
 			"A", []string{"A", "B", "C"}},
-		{"Choose", "emptyChoose", "chooseDecoder", "chooseEncoder", "chooseFuzzer",
+		{"Choose", "emptyChoose", "decodeChoose", "encodeChoose", "fuzzChoose",
 			"Hands", []string{"Hands", "Foil", "Epee", "Sabre"}},
-		{"Minimal", "emptyMinimal", "minimalDecoder", "minimalEncoder", "minimalFuzzer",
+		{"Minimal", "emptyMinimal", "decodeMinimal", "encodeMinimal", "fuzzMinimal",
 			"Lower", []string{"Lower"}},
 	} {
 		union := elm.Unions[i]
@@ -77,4 +77,18 @@ func TestUnionAllowAlias(t *testing.T) {
 	// Check comments
 	assert.Contains(t, alias.Variants[1].Comments.Trailing, "The original")
 	assert.Contains(t, alias.Aliases[0].Comments.Trailing, "This is the alias")
+}
+
+func TestPrefixAndSuffixCollision(t *testing.T) {
+	// If we mix prefixes and suffixes from functions we can potentially get a collision
+	testModule(t, `
+		syntax = "proto3";
+		// This generates an emptyDecoder zero fn
+		enum Decoder {
+			WHATEVER = 0;
+		}
+		// With suffixed decoder names this generates emptyDecoder (colliding)
+		message Empty {
+			bool field = 1;
+		}`)
 }

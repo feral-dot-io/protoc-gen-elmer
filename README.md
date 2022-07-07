@@ -173,7 +173,6 @@ Smaller steps:
     - Should work for uint64 -> float
     - and if we want to bypass our well known types to use erk/proto's
 - add Makefile to examples/e2e
-- review name collisions. Move all of our fns to a prefix?
 - codegen gives warnings on some code:
     - gen_codec: messages with one field while the rest are optional generates a warning "consider using cons instead"
     - gen_twirp: has unused imports
@@ -191,6 +190,7 @@ Explore options:
 
 release checklist
 - Review README
+- licence
 - examples folder
 - TODO comments
 

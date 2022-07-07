@@ -37,8 +37,8 @@ func TestScalarRecord(t *testing.T) {
 	// IDs
 	assert.Equal(t, "Scalar", scalar.Type.ID)
 	assert.Equal(t, "emptyScalar", scalar.Type.Zero.ID)
-	assert.Equal(t, "scalarDecoder", scalar.Type.Decoder.ID)
-	assert.Equal(t, "scalarEncoder", scalar.Type.Encoder.ID)
+	assert.Equal(t, "decodeScalar", scalar.Type.Decoder.ID)
+	assert.Equal(t, "encodeScalar", scalar.Type.Encoder.ID)
 }
 
 func TestRecordFieldEnum(t *testing.T) {
