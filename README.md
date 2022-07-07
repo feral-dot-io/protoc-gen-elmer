@@ -177,8 +177,6 @@ Smaller steps:
 - codegen gives warnings on some code:
     - gen_codec: messages with one field while the rest are optional generates a warning "consider using cons instead"
     - gen_twirp: has unused imports
-- comments:
-    - Large codegen files are hard to navigate. Perhaps create a module level comment documenting all structures?
 - structure:
     - enums need a mapper to / from string
     - timestamps are aliased to Elmer.Timestamp. Use Time.Posix directly for clarity

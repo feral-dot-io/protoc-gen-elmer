@@ -13,8 +13,8 @@ type (
 	Module struct {
 		importsSeen map[string]bool
 
-		Name, Path string
-		Imports    []string
+		Name, Path, Proto string
+		Imports           []string
 
 		Unions   Unions
 		Oneofs   Oneofs
@@ -155,6 +155,7 @@ func NewModule(suffix string, file *protogen.File) *Module {
 	pkg = pkg + suffix
 	m.Name = protoPkgToElmModule(pkg)
 	m.Path = strings.ReplaceAll(m.Name, ".", "/") + ".elm"
+	m.Proto = file.Desc.Path()
 	// Parse file
 	m.addUnions(file.Enums)
 	m.addRecords(file.Messages)

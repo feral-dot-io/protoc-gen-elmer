@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// Formats our Elm code and returns the replacement File. Errors are passed to plugin.Error. Assumes `elm-format` is in `$PATH`
 func FormatFile(plugin *protogen.Plugin, path string, file *protogen.GeneratedFile) *protogen.GeneratedFile {
 	// Fetch unformatted content
 	content, err := file.Content()
@@ -34,13 +35,13 @@ func runElmFormat(in io.Reader, out io.Writer) error {
 	return cmd.Run()
 }
 
+// Prints a do not edit string that editors may recognise as likely from codegen. It's Go specific and doesn't quite match the expected regex so we do our best to make it look similar
 func printDoNotEdit(g *protogen.GeneratedFile) {
 	// Ideally this would be left-aligned but elm-format will indent it
-	g.P("{-")
-	g.P("// Code generated protoc-gen-elmer DO NOT EDIT \\\\")
-	g.P("-}")
+	g.P("-- // Code generated protoc-gen-elmer DO NOT EDIT \\\\")
 }
 
+// Formats an Elm comment by trimming white space and prefixing it with double dashes (--). String may contain new lines.
 func (c Comments) String() (block string) {
 	if c == "" {
 		return ""
@@ -52,6 +53,7 @@ func (c Comments) String() (block string) {
 	return
 }
 
+// Prints the leading comments from a set. The main comments are printed as a document block comment ({-|})
 func (set *CommentSet) printBlock(g *protogen.GeneratedFile) {
 	for _, c := range set.LeadingDetached {
 		g.P(c)
@@ -61,6 +63,7 @@ func (set *CommentSet) printBlock(g *protogen.GeneratedFile) {
 	}
 }
 
+// Prints the trailing comments of a block.
 func (set *CommentSet) printBlockTrailing(g *protogen.GeneratedFile) {
 	g.P(set.Trailing)
 }
@@ -78,6 +81,7 @@ func (set *CommentSet) printDashDash(g *protogen.GeneratedFile) {
 	g.P(set.Leading)
 }
 
+// Prints the imports of a module. Since a `Module` holds references to tests via types, these should be skipped for non-test generators.
 func printImports(g *protogen.GeneratedFile, m *Module, skipTests bool) {
 	g.P("import Protobuf.Decode as PD")
 	g.P("import Protobuf.Encode as PE")
@@ -98,11 +102,53 @@ func printImports(g *protogen.GeneratedFile, m *Module, skipTests bool) {
 	}
 }
 
+// Generates Elm decoders and encoders (making a codec) to a file
 func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	gFP := func(formatter string, args ...interface{}) {
 		g.P(fmt.Sprintf(formatter, args...))
 	}
 	g.P("module ", m.Name, " exposing (..)")
+	g.P("{-| Protobuf library for decoding and encoding structures found in " + m.Proto + " along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.")
+	g.P("")
+	// Build list of relevant top-level types
+	var allTypes []*ElmType
+	var docsEnums, docsRecords []string
+	for _, u := range m.Unions {
+		allTypes = append(allTypes, u.Type)
+		docsEnums = append(docsEnums, u.Type.ID)
+	}
+	for _, r := range m.Records {
+		allTypes = append(allTypes, r.Type)
+		docsRecords = append(docsRecords, r.Type.ID)
+	}
+	// Build lists of IDs for @docs
+	var docsTypes, docsEmpty, docsDecs, docsEncs []string
+	for _, t := range allTypes {
+		docsTypes = append(docsTypes, t.ID)
+		docsEmpty = append(docsEmpty, "empty"+t.ID)
+		docsDecs = append(docsDecs, "decode"+t.ID)
+		docsEncs = append(docsEncs, "encode"+t.ID)
+	}
+	g.P("Derived messages: ", strings.Join(docsRecords, ", "))
+	g.P("Derived enums: ", strings.Join(docsEnums, ", "))
+	g.P("")
+	g.P("Each type defined has a: decoder, encoder and an empty (zero value) function. In addition to this enums have to and from functions for string conversion. All functions are prefixed with their purpose.")
+	g.P("")
+	g.P("Elm identifiers are derived directly from the Protobuf ID (a full ident). The package maps to a module and the rest of the ID is the type. Since Protobuf names are hierachical (separated by a dot `.`), each namespace is mapped to an underscore `_` in an Elm ID. A Protobuf namespaced ident (parts between a dot `.`) are then cased to follow Elm naming conventions and do not include any undescores `_`. For example the enum `my.pkg.MyMessage.URLOptions` maps to the Elm module `My.Pkg` with ID `MyMessage_UrlOptions`.")
+	g.P("")
+	g.P("# Types")
+	g.P("@docs ", strings.Join(docsTypes, ", "))
+	g.P("")
+	g.P("# Empty (zero values)")
+	g.P("@docs ", strings.Join(docsEmpty, ", "))
+	g.P("")
+	g.P("# Decoders")
+	g.P("@docs ", strings.Join(docsDecs, ", "))
+	g.P("")
+	g.P("# Encoders")
+	g.P("@docs ", strings.Join(docsEncs, ", "))
+	g.P("")
+	g.P("-}")
 	printDoNotEdit(g)
 	printImports(g, m, true)
 
