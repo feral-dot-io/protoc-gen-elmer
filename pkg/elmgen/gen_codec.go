@@ -124,18 +124,21 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		g.P("Records: (none)")
 	}
 	g.P("")
+	var docsStr []string
 	if len(m.Unions) > 0 {
 		g.P("Unions:")
 		for _, u := range m.Unions {
-			g.P("- ", u.Type.ID)
-			allTypes = append(allTypes, u.Type)
+			t := u.Type
+			g.P("- ", t.ID)
+			allTypes = append(allTypes, t)
+			docsStr = append(docsStr, "from"+t.ID, "to"+t.ID)
 		}
 	} else {
 		g.P("Unions: (none)")
 	}
 	g.P("")
 
-	g.P("Each type defined has a: decoder, encoder and an empty (zero value) function. In addition to this enums have to and from functions for string conversion. All functions are prefixed with their purpose.")
+	g.P("Each type defined has a: decoder, encoder and an empty (zero value) function. In addition to this enums have to and from functions for string conversion. All functions take the form `decodeDerivedIdent` where `decode` is the purpose and `DerivedIdent` comes from the Protobuf ident.")
 	g.P("")
 	g.P("Elm identifiers are derived directly from the Protobuf ID (a full ident). The package maps to a module and the rest of the ID is the type. Since Protobuf names are hierachical (separated by a dot `.`), each namespace is mapped to an underscore `_` in an Elm ID. A Protobuf namespaced ident (parts between a dot `.`) are then cased to follow Elm naming conventions and do not include any undescores `_`. For example the enum `my.pkg.MyMessage.URLOptions` maps to the Elm module `My.Pkg` with ID `MyMessage_UrlOptions`.")
 	g.P("")
@@ -154,6 +157,11 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	g.P("# Empty (zero values)")
 	g.P("@docs ", strings.Join(docsEmpty, ", "))
 	g.P("")
+	if len(docsStr) > 0 {
+		g.P("# Enum and String converters")
+		g.P("@docs ", strings.Join(docsStr, ", "))
+		g.P("")
+	}
 	g.P("# Decoders")
 	g.P("@docs ", strings.Join(docsDecs, ", "))
 	g.P("")
@@ -247,6 +255,28 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		gFP("%s : %s", t.Zero, t)
 		gFP("%s =", t.Zero)
 		gFP("    %s", u.Default().ID)
+	}
+
+	// Union to / from string converters
+	for _, u := range m.Unions {
+		gFP("from%s : %s -> String", u.Type.ID, u.Type.ID)
+		gFP("from%s u =", u.Type.ID)
+		gFP("  case u of")
+		for _, v := range u.Variants {
+			gFP(`    %s ->`, v.ID)
+			gFP(`      "%s"`, v.ID)
+		}
+
+		gFP("to%s : String -> %s", u.Type.ID, u.Type.ID)
+		gFP("to%s str =", u.Type.ID)
+		gFP("  case str of")
+		for _, v := range u.Variants {
+			gFP(`    "%s" ->`, v.ID)
+			gFP(`      %s`, v.ID)
+		}
+		// No match? Use default
+		gFP("    _ ->")
+		gFP("      %s", u.Default().ID)
 	}
 
 	// Record decoders

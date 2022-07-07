@@ -170,15 +170,14 @@ Major goals to complete:
 Smaller steps:
 - lazy handling on recursive structures?
 - remove Record.Oneofs in favour of relying on Field.Oneof?
+- Union to / from need test cases generated
+- add Makefile to examples/e2e
 - Trailing comments to specify underlying Elm type? // [elmType=double]
     - Should work for uint64 -> float
     - and if we want to bypass our well known types to use erk/proto's
-- add Makefile to examples/e2e
 - codegen gives warnings on some code:
     - gen_codec: messages with one field while the rest are optional generates a warning "consider using cons instead"
     - gen_twirp: has unused imports
-- structure:
-    - enums need a mapper to / from string
 
 Explore options:
 - Nested messages could be nil (incl. oneof)
