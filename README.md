@@ -170,7 +170,7 @@ Major goals to complete:
 Smaller steps:
 - lazy handling on recursive structures?
 - remove Record.Oneofs in favour of relying on Field.Oneof?
-- Union to / from need test cases generated
+- Union valuesOf / to / from need test cases generated
 - add Makefile to examples/e2e
 - Trailing comments to specify underlying Elm type? // [elmType=double]
     - Should work for uint64 -> float

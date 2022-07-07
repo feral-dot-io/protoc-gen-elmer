@@ -124,13 +124,14 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		g.P("Records: (none)")
 	}
 	g.P("")
-	var docsStr []string
+	var docsValues, docsStr []string
 	if len(m.Unions) > 0 {
 		g.P("Unions:")
 		for _, u := range m.Unions {
 			t := u.Type
 			g.P("- ", t.ID)
 			allTypes = append(allTypes, t)
+			docsValues = append(docsValues, "valuesOf"+t.ID)
 			docsStr = append(docsStr, "from"+t.ID, "to"+t.ID)
 		}
 	} else {
@@ -138,7 +139,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	}
 	g.P("")
 
-	g.P("Each type defined has a: decoder, encoder and an empty (zero value) function. In addition to this enums have to and from functions for string conversion. All functions take the form `decodeDerivedIdent` where `decode` is the purpose and `DerivedIdent` comes from the Protobuf ident.")
+	g.P("Each type defined has a: decoder, encoder and an empty (zero value) function. In addition to this enums have valuesOf, to and from (string) functions. All functions take the form `decodeDerivedIdent` where `decode` is the purpose and `DerivedIdent` comes from the Protobuf ident.")
 	g.P("")
 	g.P("Elm identifiers are derived directly from the Protobuf ID (a full ident). The package maps to a module and the rest of the ID is the type. Since Protobuf names are hierachical (separated by a dot `.`), each namespace is mapped to an underscore `_` in an Elm ID. A Protobuf namespaced ident (parts between a dot `.`) are then cased to follow Elm naming conventions and do not include any undescores `_`. For example the enum `my.pkg.MyMessage.URLOptions` maps to the Elm module `My.Pkg` with ID `MyMessage_UrlOptions`.")
 	g.P("")
@@ -153,21 +154,18 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 	}
 	g.P("# Types")
 	g.P("@docs ", strings.Join(docsTypes, ", "))
-	g.P("")
 	g.P("# Empty (zero values)")
 	g.P("@docs ", strings.Join(docsEmpty, ", "))
-	g.P("")
 	if len(docsStr) > 0 {
+		g.P("# Enum valuesOf")
+		g.P("@docs ", strings.Join(docsValues, ", "))
 		g.P("# Enum and String converters")
 		g.P("@docs ", strings.Join(docsStr, ", "))
-		g.P("")
 	}
 	g.P("# Decoders")
 	g.P("@docs ", strings.Join(docsDecs, ", "))
-	g.P("")
 	g.P("# Encoders")
 	g.P("@docs ", strings.Join(docsEncs, ", "))
-	g.P("")
 	g.P("-}")
 	printDoNotEdit(g)
 	printImports(g, m, true)
@@ -257,8 +255,15 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		gFP("    %s", u.Default().ID)
 	}
 
-	// Union to / from string converters
+	// Extra union helpers: valuesOf, to, and from
 	for _, u := range m.Unions {
+		var values []string
+		for _, v := range u.Variants {
+			values = append(values, v.ID.ID)
+		}
+		gFP("valuesOf%s : List %s", u.Type.ID, u.Type.ID)
+		gFP("valuesOf%s = [ %s ]", u.Type.ID, strings.Join(values, ", "))
+
 		gFP("from%s : %s -> String", u.Type.ID, u.Type.ID)
 		gFP("from%s u =", u.Type.ID)
 		gFP("  case u of")
