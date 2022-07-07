@@ -6,7 +6,6 @@ module Protobuf.Elmer exposing
     , Int32Value
     , Int64Value
     , StringValue
-    , Timestamp
     , UInt32Value
     , UInt64Value
     , decodeBoolValue
@@ -104,10 +103,6 @@ type alias Int64Value =
 
 type alias StringValue =
     Maybe String
-
-
-type alias Timestamp =
-    Time.Posix
 
 
 type alias UInt32Value =
@@ -216,7 +211,7 @@ decodeStringValue =
     decodeValue PD.string
 
 
-decodeTimestamp : PD.Decoder Timestamp
+decodeTimestamp : PD.Decoder Time.Posix
 decodeTimestamp =
     GP.timestampDecoder
         |> PD.map (\t -> t.seconds * 1000 + t.nanos // 1000000)

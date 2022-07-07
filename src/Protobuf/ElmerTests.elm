@@ -126,7 +126,7 @@ fuzzStringValue =
     Fuzz.maybe Fuzz.string
 
 
-fuzzTimestamp : Fuzzer Elmer.Timestamp
+fuzzTimestamp : Fuzzer Time.Posix
 fuzzTimestamp =
     fuzzUInt32 |> Fuzz.map Time.millisToPosix
 

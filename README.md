@@ -179,7 +179,6 @@ Smaller steps:
     - gen_twirp: has unused imports
 - structure:
     - enums need a mapper to / from string
-    - timestamps are aliased to Elmer.Timestamp. Use Time.Posix directly for clarity
 
 Explore options:
 - Nested messages could be nil (incl. oneof)

@@ -105,10 +105,16 @@ func (m *Module) NewElmType(p packager, d fullNamer) *ElmType {
 		// Use our own library?
 		if strings.HasSuffix(asType, "Value") &&
 			asType != "Value" && asType != "EnumValue" &&
-			asType != "NullValue" && asType != "ListValue" ||
-			asType == "Timestamp" {
+			asType != "NullValue" && asType != "ListValue" {
 			return &ElmType{
 				m.newElmRef(importElmer, asType),
+				m.newElmRef(importElmer, "empty"+asType),
+				m.newElmRef(importElmer, "decode"+asType),
+				m.newElmRef(importElmer, "encode"+asType),
+				m.newElmRef(importElmerTests, "fuzz"+asType)}
+		} else if asType == "Timestamp" {
+			return &ElmType{
+				m.newElmRef("Time", "Posix"),
 				m.newElmRef(importElmer, "empty"+asType),
 				m.newElmRef(importElmer, "decode"+asType),
 				m.newElmRef(importElmer, "encode"+asType),
