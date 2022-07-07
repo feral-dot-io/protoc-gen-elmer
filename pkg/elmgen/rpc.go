@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// Adds RPCs to a an Elm module from proto services
 func (m *Module) addRPCs(services []*protogen.Service) {
 	for _, protoService := range services {
 		// Build list of methods
@@ -20,11 +21,12 @@ func (m *Module) addRPCs(services []*protogen.Service) {
 		m.Services = append(m.Services, &Service{
 			string(protoService.Desc.Name()),
 			methods,
-			NewCommentSet(protoService.Comments)})
+			newCommentSet(protoService.Comments)})
 	}
 	sort.Sort(m.Services)
 }
 
+// Creates a new Elm RPC from a proto method
 func (m *Module) newRPC(sd protoreflect.Descriptor, method *protogen.Method) *RPC {
 	md := method.Desc
 	in, out := md.Input(), md.Output()
@@ -36,5 +38,5 @@ func (m *Module) newRPC(sd protoreflect.Descriptor, method *protogen.Method) *RP
 
 		sd.FullName(),
 		md.Name(),
-		NewCommentSet(method.Comments)}
+		newCommentSet(method.Comments)}
 }

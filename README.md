@@ -169,6 +169,7 @@ Major goals to complete:
 
 Smaller steps:
 - lazy handling on recursive structures?
+- remove Record.Oneofs in favour of relying on Field.Oneof?
 - Trailing comments to specify underlying Elm type? // [elmType=double]
     - Should work for uint64 -> float
     - and if we want to bypass our well known types to use erk/proto's
@@ -178,9 +179,9 @@ Smaller steps:
     - gen_twirp: has unused imports
 - comments:
     - Large codegen files are hard to navigate. Perhaps create a module level comment documenting all structures?
-    - Go code needs more
 - structure:
     - enums need a mapper to / from string
+    - timestamps are aliased to Elmer.Timestamp. Use Time.Posix directly for clarity
 
 Explore options:
 - Nested messages could be nil (incl. oneof)

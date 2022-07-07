@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// Adds proto enums as Elm unions to a module
 func (m *Module) addUnions(enums []*protogen.Enum) {
 	for _, enum := range enums {
 		union := m.newUnion(enum)
@@ -15,11 +16,12 @@ func (m *Module) addUnions(enums []*protogen.Enum) {
 	sort.Sort(m.Unions)
 }
 
+// Creates a new union, converting from a Protobuf Enum
 func (m *Module) newUnion(enum *protogen.Enum) *Union {
 	ed := enum.Desc
 	union := new(Union)
 	union.Type = m.NewElmType(ed.ParentFile(), ed)
-	union.Comments = NewCommentSet(enum.Comments)
+	union.Comments = newCommentSet(enum.Comments)
 	// Add variants
 	aliases := make(map[protoreflect.EnumNumber]*Variant)
 	for _, value := range enum.Values {
@@ -30,12 +32,12 @@ func (m *Module) newUnion(enum *protogen.Enum) *Union {
 			alias := &VariantAlias{
 				m.NewElmValue(vd.ParentFile(), vd),
 				original,
-				NewCommentSet(value.Comments)}
+				newCommentSet(value.Comments)}
 			union.Aliases = append(union.Aliases, alias)
 		} else {
 			// Create
 			id := m.NewElmType(vd.ParentFile(), vd).ElmRef
-			v := &Variant{id, num, NewCommentSet(value.Comments)}
+			v := &Variant{id, num, newCommentSet(value.Comments)}
 			// Add
 			union.Variants = append(union.Variants, v)
 			aliases[v.Number] = v
@@ -50,10 +52,11 @@ func (u *Union) Default() *Variant {
 	return u.Variants[0]
 }
 
+// Creates a new Oneof, converting from a proto Oneof. If it's an optional (synthetic field) then the type refers directly to the type instead of a layer of indirection.
 func (m *Module) newOneof(protoOneof *protogen.Oneof) *Oneof {
 	od := protoOneof.Desc
 	oneof := new(Oneof)
-	oneof.Comments = NewCommentSet(protoOneof.Comments)
+	oneof.Comments = newCommentSet(protoOneof.Comments)
 	oneof.IsSynthetic = od.IsSynthetic()
 	if oneof.IsSynthetic {
 		firstField := od.Fields().Get(0)
