@@ -171,6 +171,8 @@ Smaller steps:
 - lazy handling on recursive structures?
 - remove Record.Oneofs in favour of relying on Field.Oneof?
 - Union valuesOf / to / from need test cases generated
+- there's a real tussle between names of enum variants being sufficient vs wanting to be prefixed by the enum name
+- give twirp methods a twirp prefix? This could allow "merged" imports
 - add Makefile to examples/e2e
 - Trailing comments to specify underlying Elm type? // [elmType=double]
     - Should work for uint64 -> float
