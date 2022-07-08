@@ -1,55 +1,52 @@
 module Gen.HaberdasherTests exposing (..)
 
-{-
-   // Code generated protoc-gen-elmer DO NOT EDIT \\
+{-| Protobuf library for testing structures found in api.proto. This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit.
 -}
+
+-- // Code generated protoc-gen-elmer DO NOT EDIT \\
 
 import Expect
 import Fuzz exposing (Fuzzer)
 import Gen.Haberdasher
 import Protobuf.Decode as PD
-import Protobuf.ElmerTest
+import Protobuf.ElmerTests
 import Protobuf.Encode as PE
 import Test exposing (Test, fuzz, test)
 
 
-hatFuzzer : Fuzzer Gen.Haberdasher.Hat
-hatFuzzer =
+fuzzHat : Fuzzer Gen.Haberdasher.Hat
+fuzzHat =
     Fuzz.map Gen.Haberdasher.Hat
-        Protobuf.ElmerTest.fuzzInt32
+        Protobuf.ElmerTests.fuzzInt32
         |> Fuzz.andMap Fuzz.string
         |> Fuzz.andMap Fuzz.string
 
 
-sizeFuzzer : Fuzzer Gen.Haberdasher.Size
-sizeFuzzer =
+fuzzSize : Fuzzer Gen.Haberdasher.Size
+fuzzSize =
     Fuzz.map Gen.Haberdasher.Size
-        Protobuf.ElmerTest.fuzzInt32
+        Protobuf.ElmerTests.fuzzInt32
 
 
 testHat : Test
 testHat =
     let
-        run data =
-            PE.encode (Gen.Haberdasher.hatEncoder data)
-                |> PD.decode Gen.Haberdasher.hatDecoder
-                |> Expect.equal (Just data)
+        run =
+            Protobuf.ElmerTests.runTest Gen.Haberdasher.decodeHat Gen.Haberdasher.encodeHat
     in
     Test.describe "encode then decode Hat"
         [ test "empty" (\_ -> run Gen.Haberdasher.emptyHat)
-        , fuzz hatFuzzer "fuzzer" run
+        , fuzz fuzzHat "fuzzer" run
         ]
 
 
 testSize : Test
 testSize =
     let
-        run data =
-            PE.encode (Gen.Haberdasher.sizeEncoder data)
-                |> PD.decode Gen.Haberdasher.sizeDecoder
-                |> Expect.equal (Just data)
+        run =
+            Protobuf.ElmerTests.runTest Gen.Haberdasher.decodeSize Gen.Haberdasher.encodeSize
     in
     Test.describe "encode then decode Size"
         [ test "empty" (\_ -> run Gen.Haberdasher.emptySize)
-        , fuzz sizeFuzzer "fuzzer" run
+        , fuzz fuzzSize "fuzzer" run
         ]

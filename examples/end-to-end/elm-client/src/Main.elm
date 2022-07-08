@@ -81,7 +81,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
     H.div [] <|
-        [ H.h1 [] [ H.text "Hats!" ]
+        [ H.h1 [] [ H.text "✨ Hats! ✨" ]
         , case model.hats of
             Ok hats ->
                 viewArmoire model hats

@@ -19,9 +19,10 @@ func main() {
 
 	// Allow CORS (net/http wrapper)
 	handler := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"POST"},
-		AllowedHeaders: []string{"Content-Type"}}).
+		AllowOriginFunc:  func(string) bool { return true },
+		AllowCredentials: true,
+		AllowedMethods:   []string{"POST"},
+		AllowedHeaders:   []string{"Content-Type"}}).
 		Handler(server)
 
 	// Listen for requests
