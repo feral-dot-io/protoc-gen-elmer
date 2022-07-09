@@ -269,14 +269,14 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		gFP("  case u of")
 		for _, v := range u.Variants {
 			gFP(`    %s ->`, v.ID)
-			gFP(`      "%s"`, v.ID)
+			gFP(`      "%s"`, v.Label)
 		}
 
 		gFP("to%s : String -> %s", u.Type.ID, u.Type.ID)
 		gFP("to%s str =", u.Type.ID)
 		gFP("  case str of")
 		for _, v := range u.Variants {
-			gFP(`    "%s" ->`, v.ID)
+			gFP(`    "%s" ->`, v.Label)
 			gFP(`      %s`, v.ID)
 		}
 		// No match? Use default

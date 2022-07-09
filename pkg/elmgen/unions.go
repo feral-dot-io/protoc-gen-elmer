@@ -37,7 +37,10 @@ func (m *Module) newUnion(enum *protogen.Enum) *Union {
 		} else {
 			// Create
 			id := m.NewElmType(vd.ParentFile(), vd).ElmRef
-			v := &Variant{id, num, newCommentSet(value.Comments)}
+			v := &Variant{
+				id, string(vd.Name()),
+				num,
+				newCommentSet(value.Comments)}
 			// Add
 			union.Variants = append(union.Variants, v)
 			aliases[v.Number] = v

@@ -53,6 +53,7 @@ type (
 	// Describes a Union tag
 	Variant struct {
 		ID       *ElmRef
+		Label    string
 		Number   protoreflect.EnumNumber
 		Comments *CommentSet
 	}
