@@ -40,7 +40,7 @@ func TestRPCWithComments(t *testing.T) {
 	for i, rpc := range elm.Services[1].Methods {
 		assert.Equal(t, protoreflect.FullName("test.service.HelloWorld"), rpc.Service)
 		assert.Equal(t, protoreflect.Name(fmt.Sprintf("Hello%d", i+1)), rpc.Method)
-		assert.Equal(t, fmt.Sprintf("helloWorld_Hello%d", i+1), rpc.ID.ID)
+		assert.Equal(t, fmt.Sprintf("twirpHelloWorld_Hello%d", i+1), rpc.ID.ID)
 		assert.Equal(t, "HelloReq", rpc.In.ID)
 		assert.Equal(t, "HelloResp", rpc.Out.ID)
 		assert.Equal(t, "encodeHelloReq", rpc.In.Encoder.String())

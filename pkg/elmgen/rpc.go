@@ -31,7 +31,7 @@ func (m *Module) newRPC(sd protoreflect.Descriptor, method *protogen.Method) *RP
 	md := method.Desc
 	in, out := md.Input(), md.Output()
 	return &RPC{
-		m.NewElmValue(md.ParentFile(), md),
+		m.NewElmValue(md.ParentFile(), "twirp", md),
 		m.NewElmType(in.ParentFile(), in),
 		m.NewElmType(out.ParentFile(), out),
 		md.IsStreamingClient(), md.IsStreamingServer(),

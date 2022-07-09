@@ -169,7 +169,6 @@ Major goals to complete:
 
 Smaller steps:
 - lazy handling on recursive structures?
-- give twirp methods a twirp prefix? This could allow "merged" imports
 - add Makefile to examples/e2e
 - Trailing comments to specify underlying Elm type? // [elmType=double]
     - Should work for uint64 -> float

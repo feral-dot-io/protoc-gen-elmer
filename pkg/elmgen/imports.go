@@ -91,10 +91,10 @@ func protoReflectToElm(p packager, d fullNamer) (mod, asType, asValue string) {
 	return
 }
 
-// Creates a new Elm value (lowercase first char) from a proto ident
-func (m *Module) NewElmValue(p packager, d fullNamer) *ElmRef {
-	mod, _, asValue := protoReflectToElm(p, d)
-	return m.newElmRef(mod, asValue)
+// Creates a new Elm value (lowercase first char) from a proto ident. Prefix must be non-empty
+func (m *Module) NewElmValue(p packager, prefix string, d fullNamer) *ElmRef {
+	mod, asType, _ := protoReflectToElm(p, d)
+	return m.newElmRef(mod, prefix+asType)
 }
 
 // Creates a new Elm type reference (uppercase first char) from a proto ident
