@@ -44,7 +44,6 @@ func (m *Module) newRecord(msg *protogen.Message) *Record {
 
 			oneof, field := m.newOneofField(field.Oneof)
 			m.Oneofs = append(m.Oneofs, oneof)
-			record.Oneofs = append(record.Oneofs, oneof)
 			record.Fields = append(record.Fields, field)
 		} else { // Regular field
 			field := m.newField(field)
@@ -78,4 +77,13 @@ func (m *Module) newOneofField(protoOneof *protogen.Oneof) (*Oneof, *Field) {
 		field.Label = protoIdentToElmValue(string(field.Desc.Name()))
 	}
 	return oneof, field
+}
+
+func (r *Record) Oneofs() (fields []*Field) {
+	for _, f := range r.Fields {
+		if o := f.Oneof; o != nil {
+			fields = append(fields, f)
+		}
+	}
+	return
 }

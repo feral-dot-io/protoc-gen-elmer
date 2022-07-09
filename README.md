@@ -169,9 +169,6 @@ Major goals to complete:
 
 Smaller steps:
 - lazy handling on recursive structures?
-- remove Record.Oneofs in favour of relying on Field.Oneof?
-- Union valuesOf / to / from need test cases generated
-- there's a real tussle between names of enum variants being sufficient vs wanting to be prefixed by the enum name
 - give twirp methods a twirp prefix? This could allow "merged" imports
 - add Makefile to examples/e2e
 - Trailing comments to specify underlying Elm type? // [elmType=double]
@@ -186,6 +183,9 @@ Explore options:
 - Nested separator should be configurable. For example using `ꓸ` https://www.compart.com/en/unicode/U+A4F8 to achieve near-_zero_ naming collisions
 - Enums have a zero field that acts as an embedded option. We might want to remove this for closed enums and rejecting the whole payload (losing compatibility).
 - Revert well-known types to erk/proto's "raw" interpretation
+
+differences from Go codegen:
+- enums aren't prefixed by their name
 
 release checklist
 - Review README

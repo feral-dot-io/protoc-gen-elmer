@@ -85,7 +85,6 @@ type (
 	// A record is derived from a Protobuf message
 	Record struct {
 		Type     *ElmType
-		Oneofs   []*Oneof
 		Fields   []*Field
 		Comments *CommentSet
 	}

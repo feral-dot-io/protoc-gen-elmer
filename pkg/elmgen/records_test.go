@@ -180,7 +180,7 @@ func TestOneOf(t *testing.T) {
 	assert.Len(t, elm.Records, 1)
 	assert.Len(t, elm.Oneofs, 2)
 	r := elm.Records[0]
-	assert.Len(t, r.Oneofs, 2)
+	assert.Len(t, r.Oneofs(), 2)
 	assert.Equal(t, "Multi", r.Type.ID)
 }
 

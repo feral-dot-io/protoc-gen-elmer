@@ -290,9 +290,10 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		gFP("%s =", r.Type.Decoder)
 		// Build oneof decoders inline since they're unique to the message
 		// Ideally they'd be inline here (and in the decoder + fuzzer)
-		if len(r.Oneofs) > 0 {
+		if oneofs := r.Oneofs(); len(oneofs) > 0 {
 			g.P("    let")
-			for _, o := range r.Oneofs {
+			for _, f := range oneofs {
+				o := f.Oneof
 				gFP("        %s =", o.Type.Decoder)
 				g.P("            [")
 				for j, v := range o.Variants {
@@ -383,9 +384,11 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		}
 		gFP("%s : %s -> PE.Encoder", r.Type.Encoder, r.Type)
 		gFP("%s %s =", r.Type.Encoder, param)
-		if len(r.Oneofs) > 0 {
+		oneofs := r.Oneofs()
+		if len(oneofs) > 0 {
 			g.P("    let")
-			for _, o := range r.Oneofs {
+			for _, f := range oneofs {
+				o := f.Oneof
 				ws := "        "
 				gFP("%s%s o =", ws, o.Type.Encoder)
 				gFP("%s    case o of", ws)
@@ -435,13 +438,9 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 			written = true
 		}
 		g.P("        ]")
-		if len(r.Oneofs) > 0 {
+		if len(oneofs) > 0 {
 			// Oneof field handling
-			written = false
-			for _, f := range r.Fields {
-				if f.Oneof == nil { // Skip fields
-					continue
-				}
+			for _, f := range oneofs {
 				gFP("        ++ %s v.%s", f.Oneof.Type.Encoder, f.Label)
 			}
 		}

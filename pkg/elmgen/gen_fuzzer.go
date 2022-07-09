@@ -42,9 +42,10 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 	for _, r := range m.Records {
 		gFP("%s : Fuzzer %s", r.Type.Fuzzer.ID, r.Type)
 		gFP("%s =", r.Type.Fuzzer.ID)
-		if len(r.Oneofs) > 0 {
+		if oneofs := r.Oneofs(); len(oneofs) > 0 {
 			gFP("    let")
-			for _, o := range r.Oneofs {
+			for _, f := range oneofs {
+				o := f.Oneof
 				gFP("        %s =", o.Type.Fuzzer.ID)
 				gFP("            Fuzz.oneOf")
 				for j, v := range o.Variants {
