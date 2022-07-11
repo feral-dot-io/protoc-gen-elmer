@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
+func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) bool {
 	gFP := func(formatter string, args ...interface{}) {
 		g.P(fmt.Sprintf(formatter, args...))
 	}
@@ -105,6 +105,8 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) {
 		gFP(`        , fuzz %s "fuzzer" run`, t.Fuzzer.ID)
 		gFP("        ]")
 	}
+
+	return true
 }
 
 func fieldFuzzer(m *Module, fd protoreflect.FieldDescriptor) string {

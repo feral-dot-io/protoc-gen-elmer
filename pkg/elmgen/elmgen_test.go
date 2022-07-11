@@ -113,11 +113,20 @@ func testModule(t *testing.T, specs ...string) *Module {
 		}
 
 		var elm *Module
-		runGenerator := func(suffix string, gen func(m *Module, g *protogen.GeneratedFile)) {
+		runGenerator := func(suffix string, gen func(m *Module, g *protogen.GeneratedFile) bool) {
 			elm = NewModule(suffix, f)
 			// Generate file
 			genFile := plugin.NewGeneratedFile(elm.Path, "")
-			gen(elm, genFile)
+			valid := gen(elm, genFile)
+			if suffix == "Twirp" {
+				if len(elm.Services) == 0 {
+					assert.False(t, valid)
+				} else {
+					assert.True(t, valid)
+				}
+			} else {
+				assert.True(t, valid)
+			}
 			// Always format (checks Elm syntax)
 			formatted := FormatFile(plugin, elm.Path, genFile)
 			content, _ := formatted.Content()
@@ -141,9 +150,7 @@ func testModule(t *testing.T, specs ...string) *Module {
 		runGenerator("", GenerateCodec)
 		lastCodec = elm
 		runGenerator("Tests", GenerateFuzzTests)
-		if len(lastCodec.Services) > 0 {
-			runGenerator("Twirp", GenerateTwirp)
-		}
+		runGenerator("Twirp", GenerateTwirp)
 	}
 	// Change pwd to tests
 	wd, err := os.Getwd()
@@ -270,4 +277,50 @@ func TestQualifiedWithComments(t *testing.T) {
 			assert.True(t, strings.Contains(content, check), check)
 		}
 	}
+}
+
+func aTestRecursive(t *testing.T) {
+	// Recursive should work with any proto language feature that offers zero or more semantics
+	testModule(t, `
+		syntax = "proto3";
+
+		/*
+		// Tree structure with optional
+		message Node {
+			optional Node left = 1;
+			optional Node right = 2;
+			string value = 3;
+		}
+		*/
+		
+		/*
+		// As some sort of useless train with oneof
+		message Chain {
+			oneof carriage {
+				Chain not_this_one = 1;
+				int32 value = 2;
+			}
+		}
+		*/
+
+		// A recursive list
+		message Comment {
+			string message = 1;
+			repeated Comment responses = 2;
+		}
+
+		//
+		message Mix {
+			message Top {
+				message Inner {
+					oneof pick {
+						Top top = 1;
+						Inner inner = 2;
+					}
+					optional Top opt = 3;
+					repeated Inner list = 4;
+				}
+			}
+		}
+		`)
 }

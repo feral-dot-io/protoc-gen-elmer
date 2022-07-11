@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
-func GenerateTwirp(m *Module, g *protogen.GeneratedFile) {
+func GenerateTwirp(m *Module, g *protogen.GeneratedFile) bool {
 	gFP := func(formatter string, args ...interface{}) {
 		g.P(fmt.Sprintf(formatter, args...))
 	}
@@ -42,4 +42,6 @@ func GenerateTwirp(m *Module, g *protogen.GeneratedFile) {
 		}
 		g.P(s.Comments.Trailing)
 	}
+
+	return len(m.Services) > 0
 }

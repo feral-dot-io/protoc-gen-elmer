@@ -13,7 +13,7 @@ var (
 		"Runs generated source code through elm-format.")
 )
 
-type Generator func(*elmgen.Module, *protogen.GeneratedFile)
+type Generator func(*elmgen.Module, *protogen.GeneratedFile) bool
 
 // Creates a function that runs the given generator over all of a plugin's files to be generated. Applies options from global flags. The suffix is intended to identify the outputted files from the generator.
 func RunGenerator(suffix string, generator Generator) func(*protogen.Plugin) error {
@@ -28,10 +28,14 @@ func RunGenerator(suffix string, generator Generator) func(*protogen.Plugin) err
 			elm := elmgen.NewModule(suffix, file)
 			// Write to file
 			genFile := plugin.NewGeneratedFile(elm.Path, "")
-			generator(elm, genFile)
-			// Format file?
-			if *format {
-				elmgen.FormatFile(plugin, elm.Path, genFile)
+			valid := generator(elm, genFile)
+			if valid {
+				// Format file?
+				if *format {
+					elmgen.FormatFile(plugin, elm.Path, genFile)
+				}
+			} else {
+				genFile.Skip()
 			}
 		}
 		return nil

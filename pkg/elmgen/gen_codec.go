@@ -103,7 +103,7 @@ func printImports(g *protogen.GeneratedFile, m *Module, skipTests bool) {
 }
 
 // Generates Elm decoders and encoders (making a codec) to a file
-func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
+func GenerateCodec(m *Module, g *protogen.GeneratedFile) bool {
 	gFP := func(formatter string, args ...interface{}) {
 		g.P(fmt.Sprintf(formatter, args...))
 	}
@@ -461,6 +461,8 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) {
 		g.P("    in")
 		g.P("    PE.int32 conv")
 	}
+
+	return true
 }
 
 func fieldType(m *Module, f *Field) string {
