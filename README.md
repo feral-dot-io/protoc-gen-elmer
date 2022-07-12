@@ -279,7 +279,6 @@ cp bin/protoc-gen-elmer* ~/bin
 See also [Makefile](/Makefile).
 
 release checklist
-- licence
 - Inlined table of contents
 - Update #Install with releases
 
