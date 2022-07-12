@@ -2,7 +2,18 @@
 
 A protoc code generator that produces decoders, encoders and a minimal RPC client in Elm. A [Protobuf](https://developers.google.com/protocol-buffers/docs/overview) solution for [types without borders](https://www.youtube.com/watch?v=memIRXFSNkU).
 
-Under heavy / active development. Speak to @Joshua on Slack if needed.
+* [Documentation](#documentation)
+    + [Motivation](#motivation)
+    + [What is this project?](#what-is-this-project)
+    + [Examples](#examples)
+    + [Features](#features)
+    + [Trade-offs, downsides, and limitations](#trade-offs-downsides-and-limitations)
+    + [Ecosystem](#ecosystem)
+* [Install](#install)
+* [Usage](#usage)
+* [Server side](#server-side)
+* [Development](#development)
+* [Questions, feedback and bugs](#questions-feedback-and-bugs)
 
 ## Documentation
 ### Motivation
@@ -22,7 +33,7 @@ Clients and servers are separate so we need to handle independent updates. This 
 
 In summary: let's never write a decoder or encoder again.
 
-### What for real
+### What is this project?
 Network apps can define an API that a client uses and a server implements. This allows independent evolution of all three components enabling compatibility. The API specification allows us to define the same types across different languages. This is the goal outlined in the talk [types without borders](https://www.youtube.com/watch?v=memIRXFSNkU).
 
 [Protocol Buffers](https://developers.google.com/protocol-buffers/docs/overview) allows us to specify the API as a schema. Code generators then run on this schema to define types in your language of choice. This generated code is never edited and should be reran whenever our schema changes.
@@ -276,10 +287,9 @@ go build -o bin/protoc-gen-elmer-twirp cmd/protoc-gen-elmer-twirp/main.go
 cp bin/protoc-gen-elmer* ~/bin
 ```
 
-See also [Makefile](/Makefile).
+See also the [Makefile](/Makefile).
 
 release checklist
-- Inlined table of contents
 - Update #Install with releases
 
 ## Questions, feedback and bugs
