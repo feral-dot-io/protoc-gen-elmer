@@ -217,7 +217,7 @@ Requirements:
 
 This project is made up of three binaries: `protoc-gen-elmer`, `protoc-gen-elmer-fuzzer`, and `protoc-gen-elmer-twirp`. They all need to be available on your `$PATH` for `protoc` to work.
 
-Copy the binaries from the Github release to `~/bin`
+Copy the binaries from the [latest Github release](https://github.com/feral-dot-io/protoc-gen-elmer/releases) to `~/bin`
 
 ## Usage
 
@@ -288,9 +288,6 @@ cp bin/protoc-gen-elmer* ~/bin
 ```
 
 See also the [Makefile](/Makefile).
-
-release checklist
-- Update #Install with releases
 
 ## Questions, feedback and bugs
 
