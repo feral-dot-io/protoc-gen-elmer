@@ -1,0 +1,10 @@
+syntax = "proto3";
+package Ex02Enums;
+option go_package = "./.";
+enum Answer {
+    // Look out! Name collision!
+    MAYBE = 0;
+    YES = 1;
+    NO = 2;
+    PLEASE_REPEAT = 10;
+}

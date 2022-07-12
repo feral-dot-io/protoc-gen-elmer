@@ -1,0 +1,17 @@
+syntax = "proto3";
+// This creates an Ex04 module as well as Ex04Twirp alongside
+package Ex04;
+option go_package = "./.";
+import "google/protobuf/empty.proto";
+
+service Speaker {
+    /*
+        Example API for our RPC client. No corresponding implementation.
+        Check out `end-to-end` example of everything working together.    
+    */
+    rpc HelloWorld(google.protobuf.Empty) returns (Response);
+}
+
+message Response {
+    string message = 1;
+}

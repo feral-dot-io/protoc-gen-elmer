@@ -1,0 +1,9 @@
+syntax = "proto3";
+package Ex01Records;
+option go_package = "./.";
+// Our very first Protobuf!
+message MyFirstMessage {
+    double my_first_float = 2;
+    int32 my_favourite_number = 1;
+    bool on_or_off = 3;
+}

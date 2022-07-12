@@ -69,7 +69,7 @@ update msg model =
         MakeHatRequest ->
             ( model
             , Haberdasher.Size model.selectedInches
-                |> Rpc.haberdasher_MakeHat HatResult api
+                |> Rpc.twirpHaberdasher_MakeHat HatResult api
             )
 
         HatResult result ->
@@ -81,7 +81,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
     H.div [] <|
-        [ H.h1 [] [ H.text "✨ Hats! ✨" ]
+        [ H.h1 [] [ H.text "Hats!" ]
         , case model.hats of
             Ok hats ->
                 viewArmoire model hats

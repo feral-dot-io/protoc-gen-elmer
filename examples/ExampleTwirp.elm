@@ -1,8 +1,9 @@
 module ExampleTwirp exposing (..)
 
-{-
-   // Code generated protoc-gen-elmer DO NOT EDIT \\
+{-| Protobuf library for executing RPC methods defined in example.proto. This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit.
 -}
+
+-- // Code generated protoc-gen-elmer DO NOT EDIT \\
 
 import Bytes exposing (Bytes)
 import Bytes.Encode as BE
@@ -18,27 +19,43 @@ import Protobuf.Encode as PE
 -- We can define RPC methods and generate a Twirp client
 
 
-ourService_AnotherMethod : (Result Http.Error Example.Scalar -> msg) -> String -> Example.AllTogether -> Cmd msg
-ourService_AnotherMethod msg api data =
-    Http.post
-        { url = api ++ "/example.OurService/AnotherMethod"
+twirpOurService_AnotherMethod :
+    (Result Http.Error Example.Scalar -> msg)
+    -> String
+    -> Example.AllTogether
+    -> Cmd msg
+twirpOurService_AnotherMethod msg api data =
+    Http.riskyRequest
+        { method = "POST"
+        , headers = []
+        , url = api ++ "/example.OurService/AnotherMethod"
         , body =
-            Example.allTogetherEncoder data
+            Example.encodeAllTogether data
                 |> PE.encode
                 |> Http.bytesBody "application/protobuf"
-        , expect = PD.expectBytes msg Example.scalarDecoder
+        , expect = PD.expectBytes msg Example.decodeScalar
+        , timeout = Nothing
+        , tracker = Nothing
         }
 
 
 {-| Each method is an HTTP request
 -}
-ourService_OurRpcMethod : (Result Http.Error Example.AllTogether -> msg) -> String -> Example.Scalar -> Cmd msg
-ourService_OurRpcMethod msg api data =
-    Http.post
-        { url = api ++ "/example.OurService/OurRPCMethod"
+twirpOurService_OurRpcMethod :
+    (Result Http.Error Example.AllTogether -> msg)
+    -> String
+    -> Example.Scalar
+    -> Cmd msg
+twirpOurService_OurRpcMethod msg api data =
+    Http.riskyRequest
+        { method = "POST"
+        , headers = []
+        , url = api ++ "/example.OurService/OurRPCMethod"
         , body =
-            Example.scalarEncoder data
+            Example.encodeScalar data
                 |> PE.encode
                 |> Http.bytesBody "application/protobuf"
-        , expect = PD.expectBytes msg Example.allTogetherDecoder
+        , expect = PD.expectBytes msg Example.decodeAllTogether
+        , timeout = Nothing
+        , tracker = Nothing
         }

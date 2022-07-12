@@ -17,12 +17,12 @@ import Protobuf.Encode as PE
 
 {-| MakeHat produces a hat of mysterious, randomly-selected color!
 -}
-haberdasher_MakeHat :
+twirpHaberdasher_MakeHat :
     (Result Http.Error Gen.Haberdasher.Hat -> msg)
     -> String
     -> Gen.Haberdasher.Size
     -> Cmd msg
-haberdasher_MakeHat msg api data =
+twirpHaberdasher_MakeHat msg api data =
     Http.riskyRequest
         { method = "POST"
         , headers = []

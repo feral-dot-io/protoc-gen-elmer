@@ -43,6 +43,7 @@ We generate code for:
 Right! That's enough theory 😶‍🌫️ Let's move onto the practical 🛠️
 
 ### Examples
+
 Let's start off with the basics. Here's a complete `.proto` describing a single message:
 ```protobuf
 syntax = "proto3";
@@ -56,7 +57,7 @@ message MyFirstMessage {
 }
 ```
 
-Every `.proto` is self-describing and generates a single Elm module. This will create the file `My.FirstExample.elm`. Here's a snippet:
+Every `.proto` is self-describing and generates a single Elm module. This will create the file [My.FirstExample.elm](/examples/readme/Ex01Records.elm). Here's a snippet:
 ```elm
 {-| Our very first Protobuf!
 -}
@@ -90,7 +91,7 @@ enum Answer {
 }
 ```
 
-Take a look at the generated Elm type:
+Take a look at the [generated Elm type](/examples/readme/Ex02Enums.elm):
 ```elm
 type
     Answer
@@ -212,14 +213,14 @@ Copy the binaries from the Github release to `~/bin`
 Run with `protoc` against a `.proto` file. Example usage:
 
 ```
-protoc 
+protoc
     --elmer_out=src --elmer_opt='' \
     --elmer-fuzzer_out=src --elmer-fuzzer_opt='format=f' \
     --elmer-twirp_out=src --elmer-twirp_opt='' \
     rpc/sflow/api.proto
 ```
 
-More examples available under `/examples`
+See more available under [/examples](/examples).
 
 The `--elmer_out` options trigger the plugins. Set it to your Elm `src` directory so that generated code lands in the correct location. Set options if needed with `--elmer_opt`. You can specify multiple `.proto` files and you can specify an import path with `-I`.
 
@@ -260,7 +261,7 @@ Ideally you'd take advantage of Protobuf's extensive codegen availability to gen
 
 This, however, means solving the "RPC" mechanism of how to talk with it. [Twirp is the easiest solution](https://github.com/twitchtv/twirp) which this project embraces. Another upcoming solution is [Buf's Connect](https://buf.build/blog/connect-a-better-grpc).
 
-Don't forget the `/examples/end-to-end` to see a complete example.
+Don't forget the [/examples/end-to-end](/examples/end-to-end) to see a complete example.
 
 ## Development
 
@@ -275,17 +276,17 @@ go build -o bin/protoc-gen-elmer-twirp cmd/protoc-gen-elmer-twirp/main.go
 cp bin/protoc-gen-elmer* ~/bin
 ```
 
+See also [Makefile](/Makefile).
+
 This is my dev scratchpad of ideas and in-progress notes.
 
 TODO:
-- add Makefile to examples/e2e
 - codegen gives warnings on some code:
     - gen_codec: messages with one field while the rest are optional generates a warning "consider using cons instead"
     - gen_twirp: has unused imports
 
 release checklist
 - licence
-- examples folder
 - TODO comments
 - Inlined table of contents
 - Update #Install with releases

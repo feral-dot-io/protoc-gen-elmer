@@ -13,4 +13,4 @@ echo 'Y' | elm install elm/bytes
 echo 'Y' | elm install elm-explorations/test
 echo 'Y' | elm install eriktim/elm-protocol-buffers
 
-sed -i 's/"source-directories": \[/&"..\/..\/..\/../src",/' elm.json
+sed -i 's/"source-directories": \[/&"..\/..\/..\/..\/src",/' elm.json

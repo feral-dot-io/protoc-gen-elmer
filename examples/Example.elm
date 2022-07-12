@@ -1,8 +1,54 @@
 module Example exposing (..)
 
-{-
-   // Code generated protoc-gen-elmer DO NOT EDIT \\
+{-| Protobuf library for decoding and encoding structures found in example.proto along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.
+
+Records:
+
+  - AllTogether
+  - AllTogether\_NestedAbc
+  - Scalar
+
+Unions:
+
+  - AllTogether\_Answer
+
+Each type defined has a: decoder, encoder and an empty (zero value) function. In addition to this enums have valuesOf, to and from (string) functions. All functions take the form `decodeDerivedIdent` where `decode` is the purpose and `DerivedIdent` comes from the Protobuf ident.
+
+Elm identifiers are derived directly from the Protobuf ID (a full ident). The package maps to a module and the rest of the ID is the type. Since Protobuf names are hierachical (separated by a dot `.`), each namespace is mapped to an underscore `_` in an Elm ID. A Protobuf namespaced ident (parts between a dot `.`) are then cased to follow Elm naming conventions and do not include any undescores `_`. For example the enum `my.pkg.MyMessage.URLOptions` maps to the Elm module `My.Pkg` with ID `MyMessage_UrlOptions`.
+
+
+# Types
+
+@docs AllTogether, AllTogether_NestedAbc, Scalar, AllTogether_Answer
+
+
+# Empty (zero values)
+
+@docs emptyAllTogether, emptyAllTogether_NestedAbc, emptyScalar, emptyAllTogether_Answer
+
+
+# Enum valuesOf
+
+@docs valuesOfAllTogether_Answer
+
+
+# Enum and String converters
+
+@docs fromAllTogether_Answer, toAllTogether_Answer
+
+
+# Decoders
+
+@docs decodeAllTogether, decodeAllTogether_NestedAbc, decodeScalar, decodeAllTogether_Answer
+
+
+# Encoders
+
+@docs encodeAllTogether, encodeAllTogether_NestedAbc, encodeScalar, encodeAllTogether_Answer
+
 -}
+
+-- // Code generated protoc-gen-elmer DO NOT EDIT \\
 
 import Bytes exposing (Bytes)
 import Bytes.Encode as BE
@@ -15,7 +61,7 @@ import Protobuf.Encode as PE
 {-| Enums!
 -}
 type AllTogether_Answer
-    = AllTogether_Maybe Int
+    = AllTogether_Maybe
     | AllTogether_Yes
     | AllTogether_No
 
@@ -92,34 +138,68 @@ emptyScalar =
 
 emptyAllTogether_Answer : AllTogether_Answer
 emptyAllTogether_Answer =
-    AllTogether_Maybe 0
+    AllTogether_Maybe
 
 
-allTogetherDecoder : PD.Decoder AllTogether
-allTogetherDecoder =
+valuesOfAllTogether_Answer : List AllTogether_Answer
+valuesOfAllTogether_Answer =
+    [ AllTogether_Maybe, AllTogether_Yes, AllTogether_No ]
+
+
+fromAllTogether_Answer : AllTogether_Answer -> String
+fromAllTogether_Answer u =
+    case u of
+        AllTogether_Maybe ->
+            "MAYBE"
+
+        AllTogether_Yes ->
+            "YES"
+
+        AllTogether_No ->
+            "NO"
+
+
+toAllTogether_Answer : String -> AllTogether_Answer
+toAllTogether_Answer str =
+    case str of
+        "MAYBE" ->
+            AllTogether_Maybe
+
+        "YES" ->
+            AllTogether_Yes
+
+        "NO" ->
+            AllTogether_No
+
+        _ ->
+            AllTogether_Maybe
+
+
+decodeAllTogether : PD.Decoder AllTogether
+decodeAllTogether =
     let
-        allTogether_FavouriteDecoder =
+        decodeAllTogether_Favourite =
             [ ( 3, PD.map AllTogether_MyStr PD.string )
             , ( 4, PD.map AllTogether_MyNum PD.int32 )
-            , ( 5, PD.map AllTogether_Selection scalarDecoder )
+            , ( 5, PD.map AllTogether_Selection decodeScalar )
             ]
 
-        allTogether_MyNameDecoder =
+        decodeAllTogether_MyName =
             [ ( 6, PD.string )
             ]
     in
     PD.message emptyAllTogether
         [ PD.repeated 1 PD.string .myList (\v m -> { m | myList = v })
         , PD.mapped 2 ( "", False ) PD.string PD.bool .myMap (\v m -> { m | myMap = v })
-        , PD.oneOf allTogether_FavouriteDecoder (\v m -> { m | favourite = v })
-        , PD.oneOf allTogether_MyNameDecoder (\v m -> { m | myName = v })
-        , PD.optional 7 allTogether_NestedAbcDecoder (\v m -> { m | abc = v })
-        , PD.optional 8 allTogether_AnswerDecoder (\v m -> { m | answer = v })
+        , PD.oneOf decodeAllTogether_Favourite (\v m -> { m | favourite = v })
+        , PD.oneOf decodeAllTogether_MyName (\v m -> { m | myName = v })
+        , PD.optional 7 decodeAllTogether_NestedAbc (\v m -> { m | abc = v })
+        , PD.optional 8 decodeAllTogether_Answer (\v m -> { m | answer = v })
         ]
 
 
-allTogether_NestedAbcDecoder : PD.Decoder AllTogether_NestedAbc
-allTogether_NestedAbcDecoder =
+decodeAllTogether_NestedAbc : PD.Decoder AllTogether_NestedAbc
+decodeAllTogether_NestedAbc =
     PD.message emptyAllTogether_NestedAbc
         [ PD.optional 1 PD.int32 (\v m -> { m | a = v })
         , PD.optional 2 PD.int32 (\v m -> { m | b = v })
@@ -127,8 +207,8 @@ allTogether_NestedAbcDecoder =
         ]
 
 
-scalarDecoder : PD.Decoder Scalar
-scalarDecoder =
+decodeScalar : PD.Decoder Scalar
+decodeScalar =
     PD.message emptyScalar
         [ PD.optional 1 PD.double (\v m -> { m | myDouble = v })
         , PD.optional 2 PD.float (\v m -> { m | myFloat = v })
@@ -143,27 +223,30 @@ scalarDecoder =
         ]
 
 
-allTogether_AnswerDecoder : PD.Decoder AllTogether_Answer
-allTogether_AnswerDecoder =
+decodeAllTogether_Answer : PD.Decoder AllTogether_Answer
+decodeAllTogether_Answer =
     let
         conv v =
             case v of
+                0 ->
+                    AllTogether_Maybe
+
                 1 ->
                     AllTogether_Yes
 
                 2 ->
                     AllTogether_No
 
-                wire ->
-                    AllTogether_Maybe wire
+                _ ->
+                    AllTogether_Maybe
     in
     PD.map conv PD.int32
 
 
-allTogetherEncoder : AllTogether -> PE.Encoder
-allTogetherEncoder v =
+encodeAllTogether : AllTogether -> PE.Encoder
+encodeAllTogether v =
     let
-        allTogether_FavouriteEncoder o =
+        encodeAllTogether_Favourite o =
             case o of
                 Just (AllTogether_MyStr data) ->
                     [ ( 3, PE.string data ) ]
@@ -172,12 +255,12 @@ allTogetherEncoder v =
                     [ ( 4, PE.int32 data ) ]
 
                 Just (AllTogether_Selection data) ->
-                    [ ( 5, scalarEncoder data ) ]
+                    [ ( 5, encodeScalar data ) ]
 
                 Nothing ->
                     []
 
-        allTogether_MyNameEncoder o =
+        encodeAllTogether_MyName o =
             case o of
                 Just data ->
                     [ ( 6, PE.string data ) ]
@@ -188,15 +271,15 @@ allTogetherEncoder v =
     PE.message <|
         [ ( 1, PE.list PE.string v.myList )
         , ( 2, PE.dict PE.string PE.bool v.myMap )
-        , ( 7, allTogether_NestedAbcEncoder v.abc )
-        , ( 8, allTogether_AnswerEncoder v.answer )
+        , ( 7, encodeAllTogether_NestedAbc v.abc )
+        , ( 8, encodeAllTogether_Answer v.answer )
         ]
-            ++ allTogether_FavouriteEncoder v.favourite
-            ++ allTogether_MyNameEncoder v.myName
+            ++ encodeAllTogether_Favourite v.favourite
+            ++ encodeAllTogether_MyName v.myName
 
 
-allTogether_NestedAbcEncoder : AllTogether_NestedAbc -> PE.Encoder
-allTogether_NestedAbcEncoder v =
+encodeAllTogether_NestedAbc : AllTogether_NestedAbc -> PE.Encoder
+encodeAllTogether_NestedAbc v =
     PE.message <|
         [ ( 1, PE.int32 v.a )
         , ( 2, PE.int32 v.b )
@@ -204,8 +287,8 @@ allTogether_NestedAbcEncoder v =
         ]
 
 
-scalarEncoder : Scalar -> PE.Encoder
-scalarEncoder v =
+encodeScalar : Scalar -> PE.Encoder
+encodeScalar v =
     PE.message <|
         [ ( 1, PE.double v.myDouble )
         , ( 2, PE.float v.myFloat )
@@ -220,13 +303,13 @@ scalarEncoder v =
         ]
 
 
-allTogether_AnswerEncoder : AllTogether_Answer -> PE.Encoder
-allTogether_AnswerEncoder v =
+encodeAllTogether_Answer : AllTogether_Answer -> PE.Encoder
+encodeAllTogether_Answer v =
     let
         conv =
             case v of
-                AllTogether_Maybe wire ->
-                    wire
+                AllTogether_Maybe ->
+                    0
 
                 AllTogether_Yes ->
                     1

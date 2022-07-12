@@ -1,5 +1,7 @@
 package e2e
 
+// Instead of another Makefile, this is how you might run the codegen with Go
+
 // Go server codegen (protobuf-go and Twirp)
 //go:generate protoc --go_out=go-server --twirp_out=go-server api.proto
 

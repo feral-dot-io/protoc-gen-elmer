@@ -1,0 +1,44 @@
+syntax = "proto3";
+package Ex03Complex;
+option go_package = "./.";
+// We can import other files
+import "02-enums.proto";
+// Imports of well-known types don't need to be present
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+message Ex {
+    // We can nest messages
+    message Questions {
+        // Reference another .proto's message
+        Ex02Enums.Answer brunch = 1;
+        // Note how message fields aren't wrapped in a Maybe
+        Ex02Enums.Answer pudding = 2;
+    }
+
+    // Note the runs of caps gets converted to `WellKnownHolder`
+    message WellKNOWNHolder {
+        // Timestamp becomes `Time.Posix` directly
+        google.protobuf.Timestamp created_on = 1;
+        // Wrappers allow us to put scalars behind a `Maybe Int`
+        google.protobuf.Int32Value uncertain_integer = 16;
+    }
+
+    // We can have put things in lists
+    repeated double marbles = 1; // Diameter (in cm) -- post comments
+    // Instead of using a zero value, wrap in a Maybe and use Nothing
+    optional double last_marble_lost = 2;
+
+    // A special kind of enum that holds `Maybe pick_one`
+    oneof pick_one {
+        // We use `elm/Bytes` directly
+        bytes png_of_marbles_lost_over_time = 3;
+        // Maps to `String`
+        string essay_on_not_losing_my_marbles = 4;
+        // We can also include other messages
+        WellKNOWNHolder complex = 5;
+    }
+
+    // Let's not forget -- maps map to a Dict
+    map<string, Ex02Enums.Answer> pressing_questions = 6;
+}
