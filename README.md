@@ -278,16 +278,8 @@ cp bin/protoc-gen-elmer* ~/bin
 
 See also [Makefile](/Makefile).
 
-This is my dev scratchpad of ideas and in-progress notes.
-
-TODO:
-- codegen gives warnings on some code:
-    - gen_codec: messages with one field while the rest are optional generates a warning "consider using cons instead"
-    - gen_twirp: has unused imports
-
 release checklist
 - licence
-- TODO comments
 - Inlined table of contents
 - Update #Install with releases
 

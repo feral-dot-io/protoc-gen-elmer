@@ -21,7 +21,6 @@ func GenerateTwirp(m *Module, g *protogen.GeneratedFile) bool {
 	for _, s := range m.Services {
 		s.Comments.printDashDash(g)
 		for _, rpc := range s.Methods {
-			// TODO: api will need to be replaced with options
 			rpc.Comments.printBlock(g)
 			gFP("%s : (Result Http.Error %s -> msg)\n -> String -> %s -> Cmd msg",
 				rpc.ID.ID, rpc.Out, rpc.In)

@@ -167,6 +167,7 @@ func TestOneOf(t *testing.T) {
 	elm := testModule(t, `
 		syntax = "proto3";
 		message Multi {
+			bool leading = 100;
 			oneof pick_one {
 				string a_str = 1;
 				bool a_bool = 2;
