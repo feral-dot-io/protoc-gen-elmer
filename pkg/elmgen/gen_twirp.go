@@ -19,7 +19,7 @@ func GenerateTwirp(m *Module, g *protogen.GeneratedFile) bool {
 	}
 
 	gFP("module %s exposing (..)", m.Name)
-	gFP("{-| Protobuf library for executing RPC methods defined in " + m.Proto + ". This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit. -}")
+	gFP("{-| Protobuf library for executing RPC methods defined in package `" + m.ProtoPackage + "`. This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit. -}")
 	printDoNotEdit(g)
 
 	gFP("import Http")

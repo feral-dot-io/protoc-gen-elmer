@@ -116,7 +116,7 @@ func GenerateCodec(m *Module, g *protogen.GeneratedFile) bool {
 	}
 	g.P("module ", m.Name, " exposing (..)")
 
-	g.P("{-| Protobuf library for decoding and encoding structures found in " + m.Proto + " along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.")
+	g.P("{-| Protobuf library for decoding and encoding structures found in package `" + m.ProtoPackage + "` along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.")
 	g.P("")
 
 	// List relevant top-level types

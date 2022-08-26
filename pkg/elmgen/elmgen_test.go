@@ -31,7 +31,7 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 	// We need to pass files to protoc instead of connecting stdin / stdout
 	// Write all specs to files
 	tmpDir := t.TempDir()
-	var stdin, stdout, genReqparams string
+	var stdout, genReqparams string
 	var filesToGen []string
 	for i, spec := range specs {
 		proto := "test" + strconv.Itoa(i) + ".proto"
@@ -39,7 +39,6 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 		fullProto := tmpDir + "/" + proto
 		// Keep first, our main test file
 		if i == 0 {
-			stdin = fullProto
 			stdout = fullProto + ".desc"
 		}
 		genReqparams += "M" + proto + "=" + proto + "/" + proto + ","
@@ -48,13 +47,13 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 		assert.NoError(t, err)
 	}
 	// Invoke protoc's parser
-	cmd := exec.Command(
-		"protoc",
-		"--proto_path="+tmpDir,
+	args := []string{
+		"--proto_path=" + tmpDir,
 		"--include_imports",
 		"--include_source_info",
-		"--descriptor_set_out="+stdout,
-		stdin)
+		"--descriptor_set_out=" + stdout}
+	args = append(args, filesToGen...)
+	cmd := exec.Command("protoc", args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err := cmd.Run()
@@ -76,7 +75,6 @@ func testPlugin(t *testing.T, specs ...string) *protogen.Plugin {
 	plugin, err := (protogen.Options{}).New(req)
 	assert.NoError(t, err)
 	// Build Module from File
-	//assert.Len(t, plugin.Files, len(specs))
 	var expFiles int
 	for _, f := range protoFiles.File {
 		if f.Package == nil || !strings.HasPrefix(*f.Package, importGooglePB) {
@@ -114,14 +112,14 @@ func testModule(t *testing.T, specs ...string) *Module {
 	assert.NoError(t, err)
 
 	var lastCodec *Module
-	for _, f := range plugin.Files {
-		if !f.Generate {
+	for _, pkg := range FilesToPackages(plugin.Files) {
+		if !pkg.Generate {
 			continue
 		}
 
 		var elm *Module
 		runGenerator := func(suffix string, gen func(m *Module, g *protogen.GeneratedFile) bool) {
-			elm = NewModule(suffix, f)
+			elm = NewModule(suffix, pkg)
 			// Generate file
 			genFile := plugin.NewGeneratedFile(elm.Path, "")
 			valid := gen(elm, genFile)

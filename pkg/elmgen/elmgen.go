@@ -16,12 +16,24 @@ import (
 )
 
 type (
+	// Describes our PB inputs, possibly from multiple files
+	ProtoPackage struct {
+		Name     protoreflect.FullName
+		Generate bool
+
+		Enums      []*protogen.Enum
+		Messages   []*protogen.Message
+		Extensions []*protogen.Extension
+		Services   []*protogen.Service
+	}
+
 	// Top-level structures describing an Elm Module
 	Module struct {
 		importsSeen map[string]bool
 
-		Name, Path, Proto string
-		Imports           []string
+		ProtoPackage string
+		Name, Path   string
+		Imports      []string
 
 		Unions   Unions
 		Oneofs   Oneofs
@@ -148,25 +160,52 @@ func (a RPCs) Len() int           { return len(a) }
 func (a RPCs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a RPCs) Less(i, j int) bool { return a[i].ID.String() < a[j].ID.String() }
 
+// Protobuf packages can be made up of multiple files. Merge them into their own packages
+func FilesToPackages(files []*protogen.File) []*ProtoPackage {
+	var pkgs []*ProtoPackage
+	index := make(map[protoreflect.FullName]*ProtoPackage)
+	for _, file := range files {
+		name := file.Desc.FullName()
+		// Fetch existing input
+		pkg := index[name]
+		if pkg == nil { // Create if missing
+			pkg = &ProtoPackage{
+				Name:     name,
+				Generate: file.Generate}
+			index[file.Desc.FullName()] = pkg
+			pkgs = append(pkgs, pkg)
+		} else if file.Generate {
+			// If just one file out of the package needs generating, do the whole package
+			pkg.Generate = true
+		}
+		// Merge file
+		pkg.Enums = append(pkg.Enums, file.Enums...)
+		pkg.Messages = append(pkg.Messages, file.Messages...)
+		pkg.Extensions = append(pkg.Extensions, file.Extensions...)
+		pkg.Services = append(pkg.Services, file.Services...)
+	}
+	return pkgs
+}
+
 // Entry point for elmgen. Builds an Elm module from a given proto File. The module name may be suffixed to allow for different derivative use cases e.g., a codec with no suffix and the suffix "Twirp" for a client could live alongside each other.
-func NewModule(suffix string, file *protogen.File) *Module {
+func NewModule(suffix string, input *ProtoPackage) *Module {
 	m := new(Module)
 	m.importsSeen = make(map[string]bool)
 	// Paths
-	pkg := string(file.Desc.Package())
+	pkg := string(input.Name)
 	// Adding a prefix / suffix can prevent an empty can lead to X.elm and Tests.elm
 	// We want a consistent form i.e. X.elm and XTests.elm
 	if pkg == "" {
 		pkg = "X"
 	}
-	pkg = pkg + suffix
+	m.ProtoPackage = pkg
+	pkg += suffix
 	m.Name = protoPkgToElmModule(pkg)
 	m.Path = strings.ReplaceAll(m.Name, ".", "/") + ".elm"
-	m.Proto = file.Desc.Path()
 	// Parse file
-	m.addUnions(file.Enums)
-	m.addRecords(file.Messages)
-	m.addRPCs(file.Services)
+	m.addUnions(input.Enums)
+	m.addRecords(input.Messages)
+	m.addRPCs(input.Services)
 	// Imports
 	m.findImports()
 	for key := range m.importsSeen {

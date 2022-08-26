@@ -132,7 +132,7 @@ func TestFieldErrors(t *testing.T) {
 	})
 	// General error path (fails on fieldType)
 	assert.Panics(t, func() {
-		elm := NewModule("", plugin.Files[0])
+		elm := NewModule("", FilesToPackages(plugin.Files)[0])
 		g := plugin.NewGeneratedFile("file", "")
 		GenerateCodec(elm, g)
 	})

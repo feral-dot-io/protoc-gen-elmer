@@ -22,7 +22,7 @@ func TestFindImports(t *testing.T) {
 			map<bool, int32> my_map = 2;
 		}
 	`)
-	elm := NewModule("", plugin.Files[0])
+	elm := NewModule("", FilesToPackages(plugin.Files)[0])
 	assert.Equal(t, []string{"Bytes", "Dict", "FindTests", importElmer,
 		importElmerTests}, elm.Imports)
 }
@@ -48,7 +48,7 @@ func TestFindImportsNested(t *testing.T) {
 			map<bool, int32> not_triggered = 1;
 		}
 	`)
-	elm := NewModule("", plugin.Files[1])
+	elm := NewModule("", FilesToPackages(plugin.Files)[1])
 	assert.Equal(t, []string{"Bytes", "MyTests", "Other", "OtherTests",
 		importElmer, importElmerTests}, elm.Imports)
 }
@@ -119,4 +119,20 @@ func TestWellKnown(t *testing.T) {
 			google.protobuf.UInt64Value uint64_value = 29;
 			google.protobuf.Value value = 30;
 		}`)
+}
+
+// See issue #1
+func TestImportFilesWithSamePackage(t *testing.T) {
+	elm := testModule(t, `
+		syntax = "proto3";
+		package merge;
+		message A {}
+	`, `
+		syntax = "proto3";
+		package merge;
+		message B {}
+	`)
+	assert.Equal(t, "merge", elm.ProtoPackage)
+	assert.Equal(t, "Merge", elm.Name)
+	assert.Len(t, elm.Records, 2)
 }

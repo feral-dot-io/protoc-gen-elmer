@@ -26,13 +26,13 @@ type Generator func(*elmgen.Module, *protogen.GeneratedFile) bool
 func RunGenerator(suffix string, generator Generator) func(*protogen.Plugin) error {
 	return func(plugin *protogen.Plugin) error {
 		plugin.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
-
-		for _, file := range plugin.Files {
-			if !file.Generate {
+		// Generate a file per PB package
+		for _, pkg := range elmgen.FilesToPackages(plugin.Files) {
+			if !pkg.Generate {
 				continue
 			}
 			// Map Proto to Elm types
-			elm := elmgen.NewModule(suffix, file)
+			elm := elmgen.NewModule(suffix, pkg)
 			// Write to file
 			genFile := plugin.NewGeneratedFile(elm.Path, "")
 			valid := generator(elm, genFile)

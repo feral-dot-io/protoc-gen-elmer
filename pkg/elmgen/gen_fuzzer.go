@@ -21,7 +21,7 @@ func GenerateFuzzTests(m *Module, g *protogen.GeneratedFile) bool {
 	}
 
 	g.P("module ", m.Name, " exposing (..)")
-	gFP("{-| Protobuf library for testing structures found in " + m.Proto + ". This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit. -}")
+	gFP("{-| Protobuf library for testing structures found in package `" + m.ProtoPackage + "`. This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit. -}")
 	printDoNotEdit(g)
 
 	g.P("import Expect")
