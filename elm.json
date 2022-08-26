@@ -3,7 +3,7 @@
     "name": "feral-dot-io/protoc-gen-elmer",
     "summary": "Support library for Protobuf to Elm codegen. Builds on elm-protocol-buffers",
     "license": "LGPL-3.0",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "exposed-modules": [
         "Protobuf.Elmer",
         "Protobuf.ElmerTests"
