@@ -3,7 +3,7 @@ all: generate build test examples local-install
 
 # Only needed to be done once to prepare for tests
 generate:
-	go generate ./...
+	go generate ./... || true
 
 build:
 	go build -o bin/protoc-gen-elmer cmd/protoc-gen-elmer/main.go

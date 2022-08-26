@@ -15,6 +15,7 @@
             elmPackages.elm-live
             elmPackages.elm-test
             protobuf
+            protoc-gen-twirp
           ];
         };
     };
