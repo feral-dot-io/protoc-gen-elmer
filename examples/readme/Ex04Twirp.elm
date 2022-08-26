@@ -1,6 +1,6 @@
 module Ex04Twirp exposing (..)
 
-{-| Protobuf library for executing RPC methods defined in 04-twirp.proto. This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit.
+{-| Protobuf library for executing RPC methods defined in package `Ex04`. This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit.
 -}
 
 -- // Code generated protoc-gen-elmer DO NOT EDIT \\

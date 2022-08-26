@@ -1,6 +1,6 @@
 module Gen.Haberdasher exposing (..)
 
-{-| Protobuf library for decoding and encoding structures found in api.proto along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.
+{-| Protobuf library for decoding and encoding structures found in package `gen.haberdasher` along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.
 
 Records:
 

@@ -1,6 +1,6 @@
 module Example exposing (..)
 
-{-| Protobuf library for decoding and encoding structures found in example.proto along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.
+{-| Protobuf library for decoding and encoding structures found in package `example` along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.
 
 Records:
 

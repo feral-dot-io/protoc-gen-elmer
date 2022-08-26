@@ -1,6 +1,6 @@
 module Ex02Enums exposing (..)
 
-{-| Protobuf library for decoding and encoding structures found in 02-enums.proto along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.
+{-| Protobuf library for decoding and encoding structures found in package `Ex02Enums` along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.
 
 Records: (none)
 

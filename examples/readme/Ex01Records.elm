@@ -1,6 +1,6 @@
 module Ex01Records exposing (..)
 
-{-| Protobuf library for decoding and encoding structures found in 01-records.proto along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.
+{-| Protobuf library for decoding and encoding structures found in package `Ex01Records` along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.
 
 Records:
 

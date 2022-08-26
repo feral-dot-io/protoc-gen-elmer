@@ -1,6 +1,6 @@
 module Feral.Rpc.SflowTests exposing (..)
 
-{-| Protobuf library for testing structures found in sflow.proto. This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit.
+{-| Protobuf library for testing structures found in package `feral.rpc.sflow`. This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit.
 -}
 
 -- // Code generated protoc-gen-elmer DO NOT EDIT \\

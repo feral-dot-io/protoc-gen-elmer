@@ -1,6 +1,6 @@
 module ExampleTests exposing (..)
 
-{-| Protobuf library for testing structures found in example.proto. This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit.
+{-| Protobuf library for testing structures found in package `example`. This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit.
 -}
 
 -- // Code generated protoc-gen-elmer DO NOT EDIT \\

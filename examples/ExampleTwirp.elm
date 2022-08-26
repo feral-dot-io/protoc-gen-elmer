@@ -1,6 +1,6 @@
 module ExampleTwirp exposing (..)
 
-{-| Protobuf library for executing RPC methods defined in example.proto. This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit.
+{-| Protobuf library for executing RPC methods defined in package `example`. This file was generated automatically by `protoc-gen-elmer`. See the base file for more information. Do not edit.
 -}
 
 -- // Code generated protoc-gen-elmer DO NOT EDIT \\

@@ -1,6 +1,6 @@
 module Feral.Rpc.Sflow exposing (..)
 
-{-| Protobuf library for decoding and encoding structures found in sflow.proto along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.
+{-| Protobuf library for decoding and encoding structures found in package `feral.rpc.sflow` along with helpers. This file was generated automatically by `protoc-gen-elmer`. Do not edit.
 
 Records:
 
